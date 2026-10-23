@@ -1,11 +1,9 @@
-import unittest
-from contextlib import chdir
 from getpass import GetPassWarning
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock
 
+import pytest
 from keyring.backend import KeyringBackend
 from keyring.backends.fail import Keyring as FailKeyring
 from keyring.backends.null import Keyring as NullKeyring
@@ -16,7 +14,7 @@ from atlas.cli import app
 from atlas.vault import SERVICE_NAME
 
 
-class MemoryKeyring(KeyringBackend):
+class LocalKeyring(KeyringBackend):
     priority = 1
 
     def __init__(self) -> None:
@@ -26,176 +24,229 @@ class MemoryKeyring(KeyringBackend):
         return self.values.get((service, username))
 
     def set_password(self, service: str, username: str, password: str) -> None:
-        self.values[service, username] = password
+        self.values[(service, username)] = password
 
     def delete_password(self, service: str, username: str) -> None:
         try:
-            del self.values[service, username]
+            del self.values[(service, username)]
         except KeyError as error:
             raise PasswordDeleteError from error
 
 
-class VaultTests(unittest.TestCase):
-    def setUp(self) -> None:
-        self.runner = CliRunner()
-        self.backend = MemoryKeyring()
-        self.backend_patch = patch(
-            "atlas.vault.keyring.get_keyring", return_value=self.backend
-        )
-        self.get_backend = self.backend_patch.start()
-        self.addCleanup(self.backend_patch.stop)
-
-    def test_round_trip_and_removal_preserve_the_manifest(self) -> None:
-        with TemporaryDirectory() as directory, chdir(directory):
-            manifest = Path(".env.example")
-            contents = "# Project requirements\nAPI_TOKEN=example\n"
-            manifest.write_text(contents)
-
-            result = self.runner.invoke(
-                app, ["vault", "set", "API_TOKEN", "--stdin"], input="private value\n"
-            )
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertNotIn("private value", result.output)
-            self.assertEqual(result.stdout, "")
-            self.assertEqual(
-                self.backend.values, {(SERVICE_NAME, "API_TOKEN"): "private value"}
-            )
-
-            result = self.runner.invoke(app, ["vault", "get", "API_TOKEN"])
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertEqual(result.stdout, "private value")
-
-            result = self.runner.invoke(app, ["vault", "check"])
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertIn("ok       API_TOKEN", result.output)
-            self.assertNotIn("private value", result.output)
-
-            result = self.runner.invoke(app, ["vault", "rm", "API_TOKEN", "--yes"])
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertEqual(self.backend.values, {})
-
-            result = self.runner.invoke(app, ["vault", "check"])
-            self.assertEqual(result.exit_code, 1, result.output)
-            self.assertIn("missing  API_TOKEN", result.output)
-            self.assertEqual(manifest.read_text(), contents)
-
-    def test_check_handles_dotenv_syntax_and_duplicates(self) -> None:
-        with TemporaryDirectory() as directory, chdir(directory):
-            Path("requirements.env").write_text(
-                "# comment\n"
-                'export PRESENT="${DO_NOT_EXPAND}"\n'
-                "PRESENT=ignored\n"
-                'MULTILINE="first\nsecond"\n'
-                "MISSING=\n"
-            )
-            self.backend.set_password(SERVICE_NAME, "PRESENT", "stored token")
-            self.backend.set_password(SERVICE_NAME, "MULTILINE", "stored multiline")
-
-            result = self.runner.invoke(
-                app, ["vault", "check", "--manifest", "requirements.env"]
-            )
-            self.assertEqual(result.exit_code, 1, result.output)
-            self.assertEqual(result.output.count("PRESENT"), 1)
-            self.assertIn("ok       MULTILINE", result.output)
-            self.assertIn("missing  MISSING", result.output)
-            self.assertIn("2/3 secrets available.", result.output)
-            self.assertNotIn("stored token", result.output)
-            self.assertNotIn("DO_NOT_EXPAND", result.output)
-
-    def test_invalid_manifest_fails_before_accessing_keyring(self) -> None:
-        with TemporaryDirectory() as directory, chdir(directory):
-            Path(".env.example").write_text('TOKEN="private unterminated value\n')
-            result = self.runner.invoke(app, ["vault", "check"])
-            self.assertEqual(result.exit_code, 2, result.output)
-            self.assertIn("Invalid .env syntax", result.output)
-            self.assertNotIn("private unterminated", result.output)
-            self.get_backend.assert_not_called()
-
-    def test_missing_or_empty_manifest_has_explicit_behavior(self) -> None:
-        with TemporaryDirectory() as directory, chdir(directory):
-            result = self.runner.invoke(app, ["vault", "check"])
-            self.assertEqual(result.exit_code, 2, result.output)
-            Path(".env.example").write_text("# No required secrets yet\n")
-            result = self.runner.invoke(app, ["vault", "check"])
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertIn("No secrets declared", result.output)
-            self.get_backend.assert_not_called()
-
-    def test_input_and_deletion_require_explicit_noninteractive_options(self) -> None:
-        result = self.runner.invoke(app, ["vault", "set", "TOKEN"], input="value\n")
-        self.assertEqual(result.exit_code, 2, result.output)
-        self.assertEqual(self.backend.values, {})
-
-        result = self.runner.invoke(
-            app, ["vault", "set", "TOKEN", "--stdin"], input="\n"
-        )
-        self.assertEqual(result.exit_code, 2, result.output)
-        self.assertEqual(self.backend.values, {})
-
-        self.backend.set_password(SERVICE_NAME, "TOKEN", "keep this")
-        result = self.runner.invoke(app, ["vault", "rm", "TOKEN"])
-        self.assertEqual(result.exit_code, 2, result.output)
-        self.assertEqual(self.backend.get_password(SERVICE_NAME, "TOKEN"), "keep this")
-
-    def test_missing_secret_returns_one_without_stdout(self) -> None:
-        for command in ("get", "rm"):
-            with self.subTest(command=command):
-                result = self.runner.invoke(app, ["vault", command, "MISSING"])
-                self.assertEqual(result.exit_code, 1, result.output)
-                self.assertEqual(result.stdout, "")
-
-    def test_hidden_prompt_and_deletion_confirmation(self) -> None:
-        terminal = SimpleNamespace(stdin=SimpleNamespace(isatty=lambda: True))
-        with patch("atlas.vault.sys", terminal):
-            result = self.runner.invoke(
-                app,
-                ["vault", "set", "TOKEN"],
-                input="first attempt\nmismatch\nconfirmed token\nconfirmed token\n",
-            )
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertEqual(
-                self.backend.get_password(SERVICE_NAME, "TOKEN"), "confirmed token"
-            )
-            for value in ("first attempt", "mismatch", "confirmed token"):
-                self.assertNotIn(value, result.output)
-
-            result = self.runner.invoke(app, ["vault", "rm", "TOKEN"], input="n\n")
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertIsNotNone(self.backend.get_password(SERVICE_NAME, "TOKEN"))
-
-            result = self.runner.invoke(app, ["vault", "rm", "TOKEN"], input="y\n")
-            self.assertEqual(result.exit_code, 0, result.output)
-            self.assertIsNone(self.backend.get_password(SERVICE_NAME, "TOKEN"))
-
-    def test_hidden_input_failure_stops_without_echo_fallback(self) -> None:
-        terminal = SimpleNamespace(stdin=SimpleNamespace(isatty=lambda: True))
-        with (
-            patch("atlas.vault.sys", terminal),
-            patch("atlas.vault.typer.prompt", side_effect=GetPassWarning),
-        ):
-            result = self.runner.invoke(app, ["vault", "set", "TOKEN"])
-        self.assertEqual(result.exit_code, 2, result.output)
-        self.assertEqual(self.backend.values, {})
-
-    def test_unavailable_backends_are_rejected(self) -> None:
-        for backend in (NullKeyring(), FailKeyring()):
-            with self.subTest(backend=type(backend)):
-                self.get_backend.return_value = backend
-                result = self.runner.invoke(app, ["vault", "get", "TOKEN"])
-                self.assertEqual(result.exit_code, 2, result.output)
-                self.assertIn("No usable keyring", result.output)
-
-    def test_backend_exceptions_cannot_print_secret_values(self) -> None:
-        with patch.object(
-            self.backend, "set_password", side_effect=RuntimeError("private credential")
-        ):
-            result = self.runner.invoke(
-                app, ["vault", "set", "TOKEN", "--stdin"], input="private credential"
-            )
-        self.assertEqual(result.exit_code, 2, result.output)
-        self.assertIn("RuntimeError", result.output)
-        self.assertNotIn("private credential", result.output)
+@pytest.fixture
+def runner() -> CliRunner:
+    return CliRunner()
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.fixture
+def backend() -> LocalKeyring:
+    return LocalKeyring()
+
+
+@pytest.fixture(autouse=True)
+def get_backend(monkeypatch: pytest.MonkeyPatch, backend: LocalKeyring) -> Mock:
+    get_backend = Mock(return_value=backend)
+    monkeypatch.setattr("atlas.vault.keyring.get_keyring", get_backend)
+    return get_backend
+
+
+@pytest.fixture
+def manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Isolate the vault's project root without creating the manifest."""
+    monkeypatch.setattr("atlas.vault.ROOT_PATH", tmp_path)
+    return tmp_path / ".env.example"
+
+
+def test_round_trip_and_removal_preserve_the_manifest(
+    runner: CliRunner, backend: LocalKeyring, manifest: Path
+) -> None:
+    contents = "API_TOKEN=\n"
+    manifest.write_text(contents)
+
+    result = runner.invoke(
+        app, ["vault", "set", "API_TOKEN", "--stdin"], input="private value\n"
+    )
+    assert result.exit_code == 0, result.output
+    assert "private value" not in result.output
+    assert result.stdout == ""
+    assert backend.values == {(SERVICE_NAME, "API_TOKEN"): "private value"}
+
+    result = runner.invoke(app, ["vault", "get", "API_TOKEN"])
+    assert result.exit_code == 0, result.output
+    assert result.stdout == "private value"
+
+    result = runner.invoke(app, ["vault", "check"])
+    assert result.exit_code == 0, result.output
+    assert result.stdout == " [ok]  API_TOKEN\n"
+    assert "private value" not in result.output
+
+    result = runner.invoke(app, ["vault", "rm", "API_TOKEN", "--yes"])
+    assert result.exit_code == 0, result.output
+    assert backend.values == {}
+
+    result = runner.invoke(app, ["vault", "check"])
+    assert result.exit_code == 1, result.output
+    assert result.stdout == " [no]  API_TOKEN\n1/1 secrets missing.\n"
+    assert manifest.read_text() == contents
+
+
+def test_check_reports_available_and_missing_secrets_and_skips_blank_lines(
+    runner: CliRunner, backend: LocalKeyring, manifest: Path
+) -> None:
+    manifest.write_text("\nPRESENT=\n \t\nSECOND=\nMISSING=\n")
+    backend.set_password(SERVICE_NAME, "PRESENT", "stored token")
+    backend.set_password(SERVICE_NAME, "SECOND", "another stored token")
+
+    result = runner.invoke(app, ["vault", "check"])
+
+    assert result.exit_code == 1, result.output
+    assert result.stdout == (
+        " [ok]  PRESENT\n" " [ok]  SECOND\n" " [no]  MISSING\n" "1/3 secrets missing.\n"
+    )
+    assert "stored token" not in result.output
+
+
+@pytest.mark.parametrize(
+    "contents",
+    ["TOKEN\n", "# comment\n", "TOKEN=example\n", "=\n"],
+    ids=["missing-equals", "comment", "nonempty-value", "empty-name"],
+)
+def test_invalid_manifest_fails_before_accessing_keyring(
+    runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
+) -> None:
+    manifest.write_text(contents)
+
+    result = runner.invoke(app, ["vault", "check"])
+
+    assert result.exit_code == 2, result.output
+    assert "KEY_NAME=" in result.stderr
+    get_backend.assert_not_called()     # backend not accessed
+
+
+def test_missing_manifest_raises_file_not_found_before_accessing_keyring(
+    runner: CliRunner, manifest: Path, get_backend: Mock
+) -> None:
+    result = runner.invoke(app, ["vault", "check"])
+
+    assert result.exit_code == 1, result.output
+    assert isinstance(result.exception, FileNotFoundError)
+    get_backend.assert_not_called()
+
+
+@pytest.mark.parametrize("contents", ["", "\n \t\n"], ids=["empty", "blank-lines"])
+def test_empty_manifest_succeeds_without_accessing_keyring(
+    runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
+) -> None:
+    manifest.write_text(contents)
+
+    result = runner.invoke(app, ["vault", "check"])
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout == "No secrets declared.\n"
+    get_backend.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("arguments", "stdin"),
+    [
+        (["vault", "set", "TOKEN"], "value\n"),
+        (["vault", "set", "TOKEN", "--stdin"], "\n"),
+    ],
+    ids=["missing-stdin-option", "empty-secret"],
+)
+def test_set_rejects_noninteractive_or_empty_input(
+    runner: CliRunner, backend: LocalKeyring, arguments: list[str], stdin: str
+) -> None:
+    result = runner.invoke(app, arguments, input=stdin)
+
+    assert result.exit_code == 2, result.output
+    assert backend.values == {}
+
+
+def test_deletion_requires_explicit_noninteractive_confirmation(
+    runner: CliRunner, backend: LocalKeyring
+) -> None:
+    backend.set_password(SERVICE_NAME, "TOKEN", "keep this")
+
+    result = runner.invoke(app, ["vault", "rm", "TOKEN"])
+
+    assert result.exit_code == 2, result.output
+    assert backend.get_password(SERVICE_NAME, "TOKEN") == "keep this"
+
+
+@pytest.mark.parametrize("command", ["get", "rm"])
+def test_missing_secret_returns_one_without_stdout(
+    runner: CliRunner, command: str
+) -> None:
+    result = runner.invoke(app, ["vault", command, "MISSING"])
+
+    assert result.exit_code == 1, result.output
+    assert result.stdout == ""
+
+
+def test_hidden_prompt_and_deletion_confirmation(
+    runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    terminal = SimpleNamespace(stdin=SimpleNamespace(isatty=lambda: True))
+    monkeypatch.setattr("atlas.vault.sys", terminal)
+
+    result = runner.invoke(
+        app,
+        ["vault", "set", "TOKEN"],
+        input="first attempt\nmismatch\nconfirmed token\nconfirmed token\n",
+    )
+    assert result.exit_code == 0, result.output
+    assert backend.get_password(SERVICE_NAME, "TOKEN") == "confirmed token"
+    for value in ("first attempt", "mismatch", "confirmed token"):
+        assert value not in result.output
+
+    result = runner.invoke(app, ["vault", "rm", "TOKEN"], input="n\n")
+    assert result.exit_code == 0, result.output
+    assert backend.get_password(SERVICE_NAME, "TOKEN") is not None
+
+    result = runner.invoke(app, ["vault", "rm", "TOKEN"], input="y\n")
+    assert result.exit_code == 0, result.output
+    assert backend.get_password(SERVICE_NAME, "TOKEN") is None
+
+
+def test_hidden_input_failure_stops_without_echo_fallback(
+    runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    terminal = SimpleNamespace(stdin=SimpleNamespace(isatty=lambda: True))
+    monkeypatch.setattr("atlas.vault.sys", terminal)
+    monkeypatch.setattr("atlas.vault.typer.prompt", Mock(side_effect=GetPassWarning))
+
+    result = runner.invoke(app, ["vault", "set", "TOKEN"])
+    assert result.exit_code == 2, result.output
+    assert backend.values == {}
+
+
+@pytest.mark.parametrize(
+    "unavailable_backend", [NullKeyring(), FailKeyring()], ids=["null", "fail"]
+)
+def test_unavailable_backends_are_rejected(
+    runner: CliRunner, get_backend: Mock, unavailable_backend: KeyringBackend
+) -> None:
+    get_backend.return_value = unavailable_backend
+
+    result = runner.invoke(app, ["vault", "get", "TOKEN"])
+    assert result.exit_code == 2, result.output
+    assert "No usable keyring" in result.output
+
+
+def test_backend_exceptions_cannot_print_secret_values(
+    runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        backend, 
+        "set_password", Mock(side_effect=RuntimeError("private credential"))
+    )
+
+    result = runner.invoke(app, 
+        ["vault", "set", "TOKEN", "--stdin"], 
+        input="private credential"
+    )
+
+    assert result.exit_code == 2, result.output
+    assert "RuntimeError" in result.output
+    assert "private credential" not in result.output

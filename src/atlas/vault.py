@@ -19,8 +19,6 @@ from keyring.backends.fail import Keyring as FailKeyring
 from keyring.backends.null import Keyring as NullKeyring
 
 SERVICE_NAME = "atlas.vault"
-ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
-
 app = typer.Typer(no_args_is_help=True, help="Store secrets in your system keyring.")
 Name = Annotated[str, typer.Argument(help="Name of the secret, such as API_TOKEN.")]
 
