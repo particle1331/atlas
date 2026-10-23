@@ -47,19 +47,22 @@ uv run at vault check
 Declare expected names in the Atlas repository root's `.env.example`, for example:
 
 ```dotenv
+# Required secrets
 API_TOKEN=
 DATABASE_URL=
 ```
 
-Use one `NAME=` entry per line with an empty value. Blank lines are skipped;
-comments, `export` declarations, quoted values, and multiline values are not
-supported. Duplicate names are checked separately. The path is fixed by Atlas's
-project root; it does not depend on the current directory and has no override option.
+Use one `NAME=` entry per line with an empty value. Blank lines and full-line `#`
+comments (including indented comments) are skipped. `export` declarations, inline
+comments, quoted values, and multiline values are not supported. Duplicate names
+are checked separately. The path is fixed by Atlas's project root; it does not
+depend on the current directory and has no override option.
 
 `check` reports `[ok]` for each stored name and `[no]` for each missing name,
 followed by a missing-count summary if needed. It does not print stored values.
 The manifest must exist; a missing file raises `FileNotFoundError` and exits with
-code `1`. An empty or blank-only manifest succeeds and reports `No secrets declared.`
+code `1`. A manifest containing only blank lines or comments, or an empty manifest,
+succeeds and reports `No secrets declared.`
 
 `set` requires a terminal for hidden input unless `--stdin` is used. Empty secret
 values are rejected. `rm` requires a terminal for confirmation unless `--yes`

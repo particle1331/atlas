@@ -77,7 +77,7 @@ def test_round_trip_and_removal_preserve_the_manifest(
 
     result = runner.invoke(app, ["vault", "check"])
     assert result.exit_code == 0, result.output
-    assert result.stdout == " [ok]  API_TOKEN\n"
+    assert result.stdout == " [ok]  API_TOKEN\n■ 1/1 secrets found.\n"
     assert "private value" not in result.output
 
     result = runner.invoke(app, ["vault", "rm", "API_TOKEN", "--yes"])
@@ -86,30 +86,38 @@ def test_round_trip_and_removal_preserve_the_manifest(
 
     result = runner.invoke(app, ["vault", "check"])
     assert result.exit_code == 1, result.output
-    assert result.stdout == " [no]  API_TOKEN\n1/1 secrets missing.\n"
+    assert result.stdout == " [no]  API_TOKEN\n◩ 1/1 secrets missing.\n"
     assert manifest.read_text() == contents
 
 
-def test_check_reports_available_and_missing_secrets_and_skips_blank_lines(
+def test_check_reports_available_and_missing_secrets_and_skips_comments(
     runner: CliRunner, backend: LocalKeyring, manifest: Path
 ) -> None:
-    manifest.write_text("\nPRESENT=\n \t\nSECOND=\nMISSING=\n")
+    manifest.write_text(
+        "# Required secrets\n\n"
+        "PRESENT=\n \t\n  # Indented comment\n"
+        "SECOND=\n"
+        "# IGNORED=example\n"
+        "MISSING=\n"
+    )
     backend.set_password(SERVICE_NAME, "PRESENT", "stored token")
     backend.set_password(SERVICE_NAME, "SECOND", "another stored token")
 
     result = runner.invoke(app, ["vault", "check"])
-
     assert result.exit_code == 1, result.output
     assert result.stdout == (
-        " [ok]  PRESENT\n" " [ok]  SECOND\n" " [no]  MISSING\n" "1/3 secrets missing.\n"
+        " [ok]  PRESENT\n" 
+        " [ok]  SECOND\n" 
+        " [no]  MISSING\n" 
+        "◩ 1/3 secrets missing.\n"  # typer.secho adds trailing newline
     )
     assert "stored token" not in result.output
 
 
 @pytest.mark.parametrize(
     "contents",
-    ["TOKEN\n", "# comment\n", "TOKEN=example\n", "=\n"],
-    ids=["missing-equals", "comment", "nonempty-value", "empty-name"],
+    ["TOKEN\n", "TOKEN=example\n", "=\n"],
+    ids=["missing-equals", "nonempty-value", "empty-name"],
 )
 def test_invalid_manifest_fails_before_accessing_keyring(
     runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
@@ -117,7 +125,6 @@ def test_invalid_manifest_fails_before_accessing_keyring(
     manifest.write_text(contents)
 
     result = runner.invoke(app, ["vault", "check"])
-
     assert result.exit_code == 2, result.output
     assert "KEY_NAME=" in result.stderr
     get_backend.assert_not_called()     # backend not accessed
@@ -127,20 +134,22 @@ def test_missing_manifest_raises_file_not_found_before_accessing_keyring(
     runner: CliRunner, manifest: Path, get_backend: Mock
 ) -> None:
     result = runner.invoke(app, ["vault", "check"])
-
     assert result.exit_code == 1, result.output
     assert isinstance(result.exception, FileNotFoundError)
     get_backend.assert_not_called()
 
 
-@pytest.mark.parametrize("contents", ["", "\n \t\n"], ids=["empty", "blank-lines"])
+@pytest.mark.parametrize(
+    "contents",
+    ["", "\n \t\n", "# Required secrets\n  # No entries yet\n"],
+    ids=["empty", "blank-lines", "comments-only"],
+)
 def test_empty_manifest_succeeds_without_accessing_keyring(
     runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
 ) -> None:
     manifest.write_text(contents)
 
     result = runner.invoke(app, ["vault", "check"])
-
     assert result.exit_code == 0, result.output
     assert result.stdout == "No secrets declared.\n"
     get_backend.assert_not_called()
@@ -158,7 +167,6 @@ def test_set_rejects_noninteractive_or_empty_input(
     runner: CliRunner, backend: LocalKeyring, arguments: list[str], stdin: str
 ) -> None:
     result = runner.invoke(app, arguments, input=stdin)
-
     assert result.exit_code == 2, result.output
     assert backend.values == {}
 
@@ -169,7 +177,6 @@ def test_deletion_requires_explicit_noninteractive_confirmation(
     backend.set_password(SERVICE_NAME, "TOKEN", "keep this")
 
     result = runner.invoke(app, ["vault", "rm", "TOKEN"])
-
     assert result.exit_code == 2, result.output
     assert backend.get_password(SERVICE_NAME, "TOKEN") == "keep this"
 
@@ -179,7 +186,6 @@ def test_missing_secret_returns_one_without_stdout(
     runner: CliRunner, command: str
 ) -> None:
     result = runner.invoke(app, ["vault", command, "MISSING"])
-
     assert result.exit_code == 1, result.output
     assert result.stdout == ""
 
@@ -246,7 +252,6 @@ def test_backend_exceptions_cannot_print_secret_values(
         ["vault", "set", "TOKEN", "--stdin"], 
         input="private credential"
     )
-
     assert result.exit_code == 2, result.output
     assert "RuntimeError" in result.output
     assert "private credential" not in result.output

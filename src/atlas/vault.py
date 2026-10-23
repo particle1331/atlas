@@ -19,7 +19,7 @@ from keyring.backends.fail import Keyring as FailKeyring
 from keyring.backends.null import Keyring as NullKeyring
 
 SERVICE_NAME = "atlas.vault"
-app = typer.Typer(no_args_is_help=True, help="Store secrets in your system keyring.")
+app = typer.Typer(no_args_is_help=True, help="Store secrets in system keyring.")
 Name = Annotated[str, typer.Argument(help="Name of the secret, such as API_TOKEN.")]
 
 
@@ -32,9 +32,9 @@ def _get_backend() -> KeyringBackend:
     try:
         backend = keyring.get_keyring()
     except Exception as error:
-        _exit(f"Could not initialize keyring ({type(error).__name__}). Run `keyring diagnose`.")
+        _exit(f"Could not initialize keyring ({type(error).__name__}).")
     if isinstance(backend, (FailKeyring, NullKeyring)):
-        _exit(f"No usable keyring is configured. Run `keyring diagnose`.")
+        _exit(f"No usable keyring is configured.")
     return backend
 
 
@@ -46,22 +46,11 @@ def _call_keyring[T](function: Callable[..., T], *args: str) -> T:
 
 
 def _copy_to_clipboard(value: str) -> None:
-    commands = {
-        "win32": [["clip"]],
-        "darwin": [["pbcopy"]],
-    }
-    default_commands = [
-        ["wl-copy"],
-        ["xclip", "-selection", "clipboard"],
-        ["xsel", "--clipboard", "--input"],
-    ]
-
-    platform_command = commands.get(sys.platform, default_commands)
-    command = next((c for c in platform_command if shutil.which(c[0])), None)
-    if command is None:
-        _exit("No usable clipboard command was found.")
+    copy_command = "pbcopy"
+    if shutil.which(copy_command) is None:
+        _exit("Copy command not found. Alias your platform's copy command to `pbcopy`.")
     try:
-        subprocess.run(command, input=value, text=True, check=True)
+        subprocess.run(copy_command, input=value, text=True, check=True)
     except (OSError, subprocess.CalledProcessError) as error:
         _exit(f"Clipboard operation failed ({type(error).__name__}).")
 
@@ -71,7 +60,7 @@ def _read_env_example() -> list[Name]:
         keys = []
         for line in f.readlines():
             l = line.strip()
-            if len(l) == 0:
+            if len(l) == 0 or l.startswith("#"):
                 continue
 
             if "=" not in l:
@@ -125,8 +114,8 @@ def set_secret(
             # type.prompt w/ hide_input=True does not guarantee terminal hides input
             # if echo-free input is not available 
             # => getpass falls back to reading from stdin
-            # => triggers GetPassWarning
-            _exit("Could not hide terminal input. Use --stdin to provide the secret.")
+            # => triggers GetPassWarning, which we raise via simplefilter
+            _exit("Could not hide terminal input. Use --stdin to pipe the secret.")
     
     if not value:
         _exit("The secret must not be empty.")
@@ -180,6 +169,10 @@ def check_secrets() -> None:
             typer.secho(f" [ok]  {name}", fg=typer.colors.BRIGHT_GREEN)
     
     if missing:
-        message = f"{missing}/{len(names)} secrets missing."
+        message = f"◩ {missing}/{len(names)} secrets missing."
         typer.secho(message, fg=typer.colors.YELLOW)
         raise typer.Exit(1)
+    else:
+        message = f"■ {len(names)}/{len(names)} secrets found."
+        typer.secho(message, fg=typer.colors.BRIGHT_GREEN)
+        raise typer.Exit(0)
