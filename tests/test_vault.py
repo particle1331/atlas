@@ -60,6 +60,7 @@ def manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_round_trip_and_removal_preserve_the_manifest(
     runner: CliRunner, backend: LocalKeyring, manifest: Path
 ) -> None:
+    """From a manifest declaring API_TOKEN, exercise its complete lifecycle."""
     contents = "API_TOKEN=\n"
     manifest.write_text(contents)
 
@@ -93,9 +94,11 @@ def test_round_trip_and_removal_preserve_the_manifest(
 def test_check_reports_available_and_missing_secrets_and_skips_comments(
     runner: CliRunner, backend: LocalKeyring, manifest: Path
 ) -> None:
+    """Manifest containing comments and one missing (not stored in vault)."""
     manifest.write_text(
         "# Required secrets\n\n"
-        "PRESENT=\n \t\n  # Indented comment\n"
+        "PRESENT=\n"
+        "\t# Indented comment\n"
         "SECOND=\n"
         "# IGNORED=example\n"
         "MISSING=\n"
@@ -114,25 +117,26 @@ def test_check_reports_available_and_missing_secrets_and_skips_comments(
     assert "stored token" not in result.output
 
 
-@pytest.mark.parametrize(
-    "contents",
+@pytest.mark.parametrize("contents",
     ["TOKEN\n", "TOKEN=example\n", "=\n"],
     ids=["missing-equals", "nonempty-value", "empty-name"],
 )
 def test_invalid_manifest_fails_before_accessing_keyring(
     runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
 ) -> None:
+    """Incorrect manifest entry syntax examples (one-liner each)."""
     manifest.write_text(contents)
 
     result = runner.invoke(app, ["vault", "check"])
     assert result.exit_code == 2, result.output
     assert "KEY_NAME=" in result.stderr
-    get_backend.assert_not_called()     # backend not accessed
+    get_backend.assert_not_called()     # vault not accessed
 
 
 def test_missing_manifest_raises_file_not_found_before_accessing_keyring(
     runner: CliRunner, manifest: Path, get_backend: Mock
 ) -> None:
+    """Missing manifest (no write) fails vault check w/o vault access."""
     result = runner.invoke(app, ["vault", "check"])
     assert result.exit_code == 1, result.output
     assert isinstance(result.exception, FileNotFoundError)
@@ -147,6 +151,7 @@ def test_missing_manifest_raises_file_not_found_before_accessing_keyring(
 def test_empty_manifest_succeeds_without_accessing_keyring(
     runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
 ) -> None:
+    """Examples of empty manifests. OK w/o vault access."""
     manifest.write_text(contents)
 
     result = runner.invoke(app, ["vault", "check"])
@@ -158,14 +163,15 @@ def test_empty_manifest_succeeds_without_accessing_keyring(
 @pytest.mark.parametrize(
     ("arguments", "stdin"),
     [
-        (["vault", "set", "TOKEN"], "value\n"),
-        (["vault", "set", "TOKEN", "--stdin"], "\n"),
+        (["vault", "set", "TOKEN"], "value\n"),         # cant expose value in tty
+        (["vault", "set", "TOKEN", "--stdin"], "\n"),   # non-empty value required
     ],
     ids=["missing-stdin-option", "empty-secret"],
 )
 def test_set_rejects_noninteractive_or_empty_input(
     runner: CliRunner, backend: LocalKeyring, arguments: list[str], stdin: str
 ) -> None:
+    """Invalid vault set input examples (exit code 2). Note: '\n\n' passes!"""
     result = runner.invoke(app, arguments, input=stdin)
     assert result.exit_code == 2, result.output
     assert backend.values == {}
@@ -174,6 +180,7 @@ def test_set_rejects_noninteractive_or_empty_input(
 def test_deletion_requires_explicit_noninteractive_confirmation(
     runner: CliRunner, backend: LocalKeyring
 ) -> None:
+    """Deletion requires confirmation (interactive, or --yes / -y)."""
     backend.set_password(SERVICE_NAME, "TOKEN", "keep this")
 
     result = runner.invoke(app, ["vault", "rm", "TOKEN"])
@@ -185,14 +192,18 @@ def test_deletion_requires_explicit_noninteractive_confirmation(
 def test_missing_secret_returns_one_without_stdout(
     runner: CliRunner, command: str
 ) -> None:
+    """Missing key gives exit code 1 for read/delete commands."""
     result = runner.invoke(app, ["vault", command, "MISSING"])
     assert result.exit_code == 1, result.output
-    assert result.stdout == ""
+    assert result.stdout == ""  # error msg goes to stderr
+    assert result.stderr == "Error: Secret 'MISSING' was not found.\n"
 
 
 def test_hidden_prompt_and_deletion_confirmation(
     runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Simulating vault set & rm confirmation from terminal."""
+    # Note: in prev tests, CliRunner does not create a terminal
     terminal = SimpleNamespace(stdin=SimpleNamespace(isatty=lambda: True))
     monkeypatch.setattr("atlas.vault.sys", terminal)
 
@@ -218,6 +229,7 @@ def test_hidden_prompt_and_deletion_confirmation(
 def test_hidden_input_failure_stops_without_echo_fallback(
     runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Simulating inability to hide input in terminal (exit code 2)."""
     terminal = SimpleNamespace(stdin=SimpleNamespace(isatty=lambda: True))
     monkeypatch.setattr("atlas.vault.sys", terminal)
     monkeypatch.setattr("atlas.vault.typer.prompt", Mock(side_effect=GetPassWarning))
@@ -233,6 +245,7 @@ def test_hidden_input_failure_stops_without_echo_fallback(
 def test_unavailable_backends_are_rejected(
     runner: CliRunner, get_backend: Mock, unavailable_backend: KeyringBackend
 ) -> None:
+    """Missing backend exit code 2."""
     get_backend.return_value = unavailable_backend
 
     result = runner.invoke(app, ["vault", "get", "TOKEN"])
@@ -243,8 +256,8 @@ def test_unavailable_backends_are_rejected(
 def test_backend_exceptions_cannot_print_secret_values(
     runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        backend, 
+    """Credentials must not be printed (output = stderr + stdout)."""
+    monkeypatch.setattr(backend, 
         "set_password", Mock(side_effect=RuntimeError("private credential"))
     )
 

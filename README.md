@@ -9,6 +9,10 @@ uv sync
 uv run at --help
 ```
 
+Run `make doctor` to check the vault entries and run pytest with line and branch
+coverage. The report includes uncovered line numbers. Both checks run, and the
+command fails if either check fails.
+
 ## Git hooks
 
 Install the pre-commit tool and enable the repository hook once per clone:
