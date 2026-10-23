@@ -7,12 +7,13 @@ import sys
 import warnings
 from collections.abc import Callable
 from getpass import GetPassWarning
-from pathlib import Path
 from typing import Annotated
 
 import keyring
 import typer
-from dotenv.parser import parse_stream
+
+from atlas.config import ROOT_PATH
+
 from keyring.backend import KeyringBackend
 from keyring.backends.fail import Keyring as FailKeyring
 from keyring.backends.null import Keyring as NullKeyring
@@ -25,7 +26,7 @@ Name = Annotated[str, typer.Argument(help="Name of the secret, such as API_TOKEN
 
 
 def _exit(message: str, *, code: int = 2):
-    typer.echo(f"Error: {message}", err=True)
+    typer.secho(f"Error: {message}", err=True, fg=typer.colors.BRIGHT_RED)
     raise typer.Exit(code)
 
 
@@ -68,7 +69,7 @@ def _copy_to_clipboard(value: str) -> None:
 
 
 def _read_env_example() -> list[Name]:
-    with open(".env.example", "r") as f:
+    with open(ROOT_PATH / ".env.example", "r") as f:
         keys = []
         for line in f.readlines():
             if len(line.strip()) == 0:
@@ -114,7 +115,7 @@ def set_secret(
         value = value.removesuffix("\n").removesuffix("\r")
     else:
         if not sys.stdin.isatty():
-            _exit("A terminal is required for hidden input. Use --stdin for piped input.")
+            _exit("Terminal is required for hidden input. Use --stdin for piped input.")
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("error", GetPassWarning)
@@ -138,20 +139,24 @@ def set_secret(
 def remove_secret(
     name: Name,
     yes: Annotated[
-        bool, typer.Option("--yes", "-y", help="Skip the deletion confirmation.")
+        bool, 
+        typer.Option("--yes", "-y", help="Skip the deletion confirmation.")
     ] = False,
 ) -> None:
     """Delete a local secret value from the keyring."""
     backend = _get_backend()
     if _call_keyring(backend.get_password, name) is None:
         _exit(f"Secret {name!r} was not found.", code=1)
+    
     if not yes:
         if not sys.stdin.isatty():
             # not in a terminal => can't confirm => confirm flag should be passed
             _exit("Use --yes to confirm deletion when stdin is not a terminal.")
+
         if not typer.confirm(f"Delete {name!r} from the keyring?", err=True):
             typer.echo("Cancelled.", err=True)
             return
+    
     _call_keyring(backend.delete_password, name)
     typer.echo(f"Removed {name}.", err=True)
 
@@ -170,9 +175,11 @@ def check_secrets() -> None:
         value = _call_keyring(backend.get_password, name)
         if value is None:
             missing += 1
-            typer.secho(f"[no]  {name}", fg=typer.colors.RED)
+            typer.secho(f" [no]  {name}", fg=typer.colors.BRIGHT_RED)
         else:
-            typer.secho(f"[ok]  {name}", fg=typer.colors.GREEN)
-    typer.secho(f"\n{len(names) - missing}/{len(names)} secrets available.", fg=typer.colors.YELLOW)
+            typer.secho(f" [ok]  {name}", fg=typer.colors.BRIGHT_GREEN)
+    
     if missing:
+        message = f"{missing}/{len(names)} secrets missing."
+        typer.secho(message, fg=typer.colors.YELLOW)
         raise typer.Exit(1)
