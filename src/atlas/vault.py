@@ -49,8 +49,8 @@ def _call_keyring[T](function: Callable[..., T], *args: str) -> T:
 
 def _copy_to_clipboard(value: str) -> None:
     commands = {
+        "win32": [["clip"]],
         "darwin": [["pbcopy"]],
-        "win32": [["clip"]]
     }
     default_commands = [
         ["wl-copy"],
@@ -58,8 +58,8 @@ def _copy_to_clipboard(value: str) -> None:
         ["xsel", "--clipboard", "--input"],
     ]
 
-    cmds = commands.get(sys.platform, default_commands)
-    command = next((c for c in cmds if shutil.which(c[0])), None)
+    platform_command = commands.get(sys.platform, default_commands)
+    command = next((c for c in platform_command if shutil.which(c[0])), None)
     if command is None:
         _exit("No usable clipboard command was found.")
     try:
@@ -72,15 +72,17 @@ def _read_env_example() -> list[Name]:
     with open(ROOT_PATH / ".env.example", "r") as f:
         keys = []
         for line in f.readlines():
-            if len(line.strip()) == 0:
+            l = line.strip()
+            if len(l) == 0:
                 continue
 
-            if "=" not in line:
-                _exit("Invalid format: each line of .env.example shoud be `KEY_NAME=`")
+            if "=" not in l:
+                _exit("Each line of .env.example shoud be `KEY_NAME=`")
             
-            key, value = line.strip().split("=", maxsplit=1)
+            key, value = l.split("=", maxsplit=1)
             if value != "" or len(key) == 0:
-                _exit("Invalid format: each line of .env.example shoud be `KEY_NAME=`")
+                print(key, value)
+                _exit("Each line of .env.example shoud be `KEY_NAME=`")
             
             keys.append(key)
         return keys

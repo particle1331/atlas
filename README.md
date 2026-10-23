@@ -9,6 +9,19 @@ uv sync
 uv run at --help
 ```
 
+## Git hooks
+
+Install the pre-commit tool and enable the repository hook once per clone:
+
+```sh
+uv tool install pre-commit
+pre-commit install
+```
+
+Before each commit, the hook runs `uv run at vault check` and scans staged files
+for likely secrets. To run both checks manually across tracked files, use
+`pre-commit run --all-files`.
+
 ## Vault
 
 ```sh
