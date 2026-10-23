@@ -1,12 +1,14 @@
 """Manage local secrets through the system keyring."""
 
 import re
+import shutil
+import subprocess
 import sys
 import warnings
 from collections.abc import Callable
 from getpass import GetPassWarning
 from pathlib import Path
-from typing import Annotated, NoReturn
+from typing import Annotated
 
 import keyring
 import typer
@@ -22,21 +24,18 @@ app = typer.Typer(no_args_is_help=True, help="Store secrets in your system keyri
 Name = Annotated[str, typer.Argument(help="Name of the secret, such as API_TOKEN.")]
 
 
-def _fail(message: str, code: int = 2) -> NoReturn:
+def _exit(message: str, *, code: int = 2):
     typer.echo(f"Error: {message}", err=True)
     raise typer.Exit(code)
 
 
-def _backend() -> KeyringBackend:
+def _get_backend() -> KeyringBackend:
     try:
         backend = keyring.get_keyring()
     except Exception as error:
-        _fail(
-            f"Could not initialize the system keyring ({type(error).__name__}). "
-            "Run `keyring diagnose` to inspect its configuration."
-        )
+        _exit(f"Could not initialize keyring ({type(error).__name__}). Run `keyring diagnose`.")
     if isinstance(backend, (FailKeyring, NullKeyring)):
-        _fail("No usable keyring is configured. Run `keyring diagnose` for details.")
+        _exit(f"No usable keyring is configured. Run `keyring diagnose`.")
     return backend
 
 
@@ -44,40 +43,59 @@ def _call_keyring[T](function: Callable[..., T], *args: str) -> T:
     try:
         return function(SERVICE_NAME, *args)
     except Exception as error:
-        # Backend exception messages can contain credentials. Report only the type.
-        _fail(
-            f"System keyring operation failed ({type(error).__name__}). "
-            "Run `keyring diagnose` to inspect its configuration."
-        )
+        _exit(f"Keyring operation failed ({type(error).__name__}).")
 
 
-def _expected_names(manifest: Path) -> list[str]:
-    names: dict[str, None] = {}
+def _copy_to_clipboard(value: str) -> None:
+    commands = {
+        "darwin": [["pbcopy"]],
+        "win32": [["clip"]]
+    }
+    default_commands = [
+        ["wl-copy"],
+        ["xclip", "-selection", "clipboard"],
+        ["xsel", "--clipboard", "--input"],
+    ]
+
+    cmds = commands.get(sys.platform, default_commands)
+    command = next((c for c in cmds if shutil.which(c[0])), None)
+    if command is None:
+        _exit("No usable clipboard command was found.")
     try:
-        with manifest.open(encoding="utf-8-sig") as stream:
-            for binding in parse_stream(stream):
-                if binding.error:
-                    _fail(f"Invalid .env syntax at {manifest}:{binding.original.line}.")
-                if binding.key is None:
-                    continue
-                if ENV_NAME.fullmatch(binding.key) is None:
-                    _fail(
-                        f"Invalid environment variable name at "
-                        f"{manifest}:{binding.original.line}."
-                    )
-                names[binding.key] = None
-    except (OSError, UnicodeError):
-        _fail(f"Could not read {manifest}. Check that the file exists and is UTF-8.")
-    return list(names)
+        subprocess.run(command, input=value, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        _exit(f"Clipboard operation failed ({type(error).__name__}).")
+
+
+def _read_env_example() -> list[Name]:
+    with open(".env.example", "r") as f:
+        keys = []
+        for line in f.readlines():
+            if len(line.strip()) == 0:
+                continue
+
+            if "=" not in line:
+                _exit("Invalid format: each line of .env.example shoud be `KEY_NAME=`")
+            
+            key, value = line.strip().split("=", maxsplit=1)
+            if value != "" or len(key) == 0:
+                _exit("Invalid format: each line of .env.example shoud be `KEY_NAME=`")
+            
+            keys.append(key)
+        return keys
 
 
 @app.command("get")
 def get_secret(name: Name) -> None:
-    """Write a stored secret to stdout."""
-    value = _call_keyring(_backend().get_password, name)
+    """Copy a secret to the clipboard or write it to stdout when piped."""
+    value = _call_keyring(_get_backend().get_password, name)
     if value is None:
-        _fail(f"Secret {name!r} was not found.", code=1)
-    typer.echo(value, nl=sys.stdout.isatty() and not value.endswith("\n"))
+        _exit(f"Secret {name!r} was not found.", code=1)
+    if sys.stdout.isatty():
+        _copy_to_clipboard(value)
+        typer.echo(f"Copied {name} to clipboard.", err=True)
+    else:
+        sys.stdout.write(value)
 
 
 @app.command("set")
@@ -89,26 +107,29 @@ def set_secret(
     ] = False,
 ) -> None:
     """Create or replace a secret using a hidden prompt or stdin."""
-    backend = _backend()
+    
+    backend = _get_backend()
     if from_stdin:
         value = sys.stdin.read()
-        # Accommodate line-oriented input while preserving other whitespace.
         value = value.removesuffix("\n").removesuffix("\r")
     else:
         if not sys.stdin.isatty():
-            _fail(
-                "A terminal is required for hidden input. Use --stdin for piped input."
-            )
+            _exit("A terminal is required for hidden input. Use --stdin for piped input.")
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("error", GetPassWarning)
-                value = typer.prompt(
-                    "Secret", hide_input=True, confirmation_prompt=True, err=True
-                )
+                value = typer.prompt("Secret", hide_input=True, confirmation_prompt=True, err=True)
+
         except GetPassWarning:
-            _fail("Could not hide terminal input. Use --stdin to provide the secret.")
+            # type.prompt w/ hide_input=True does not guarantee terminal hides input
+            # if echo-free input is not available 
+            # => getpass falls back to reading from stdin
+            # => triggers GetPassWarning
+            _exit("Could not hide terminal input. Use --stdin to provide the secret.")
+    
     if not value:
-        _fail("The secret must not be empty.")
+        _exit("The secret must not be empty.")
+
     _call_keyring(backend.set_password, name, value)
     typer.echo(f"Stored {name}.", err=True)
 
@@ -121,12 +142,13 @@ def remove_secret(
     ] = False,
 ) -> None:
     """Delete a local secret value from the keyring."""
-    backend = _backend()
+    backend = _get_backend()
     if _call_keyring(backend.get_password, name) is None:
-        _fail(f"Secret {name!r} was not found.", code=1)
+        _exit(f"Secret {name!r} was not found.", code=1)
     if not yes:
         if not sys.stdin.isatty():
-            _fail("Use --yes to confirm deletion when stdin is not a terminal.")
+            # not in a terminal => can't confirm => confirm flag should be passed
+            _exit("Use --yes to confirm deletion when stdin is not a terminal.")
         if not typer.confirm(f"Delete {name!r} from the keyring?", err=True):
             typer.echo("Cancelled.", err=True)
             return
@@ -135,28 +157,22 @@ def remove_secret(
 
 
 @app.command("check")
-def check_secrets(
-    manifest: Annotated[
-        Path,
-        typer.Option(
-            "--manifest", help="File declaring the expected environment names."
-        ),
-    ] = Path(".env.example"),
-) -> None:
+def check_secrets() -> None:
     """Check that every name in .env.example has a keyring entry."""
-    names = _expected_names(manifest)
+    names = _read_env_example()
     if not names:
-        typer.echo(f"No secrets declared in {manifest}.")
+        typer.echo(f"No secrets declared.")
         return
-    backend = _backend()
+    
+    backend = _get_backend()
     missing = 0
     for name in names:
         value = _call_keyring(backend.get_password, name)
         if value is None:
             missing += 1
-            typer.echo(f"missing  {name}")
+            typer.secho(f"[no]  {name}", fg=typer.colors.RED)
         else:
-            typer.echo(f"ok       {name}")
-    typer.echo(f"{len(names) - missing}/{len(names)} secrets available.")
+            typer.secho(f"[ok]  {name}", fg=typer.colors.GREEN)
+    typer.secho(f"\n{len(names) - missing}/{len(names)} secrets available.", fg=typer.colors.YELLOW)
     if missing:
         raise typer.Exit(1)

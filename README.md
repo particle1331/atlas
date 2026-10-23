@@ -18,7 +18,7 @@ uv run at vault set API_TOKEN
 # Read a value from stdin; removes one trailing line ending.
 uv run at vault set API_TOKEN --stdin < /path/to/token
 
-# Print the value. Piped output preserves the stored value exactly.
+# Copy the value when running interactively; write it to stdout when piped.
 uv run at vault get API_TOKEN
 
 # Delete the local value; prompts for confirmation.
@@ -42,6 +42,9 @@ DATABASE_URL=
 `check` reports `ok` or `missing` for each name and prints no secret values. Comments,
 `export` declarations, quoted values, and multiline values follow dotenv syntax;
 duplicate names are checked once. Values in the example file are ignored.
+
+`get` copies a secret to the clipboard when stdout is a terminal. When stdout is
+redirected or piped, it writes the stored value to stdout without adding a newline.
 
 Vault commands leave `.env.example` unchanged. Deleting a value makes its name
 appear as missing on the next check. Remove a name from `.env.example` when the
