@@ -1,0 +1,31 @@
+[project]
+name = "atlas"
+version = "0.1.0"
+description = "Helping to manage the crushing weight of AI slop."
+readme = "README.md"
+authors = [
+    { name = "particle1331", email = "particle1331@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "flet[all]>=1.0.5",
+    "keyring>=25.0",
+    "python-dotenv>=1.0",
+    "typer>=0.15",
+]
+
+[project.scripts]
+at = "atlas.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "black>=26.10.1",
+    "isort>=9.0.2",
+]
+
+[tool.isort]
+profile = "black"
