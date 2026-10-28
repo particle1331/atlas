@@ -4,3 +4,5 @@ long_description: |-
   Start with two walkthroughs of the implemented Vault: its CLI and tests, followed
   by audit logging, file locking, and retention. The remaining posts are stubs for
   the notebook publishing workflow.
+cover_caption: '*Crouching Figure of Atlas* by the Italian Renaissance artist Baldassare Tommaso Peruzzi
+  (1481–1536)'

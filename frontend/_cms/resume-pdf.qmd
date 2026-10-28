@@ -1,0 +1,21 @@
+---
+format:
+  typst:
+    papersize: us-letter
+    fontsize: 10pt
+    margin:
+      x: 0.6in
+      y: 0.55in
+    toc: false
+    number-sections: false
+    include-in-header:
+      text: |
+        #set par(leading: 0.45em, spacing: 0.55em, justify: false)
+        #set list(spacing: 0.25em)
+---
+
+[GitHub](https://github.com/particle1331) · [LinkedIn](https://linkedin.com/in/ron-medina-5a411218a/) · [ron.mdn@gmail.com](mailto:ron.mdn@gmail.com) · [(+63) 962 831 6730](tel:+639628316730)
+
+{{cms:summary}}
+
+{{cms:entries}}

@@ -122,6 +122,7 @@ uv run at cms collection new "Transformers from Scratch"
 uv run at cms collection ls
 uv run at cms collection edit collection/transformers-from-scratch --description "A reading sequence"
 uv run at cms collection edit collection/transformers-from-scratch --cover /path/to/cover.png
+uv run at cms collection edit collection/transformers-from-scratch --cover-caption '*Cover title* by Artist'
 uv run at cms collection open collection/transformers-from-scratch
 uv run at cms collection add collection/transformers-from-scratch post/understanding-attention
 uv run at cms collection move collection/transformers-from-scratch post/understanding-attention --position 0
@@ -134,6 +135,9 @@ IDs. Positions start at zero; adding without `--position` appends. `publish`
 requires descriptions, a cover and at least one published member; `draft` returns
 the collection to draft.
 Collection changes never publish or delete the member posts.
+`--cover-caption` adds a Markdown caption beneath the cover on the collection
+page. Edit `cover_caption` in the collection YAML or pass `--cover-caption ""`
+to clear it. Replacing the image preserves the caption.
 
 ### Résumé
 
@@ -152,6 +156,8 @@ uv run at cms resume profile --summary "My updated opening summary."
 Sections are `employment`, `skills`, `education` and `projects`. Editable titles,
 subtitles and bodies live in `content/resume/`. Section assignments and zero-based
 order live in `backend/resume/`; the CLI generates the section/page structure.
+`make preview` and `make build` regenerate the downloadable PDF from
+the same saved résumé title, summary and ordered entries before rendering the site.
 
 ### Writing, notes and storage
 
@@ -186,7 +192,7 @@ backend/cms.yaml                 # Storage schema
 ### Preview and build
 
 ```sh
-make docs                 # Live preview at http://localhost:4200
+make preview             # Live preview at http://localhost:4200
 make preview PORT=4300    # Use a different port
 make build               # Render frontend/_site/
 uv run at cms sync --preview  # Regenerate draft copies without rendering
@@ -206,11 +212,16 @@ their publication requirements are met. Use `at cms check` to see blockers.
 
 The landing page and theme remain under `frontend/`. Listing and résumé templates
 live in `frontend/_cms/`; generated listings, posts, collections and résumé pages
-are ignored. The downloadable PDF is still a separate asset at
-`frontend/assets/resume.pdf`. No build reads the Watchtower checkout.
+are ignored. `frontend/_cms/resume-pdf.qmd` controls the PDF layout and contact
+links; its title, summary and entries come from the same YAML sources as the web
+page. Preview and build render it with Quarto's bundled Typst engine and replace
+`frontend/assets/resume.pdf` before Quarto copies assets into the site output.
+A failed PDF render stops the command and preserves the previous download.
+No separate LaTeX installation is needed. No build reads the Watchtower checkout.
 
 During a running preview, run `uv run at cms sync --preview` after source edits
-to refresh the generated copies, or restart `make docs`.
+to refresh the generated copies, or restart `make preview`. Sync alone does not
+render the PDF; restart `make preview` to refresh the download as well.
 
 See [CMS commands and storage](docs/cms-cli.md) for publication, ordering,
 concurrency, and the complete authoring workflow. On a new workspace, run

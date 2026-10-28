@@ -15,7 +15,7 @@ instructions for the current Atlas CMS. Each CLI command accepts `--help`.
 | Path | What belongs here and how to edit it |
 | --- | --- |
 | `content/posts/<id>.ipynb` | Canonical post cells, code, outputs, attachments and cell options. Prefer `at notebook` for terminal edits; VS Code/Jupyter saves are supported. |
-| `content/collections/<id>.yaml` | Authored `title`, `short_description` and Markdown `long_description`; edit directly or through the CMS. |
+| `content/collections/<id>.yaml` | Authored `title`, `short_description`, Markdown `long_description` and optional `cover_caption`; edit directly or through the CMS. |
 | `content/resume.yaml` | Authored résumé `title` and `summary`. |
 | `content/resume/<entry-id>.yaml` | Authored entry `title`, `subtitle` and Markdown `body`. |
 | `backend/` | CLI-managed IDs, metadata, source paths/digests, dates, publication, membership, ordering, notes and to-dos. Use CMS commands instead of hand edits. |
@@ -135,8 +135,10 @@ post. The CMS generates the collection contents table.
 
 Résumé sections are `employment`, `skills`, `education` and `projects`. Keep
 section/position fields in backend records and authored text in content YAML.
-Résumé commands update the web page; `frontend/assets/resume.pdf` is a separate
-asset. Preserve existing facts and links when revising résumé prose.
+Résumé content feeds both the web page and `frontend/assets/resume.pdf`.
+`make preview` and `make build` regenerate the PDF before rendering the site.
+`frontend/_cms/resume-pdf.qmd` controls its layout/contact links. Sync alone does
+not render the PDF. Preserve existing facts and links when revising résumé prose.
 
 Use `cms notes ID --file PATH` and `cms todos ID --add "Task"` for private
 post/collection planning. To-dos support `--index N --done`, `--text`, `--position`
@@ -150,6 +152,7 @@ uv run at notebook figure post/attention /path/to/plot.svg --caption "Attention 
 uv run at notebook figure post/attention /path/to/new-plot.png --replace --label fig-attention
 uv run at cms post edit post/attention --thumbnail /path/to/thumbnail.png
 uv run at cms collection edit collection/transformers --cover /path/to/cover.png
+uv run at cms collection edit collection/transformers --cover-caption '*Cover title* by Artist'
 ```
 
 These commands copy input bytes into managed storage and leave the originals
@@ -160,6 +163,10 @@ for later lookup/replacement. Replacement requires exactly one of `--index` or
 Omit `--caption`/`--alt` during replacement. Keep existing image copies that may
 still have references. Thumbnails/covers accept verified PNG, JPEG, WebP or GIF
 up to 20 MiB; notebook figures additionally accept SVG.
+Collection cover captions support single-line Markdown and appear beneath the
+cover on the collection page. Store them in the authored `cover_caption` field;
+use `collection edit --cover-caption ""` to clear a caption. Replacing the cover
+preserves its caption.
 
 ## Revisions and saved execution
 
@@ -194,7 +201,7 @@ code cell's output.
 ```sh
 uv run at cms check
 uv run at cms sync --preview
-make docs                       # Draft-inclusive preview, port 4200
+make preview                    # Draft-inclusive preview, port 4200
 make preview PORT=4300
 make build                      # Published content, frontend/_site/
 ```

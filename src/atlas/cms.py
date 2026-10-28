@@ -355,12 +355,22 @@ def collection_edit(
     title: str | None = None,
     description: str | None = None,
     cover: Path | None = None,
+    cover_caption: Annotated[
+        str | None,
+        typer.Option(
+            help="Single-line Markdown caption beneath the cover; empty to clear."
+        ),
+    ] = None,
     expected_revision: Revision = None,
 ):
     """Edit card metadata or import a cover image."""
     patch = {
         key: value
-        for key, value in (("title", title), ("short_description", description))
+        for key, value in (
+            ("title", title),
+            ("short_description", description),
+            ("cover_caption", cover_caption),
+        )
         if value is not None
     }
     edit_fields(ctx, identity, "collection", patch, expected_revision, cover)
@@ -818,12 +828,33 @@ def sync(ctx: typer.Context, preview: bool = False):
     emit(generate(store_for(ctx), preview))
 
 
+def render_resume_pdf(store: Store, executable: str):
+    """Replace the download only after an isolated PDF render succeeds."""
+    with tempfile.TemporaryDirectory(
+        prefix="resume-pdf-", dir=store.path(".atlas/cms")
+    ) as directory:
+        source = Path(directory) / "resume.qmd"
+        shutil.copyfile(store.path(".atlas/cms/resume.qmd"), source)
+        status = subprocess.call(
+            [executable, "render", str(source), "--to", "typst", "--no-execute"],
+            cwd=directory,
+        )
+        if status:
+            raise typer.Exit(status)
+        pdf = source.with_suffix(".pdf").read_bytes()
+        if not pdf.startswith(b"%PDF-"):
+            raise ValueError("Quarto did not generate a résumé PDF.")
+        with store.lock():
+            store.commit({store.path("frontend/assets/resume.pdf"): pdf})
+
+
 def run_quarto(ctx, preview, port=4200):
     executable = shutil.which(os.environ.get("QUARTO", "quarto"))
     if executable is None:
         raise ValueError("Install Quarto, then run this command again.")
     store = store_for(ctx)
     result = generate(store, preview)
+    render_resume_pdf(store, executable)
     command = [executable, "preview" if preview else "render", result["site"]]
     if preview:
         command += ["--profile", "preview", "--port", str(port), "--render", "all"]

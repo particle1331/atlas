@@ -496,7 +496,7 @@ def generate(store: Store, preview: bool = False) -> dict:
                 lines = []
                 if record["cover_path"]:
                     lines.append(
-                        f"![](../assets/cms/{Path(record['cover_path']).name})"
+                        f"![{record['cover_caption']}](../assets/cms/{Path(record['cover_path']).name})"
                     )
                 lines.append(record["long_description"])
                 members = [
@@ -557,6 +557,16 @@ def generate(store: Store, preview: bool = False) -> dict:
                 "{{cms:entries}}", "\n\n".join(sections)
             )
             (stage / "resume.qmd").write_bytes(document(meta, body))
+            pdf_template = store.path("frontend/_cms/resume-pdf.qmd")
+            pdf_meta, pdf_body = (
+                split_document(pdf_template.read_text())
+                if pdf_template.exists()
+                else ({}, "{{cms:summary}}\n\n{{cms:entries}}")
+            )
+            pdf_meta["title"] = profile["title"]
+            pdf_body = pdf_body.replace("{{cms:summary}}", profile["summary"]).replace(
+                "{{cms:entries}}", "\n\n".join(sections)
+            )
             # Install complete generated files together through the recoverable
             # writer. Templates, configuration and authored notebooks stay put.
             generated = {}
@@ -576,6 +586,9 @@ def generate(store: Store, preview: bool = False) -> dict:
                         generated[path] = None
             for page in ("resume.qmd", "posts.qmd", "collections.qmd"):
                 generated[store.path("frontend/" + page)] = (stage / page).read_bytes()
+            generated[store.path(".atlas/cms/resume.qmd")] = document(
+                pdf_meta, pdf_body
+            )
             store.commit(generated)
         finally:
             if stage.exists():

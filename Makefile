@@ -1,10 +1,8 @@
 .DEFAULT_GOAL := doctor
-.PHONY: doctor docs preview build
+.PHONY: doctor preview build
 
 QUARTO ?= quarto
 PORT ?= 4200
-
-docs: preview
 
 preview:
 	QUARTO="$(QUARTO)" uv run at cms preview --port $(PORT)

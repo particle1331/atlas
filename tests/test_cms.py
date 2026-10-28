@@ -399,6 +399,72 @@ def test_collections_keep_order_and_never_own_posts(store):
     assert store.get("post/two")["record"]["title"] == "Renamed second post"
 
 
+def test_collection_cover_captions_support_markdown_replacement_and_clearing(store):
+    identity = "collection/guide"
+    source = store.path("content/collections/guide.yaml")
+    original = store.get(identity)
+    assert "cover_caption" not in decode(source.read_bytes())
+    assert original["record"]["cover_caption"] == ""
+    image = store.root / "cover.png"
+    Image.new("RGB", (8, 8), "blue").save(image)
+    caption = "*Crouching Figure of Atlas* by Baldassare Tommaso Peruzzi (1481–1536)"
+    changed = run(
+        store,
+        "collection",
+        "edit",
+        identity,
+        "--cover",
+        str(image),
+        "--cover-caption",
+        caption,
+        "--expected-revision",
+        original["revision"],
+    )
+    assert decode(source.read_bytes())["cover_caption"] == caption
+    assert "cover_caption" not in decode(store.record_path(identity).read_bytes())
+    assert changed["record"]["source_digest"] == digest(source.read_bytes())
+    assert changed["record"]["updated_at"] != original["record"]["updated_at"]
+    assert (
+        run(store, "collection", "edit", identity, "--cover-caption", caption)
+        == changed
+    )
+    invoke(
+        store,
+        "collection",
+        "edit",
+        identity,
+        "--cover-caption",
+        "Stale credit",
+        "--expected-revision",
+        original["revision"],
+        code=3,
+    )
+    assert store.get(identity) == changed
+    Image.new("RGB", (8, 8), "red").save(image)
+    replacement = run(store, "collection", "edit", identity, "--cover", str(image))
+    assert replacement["record"]["cover_caption"] == caption
+    run(store, "sync", "--preview")
+    page = store.path("frontend/collections/guide.qmd")
+    assert f"![{caption}](../assets/cms/" in page.read_text()
+    cleared = run(store, "collection", "edit", identity, "--cover-caption", "")
+    assert cleared["record"]["cover_caption"] == ""
+    assert "cover_caption" not in decode(source.read_bytes())
+    run(store, "sync", "--preview")
+    assert "![](../assets/cms/" in page.read_text()
+    assert caption not in page.read_text()
+
+
+@pytest.mark.parametrize("caption", [None, 42, "First line\nSecond line", "A\rB"])
+def test_invalid_cover_caption_leaves_content_and_metadata_unchanged(store, caption):
+    original = store.get("collection/guide")
+    source = store.path("content/collections/guide.yaml")
+    raw = source.read_bytes()
+    with pytest.raises(ValueError, match="single-line Markdown"):
+        store.update("collection/guide", {"cover_caption": caption})
+    assert store.get("collection/guide") == original
+    assert source.read_bytes() == raw
+
+
 def test_publication_and_public_projection_filter_drafts(store):
     new_post(store, "Public")
     new_post(store, "Private")
@@ -422,6 +488,8 @@ def test_publication_and_public_projection_filter_drafts(store):
         "collection/reading",
         "--cover",
         str(store.root / "thumbnail.png"),
+        "--cover-caption",
+        "*Public cover* by the artist",
     )
     run(store, "collection", "add", "collection/reading", "post/private")
     run(store, "collection", "add", "collection/reading", "post/public")
@@ -432,6 +500,7 @@ def test_publication_and_public_projection_filter_drafts(store):
     run(store, "sync")
     assert not store.path("frontend/posts/private.ipynb").exists()
     page = store.path("frontend/collections/reading.qmd").read_text()
+    assert "![*Public cover* by the artist](../assets/cms/" in page
     assert "[Private]" not in page
     assert "| 1 | [Public]" in page
     assert "Related:" not in store.path("frontend/posts/public.ipynb").read_text()
@@ -610,6 +679,132 @@ def test_resume_import_preserves_every_fact_and_existing_markup(workspace):
     generate(workspace, preview=True)
     generated = split_document(workspace.path("frontend/resume.qmd").read_text())[1]
     assert re.sub(r"\s+", " ", generated) == re.sub(r"\s+", " ", original)
+
+
+def test_resume_pdf_projection_shares_authored_content_and_order(store):
+    template = store.path("frontend/_cms/resume-pdf.qmd")
+    template.write_text(
+        "---\nformat: typst\n---\n\nPDF contacts.\n\n"
+        "{{cms:summary}}\n\n{{cms:entries}}\n"
+    )
+    store.new(
+        "resume",
+        "First role",
+        section="employment",
+        subtitle="2026 -- Present",
+        body="- [A project](https://example.com).",
+    )
+    run(store, "resume", "move", "resume/first-role", "--position", "0")
+    run(
+        store,
+        "resume",
+        "profile",
+        "--title",
+        "Updated résumé",
+        "--summary",
+        "New summary.",
+    )
+    generate(store, preview=True)
+    meta, pdf = split_document(store.path(".atlas/cms/resume.qmd").read_text())
+    web = store.path("frontend/resume.qmd").read_text()
+    assert meta == {"format": "typst", "title": "Updated résumé"}
+    for text in (
+        "New summary.",
+        "2026 -- Present",
+        "- [A project](https://example.com).",
+    ):
+        assert text in pdf and text in web
+    assert pdf.index("### First role") < pdf.index("### Engineer")
+    assert "PDF contacts." in pdf
+    assert "assets/resume.pdf" not in pdf
+    assert "<script" not in pdf
+    assert "{{cms:" not in pdf
+
+
+@pytest.mark.parametrize("command", ["build", "preview"])
+def test_build_and_preview_regenerate_pdf_before_rendering_site(
+    store, monkeypatch, command
+):
+    from atlas import cms
+
+    download = store.path("frontend/assets/resume.pdf")
+    download.parent.mkdir(parents=True, exist_ok=True)
+    download.write_bytes(b"Previous download")
+    monkeypatch.setenv("QUARTO", "custom-quarto")
+
+    def which(name):
+        assert name == "custom-quarto"
+        return "/bin/custom-quarto"
+
+    monkeypatch.setattr(cms.shutil, "which", which)
+    calls = []
+
+    def quarto(args, cwd):
+        calls.append(args)
+        assert args[0] == "/bin/custom-quarto"
+        assert "--no-execute" in args
+        if "typst" in args:
+            source = Path(args[2])
+            assert Path(cwd) == source.parent
+            assert "_quarto.yml" not in {p.name for p in source.parent.iterdir()}
+            pdf = b"%PDF-1.7\n" + source.read_bytes()
+            source.with_suffix(".pdf").write_bytes(pdf)
+        else:
+            assert Path(cwd) == store.root
+            assert args[1] == ("preview" if command == "preview" else "render")
+            assert args[2] == str(store.path("frontend"))
+            assert "typst" in calls[-2]
+            assert download.read_bytes().startswith(b"%PDF-")
+            assert ("--profile" in args) == (command == "preview")
+            if command == "preview":
+                assert args[args.index("--port") + 1] == "4300"
+        return 0
+
+    monkeypatch.setattr(cms.subprocess, "call", quarto)
+    args = [command] + (["--port", "4300"] if command == "preview" else [])
+    invoke(store, *args)
+    first = download.read_bytes()
+    run(store, "resume", "profile", "--summary", "A freshly edited summary.")
+    run(
+        store,
+        "resume",
+        "open",
+        "resume/employment-engineer-example",
+        "--file",
+        "-",
+        input="- A freshly edited accomplishment.",
+    )
+    invoke(store, *args)
+    assert len(calls) == 4
+    assert download.read_bytes() != first
+    assert b"A freshly edited summary." in download.read_bytes()
+    assert b"A freshly edited accomplishment." in download.read_bytes()
+    assert not list(store.path(".atlas/cms").glob("resume-pdf-*"))
+
+
+@pytest.mark.parametrize("failure", ["exit", "missing", "invalid"])
+def test_failed_resume_pdf_render_preserves_download_and_stops_site(
+    store, monkeypatch, failure
+):
+    from atlas import cms
+
+    download = store.path("frontend/assets/resume.pdf")
+    download.parent.mkdir(parents=True, exist_ok=True)
+    download.write_bytes(b"Previous download")
+    monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
+    calls = []
+
+    def quarto(args, cwd):
+        calls.append(args)
+        if failure == "invalid":
+            Path(args[2]).with_suffix(".pdf").write_bytes(b"An HTML error page")
+        return 7 if failure == "exit" else 0
+
+    monkeypatch.setattr(cms.subprocess, "call", quarto)
+    invoke(store, "build", code=7 if failure == "exit" else 2)
+    assert len(calls) == 1
+    assert download.read_bytes() == b"Previous download"
+    assert not list(store.path(".atlas/cms").glob("resume-pdf-*"))
 
 
 def test_resume_positions_stay_zero_based_after_removal_and_section_changes(store):

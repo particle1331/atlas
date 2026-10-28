@@ -11,7 +11,7 @@ separate historical prototype; Atlas does not depend on it.
 | Path | Role |
 | --- | --- |
 | `content/posts/<id>.ipynb` | Canonical body, code, outputs, attachments and cell options. |
-| `content/collections/<id>.yaml` | Editable `title`, `short_description`, and Markdown `long_description`. |
+| `content/collections/<id>.yaml` | Editable `title`, `short_description`, Markdown `long_description` and optional `cover_caption`. |
 | `content/resume.yaml` | Editable résumé `title` and `summary`. |
 | `content/resume/<entry-id>.yaml` | Editable entry `title`, `subtitle`, and Markdown `body`. |
 | `backend/posts/<id>.yaml` | CLI-managed post metadata, notes/to-dos, source path and digest. |
@@ -21,6 +21,8 @@ separate historical prototype; Atlas does not depend on it.
 | `content/images/<sha256>.<ext>` | Imported, verified image bytes. |
 | `content/images/post/<post-id>-<uuid>.<ext>` | Copied notebook figure images. |
 | `frontend/_cms/resume.qmd` | Public résumé layout; entry content is supplied by YAML. |
+| `frontend/_cms/resume-pdf.qmd` | PDF résumé layout/contact links; uses the same YAML content. |
+| `frontend/assets/resume.pdf` | Download regenerated before each preview/build. |
 | `frontend/_cms/posts.qmd`, `frontend/_cms/collections.qmd` | Public listing templates. |
 | `frontend/posts/*.ipynb` | Generated notebook copies; ignored. |
 | `frontend/collections/*.qmd`, `frontend/resume.qmd` | Generated pages; ignored. |
@@ -112,6 +114,7 @@ Use Jupyter/VS Code to run code and save its outputs explicitly.
 ```sh
 uv run at cms collection new "Transformers" --description "A reading sequence"
 uv run at cms collection edit collection/transformers --cover /path/to/cover.png
+uv run at cms collection edit collection/transformers --cover-caption '*Cover title* by Artist'
 uv run at cms collection open collection/transformers
 uv run at cms collection add collection/transformers post/attention
 uv run at cms collection add collection/transformers post/another-post --position 0
@@ -130,6 +133,12 @@ at 200 words per minute, rounded up to at least one minute. You can also edit
 `title`, `short_description` and `long_description` directly in
 `content/collections/<id>.yaml`. Membership, cover, publication and dates are
 managed through the CLI in `backend/collections/<id>.yaml`.
+
+`--cover-caption` sets a single-line Markdown caption beneath the cover on the
+collection page; emphasis and links are supported. It can be supplied with
+`--cover` or used separately. The caption is editable as `cover_caption` in the
+collection's content YAML and defaults to empty for existing collections.
+Replacing the cover preserves its caption; pass `--cover-caption ""` to clear it.
 
 ## Notebook navigation and cell tools
 
@@ -254,8 +263,11 @@ is Markdown in a YAML block scalar. Its title/subtitle/section/order are explici
 fields in editable `content/resume/<id>.yaml`; section, position, ID and dates are
 in `backend/resume/<id>.yaml`. The renderer supplies headings and section ordering; `open` exposes only
 the body. Imported résumé facts, existing links and contact controls are retained.
-The homepage and downloadable PDF are independent; these commands update the
-résumé web page.
+The homepage is independent. Résumé edits reach the web page at sync; preview
+and build also regenerate the downloadable PDF from the same title, summary and
+ordered entries. Edit `frontend/_cms/resume-pdf.qmd` for its layout/contact links,
+not the generated PDF. Workspaces without that optional template get a basic
+PDF containing the résumé title, summary and entries.
 
 ## Internal authoring and publication
 
@@ -291,7 +303,7 @@ the source file is left in place. Notebook figures additionally support SVG.
 ```sh
 uv run at cms sync --preview    # Include drafts, without rendering
 uv run at cms sync              # Published content only, without rendering
-make docs                      # Sync drafts, then Quarto preview on port 4200
+make preview                   # Sync drafts, then Quarto preview on port 4200
 make preview PORT=4300
 make build                     # Sync published content, then Quarto render
 ```
@@ -307,6 +319,13 @@ and hidden files are excluded from sidecar copies. Public collection contents
 filter out drafts. Preview includes them. Public validation failures leave
 the previous generated files intact. Quarto always receives `--no-execute`.
 
+Before launching Quarto's site render or preview server, the CMS renders the
+résumé PDF with Quarto's bundled Typst engine. It uses the same saved-content
+snapshot as the web page, staged under `.atlas/cms/`, and atomically replaces
+`frontend/assets/resume.pdf` only on success. The site then copies that fresh
+download into `_site/assets/` or `_site-preview/assets/`. PDF failures stop the
+command and preserve the previous download. No separate LaTeX install is needed.
+
 Notebook, collection and résumé-entry edits outside the CLI are observed by
 SHA-256 at explicit sync/build. The first observation advances the corresponding
 record's public modification date in UTC;
@@ -316,7 +335,8 @@ filesystem modification time. Code-directory edits do not change post dates.
 
 The preview server watches generated files. After editing source content during
 a running preview, run `at cms sync --preview` in another terminal, or restart
-`make docs`, to project the changes.
+`make preview`, to project the changes. Sync alone does not render the PDF; restart
+`make preview` to refresh the download too.
 
 ## Revisions and failures
 

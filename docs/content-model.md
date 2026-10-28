@@ -208,7 +208,8 @@ Editable files live under `content/`, and CLI-managed fields live under `backend
 Posts have `backend/posts/<stable-id>.yaml` and a canonical
 `content/posts/<stable-id>.ipynb`. Collections have editable `title`,
 `short_description` and Markdown `long_description` in
-`content/collections/<id>.yaml`; IDs, cover, membership, status, dates and internal
+`content/collections/<id>.yaml`, with an optional single-line Markdown
+`cover_caption` shown beneath the cover. IDs, cover, membership, status, dates and internal
 fields are in `backend/collections/<id>.yaml`. Their contents list is generated
 from backend `post_ids`. There is no database.
 
@@ -235,8 +236,11 @@ also accepts SVG and stores each figure as
 Markdown figure cell at a zero-based index. Generated notebooks reference
 copies of the used figure files under `frontend/assets/cms/post/`.
 
-`make docs` and `make build` sync source and allowlisted metadata into generated
-notebooks/pages under `frontend/`. Generated content, locks and recovery files
+`make preview` and `make build` sync source and allowlisted metadata into generated
+notebooks/pages under `frontend/`. Both regenerate `frontend/assets/resume.pdf`
+from the same résumé title, summary and ordered entries using Quarto's bundled
+Typst renderer before rendering the website. The PDF layout/contact links live
+in `frontend/_cms/resume-pdf.qmd`. Generated content, locks and recovery files
 are ignored; canonical content, backend records and public templates are tracked. No build edits
 or executes the source notebook. See the [CLI guide](cms-cli.md) for exact paths,
 publication requirements and source-observation timestamp semantics.
@@ -250,7 +254,7 @@ output are ignored. This is a change from the earlier no-Git-diff goal.
 
 - Managed image layout, backup/restore and publication retention. Image bytes are
   ordinary files, not embedded database payloads; future hosting is separate.
-- Home editing fields and storage; résumé PDF generation.
+- Home editing fields and storage.
 - Frozen release transport and retained-image cleanup beyond local builds.
 - Whether supporting code edits should eventually affect post modification dates.
 - Source-code link versioning, deletion/undo policy

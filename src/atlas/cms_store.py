@@ -47,7 +47,14 @@ FIELDS = {
         "source_digest",
     },
     "collection": COMMON
-    | {"cover_path", "long_description", "post_ids", "source_path", "source_digest"},
+    | {
+        "cover_path",
+        "cover_caption",
+        "long_description",
+        "post_ids",
+        "source_path",
+        "source_digest",
+    },
     "resume": {
         "id",
         "title",
@@ -63,9 +70,10 @@ FIELDS = {
 INTERNAL = {"internal_notes", "internal_todos"}
 PROFILE = {"title", "summary"}
 CONTENT_FIELDS = {
-    "collection": ("title", "short_description", "long_description"),
+    "collection": ("title", "short_description", "long_description", "cover_caption"),
     "resume": ("title", "subtitle", "body"),
 }
+CONTENT_DEFAULTS = {"collection": {"cover_caption": ""}}
 
 
 class Conflict(ValueError):
@@ -206,11 +214,20 @@ class Store:
         )
 
     def content_bytes(self, record: dict) -> bytes:
-        fields = CONTENT_FIELDS[record["id"].split("/")[0]]
-        return encode({key: record[key] for key in fields})
+        kind = record["id"].split("/")[0]
+        defaults = CONTENT_DEFAULTS.get(kind, {})
+        return encode(
+            {
+                key: record[key]
+                for key in CONTENT_FIELDS[kind]
+                if key not in defaults or record[key] != defaults[key]
+            }
+        )
 
     def prepare_content(self, record: dict) -> tuple[Path, bytes]:
         kind, key = record["id"].split("/")
+        for field, default in CONTENT_DEFAULTS.get(kind, {}).items():
+            record.setdefault(field, default)
         directory = {"collection": "collections", "resume": "resume"}[kind]
         relative = f"content/{directory}/{key}.yaml"
         raw = self.content_bytes(record)
@@ -347,7 +364,7 @@ class Store:
         revision_raw = raw
         if authored:
             source_raw = self.path(record.get("source_path")).read_bytes()
-            content = decode(source_raw)
+            content = CONTENT_DEFAULTS.get(kind, {}) | decode(source_raw)
             if set(content) != set(authored):
                 raise ValueError(
                     f"Expected only {', '.join(authored)} in {record['source_path']}."
@@ -459,8 +476,13 @@ class Store:
                 or not 1 <= record["toc_depth"] <= 6
             ):
                 raise ValueError("TOC depth must be between 1 and 6.")
-        elif not isinstance(record["long_description"], str):
-            raise ValueError("Collection introduction must be text.")
+        else:
+            if not isinstance(record["long_description"], str):
+                raise ValueError("Collection introduction must be text.")
+            if not isinstance(record["cover_caption"], str) or any(
+                character in record["cover_caption"] for character in "\r\n"
+            ):
+                raise ValueError("Cover caption must be single-line Markdown text.")
 
     def references(self, record: dict):
         kind = record["id"].split("/")[0]
@@ -540,7 +562,12 @@ class Store:
     def new(self, kind: str, title: str, **fields) -> dict:
         allowed = {
             "post": {"short_description", "tags", "code_path"},
-            "collection": {"short_description", "long_description", "post_ids"},
+            "collection": {
+                "short_description",
+                "long_description",
+                "cover_caption",
+                "post_ids",
+            },
             "resume": {"section", "subtitle", "body"},
         }
         if kind not in allowed or not set(fields) <= allowed[kind]:
