@@ -2,6 +2,13 @@
 
 [Project home](../README.md) · [Project instructions](../AGENTS.md)
 
+**Atlas implementation, 2026-10-28:** use the [CMS CLI guide](cms-cli.md)
+for the current `at cms` commands, YAML sources and generated frontend workflow.
+Editable notebooks and YAML live under `content/`; CLI-managed metadata lives
+under `backend/`, superseding the Markdown storage
+decision below. The remaining plan documents describe the earlier Watchtower2
+prototype and proposals; they are not a report of Atlas's current implementation.
+
 **Revised 2026-10-21.** Build a smaller CMS around notebook posts and ordered
 collections. The site navigation is Home, Resume, Posts and Collections.
 Posts use a thumbnail listing; collections use a cover-card grid similar to
@@ -14,10 +21,11 @@ Kanban-first roadmap. The [first implementation slice](first-slice.md) now has
 a Markdown-backed `wt2` draft-post CLI and optional declarative Flet editor.
 Notebook/image/publishing/collection workflows remain future work.
 
-## Reading order
+## Contents
 
 | Document | Purpose |
 | --- | --- |
+| [Atlas CMS CLI](cms-cli.md) | Current commands, source layout, generated notebooks, collections and résumé editing. |
 | [First implementation slice](first-slice.md) | Working CLI/editor, Markdown format, evidence and limitations. |
 | [Content model](content-model.md) | Post and collection schemas, immutable IDs, public dates, authoring fields and separate Kanban. Start here. |
 | [CLI and Flet](cli-v2-and-flet.md) | Simple editors and shared application use cases for people and agents. |

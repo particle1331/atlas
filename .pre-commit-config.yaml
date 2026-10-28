@@ -3,4 +3,11 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        args: ["--no-verify"]
+        args:
+          - --no-verify
+          # CMS source checksums are SHA-256 digests, not credentials.
+          - --exclude-lines
+          - '^source_digest: "?[0-9a-f]{64}"?$'
+          # Generated notebook cell IDs use the first 12 hex digits of a UUID.
+          - --exclude-lines
+          - '^\s*"id": "[0-9a-f]{12}",?$'

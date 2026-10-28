@@ -1,0 +1,10 @@
+title: Machine Learning
+subtitle: ''
+body: |-
+  - Deep neural networks in TensorFlow and PyTorch
+  - Machine learning models in scikit-learn
+  - Recommender systems, anomaly detection / imbalanced learning
+  - Weak supervision for training noise-aware models
+  - Gradient Boosting (Catboost, XGBoost, LightGBM), ensembling/stacking
+  - LLMs: prompting, RAG, fine-tuning, MCP, agentic workflows (LangChain, LangGraph)
+  - Embedding-based retrieval and semantic search

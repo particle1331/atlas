@@ -1,8 +1,11 @@
 # Atlas
 
-Atlas provides the `at` CLI. Its vault stores local secrets in the system keyring
-using the service name `atlas.vault`. Secret names and values are shared across
+Atlas provides the `at` CLI for content authoring and a local secret vault, and
+currently targets macOS. The CMS manages posts, collections and résumé entries.
+The vault uses the system keyring; secret names and values are shared across
 projects for the current operating system user.
+
+See [AGENTS.md](AGENTS.md) for agent workflows for navigating, authoring and editing content.
 
 ```sh
 uv sync
@@ -12,6 +15,211 @@ uv run at --help
 Run `make doctor` to check the vault entries and run pytest with line and branch
 coverage. The report includes uncovered line numbers. Both checks run, and the
 command fails if either check fails.
+
+## Content CMS and Quarto frontend
+
+Install [Quarto](https://quarto.org/docs/get-started/) separately from the Python
+dependencies. Editable sources live in `content/`; CLI-managed records live in
+`backend/`. The build generates the Quarto copies. Start with `uv run at cms --help`; every command
+also accepts `--help`.
+
+| Where | How to edit |
+| --- | --- |
+| `content/posts/*.ipynb` | Edit normally in VS Code/Jupyter or use `at notebook`. |
+| `content/collections/*.yaml` | Edit title, short description and introduction by hand, or use the CMS commands. |
+| `content/resume.yaml`, `content/resume/*.yaml` | Edit résumé text by hand, or use the CMS commands. |
+| `backend/` | Use the CLI for metadata, membership, ordering, publication, notes and to-dos. |
+| Generated posts, collections, listings and résumé under `frontend/` | Recreate with sync/build. |
+
+Commit both `content/` and `backend/`. Hand edits to notebooks and collection or
+résumé entries are observed at sync/build and update their public modification
+dates. The authored files are never rewritten by a build. Site templates under
+`frontend/_cms/`, the landing page, theme and configuration are editable directly.
+
+### Posts
+
+```sh
+uv run at cms post new "Understanding Attention" --tags "python,transformers"
+# Edit content/posts/understanding-attention.ipynb in VS Code or Jupyter.
+uv run at cms post ls
+uv run at cms post show post/understanding-attention
+uv run at cms post edit post/understanding-attention  # Prompt for listing fields
+uv run at cms post edit post/understanding-attention --description "How attention works"
+uv run at cms post toc post/understanding-attention --depth 3
+uv run at cms post toc post/understanding-attention --disabled
+
+# Optional terminal editing: only a cell's source, without notebook JSON.
+uv run at cms post cells post/understanding-attention
+uv run at cms post open post/understanding-attention --cell 0
+uv run at cms post open post/understanding-attention --append --code
+uv run at cms post open post/understanding-attention --cell 0 --file body.md
+
+uv run at cms post edit post/understanding-attention --thumbnail /path/to/image.png
+uv run at cms post publish post/understanding-attention
+uv run at cms post draft post/understanding-attention
+```
+
+A new post starts as a draft with an empty notebook. `edit` handles title,
+description, tags, thumbnail, code path and related-post IDs. A published post
+needs a description, verified thumbnail and notebook content; publishing makes
+it eligible for a build and does not deploy anything.
+
+Thumbnail and cover paths can point anywhere, including your Desktop. The CLI
+copies the original image bytes into `content/images/`; you can move or delete
+the input file afterward.
+
+### Notebook tools
+
+Notebook navigation and cell operations are separate from CMS record editing:
+
+```sh
+uv run at notebook map
+uv run at notebook find "attention weights"
+uv run at notebook count post/understanding-attention
+uv run at notebook cat post/understanding-attention --index 0:4 --context 1
+uv run at notebook cat post/understanding-attention --with-revision
+
+uv run at notebook edit-cell post/understanding-attention --index 0
+uv run at notebook append-cell post/understanding-attention --type code
+uv run at notebook insert-cell post/understanding-attention --before 2 --content "## Results"
+uv run at notebook figure post/understanding-attention ~/Desktop/plot.png
+uv run at notebook figure post/understanding-attention ~/Desktop/plot.svg --index 2 --caption "Attention weights"
+uv run at notebook figure post/understanding-attention ~/Desktop/updated-plot.svg --replace --index 2
+uv run at notebook remove-cell post/understanding-attention --index 3
+uv run at notebook tag post/understanding-attention --index 1 --add hide-input
+uv run at notebook clear-outputs post/understanding-attention --from 4
+
+uv run at notebook output post/understanding-attention --index 8
+uv run at notebook run post/understanding-attention --index 8
+uv run at notebook diff post/understanding-attention
+uv run at notebook kernels
+```
+
+Cell indices are zero-based. `cat` prints cell source without notebook JSON and
+filters by index/range, tag, or Quarto label. Long edits open `$VISUAL`/`$EDITOR`,
+accept `--file`, or read stdin. Cell edits preserve outputs and metadata; explicitly
+run code to refresh saved outputs. `run` is the only notebook command that
+executes code, and site renders keep execution disabled. See the [notebook CLI
+guide](docs/cms-cli.md#notebook-navigation-and-cell-tools) for command options.
+
+`figure <notebook> <image-path>` copies the image into
+`content/images/post/<post-id>-<uuid>.<ext>` and inserts a Markdown figure cell.
+It appends by default; `--index 0` inserts before the first cell. Optional
+`--caption` and `--alt` set the caption and accessible description. PNG, JPEG
+(`.jpg`/`.jpeg`), SVG, WebP and GIF are supported. The original image stays in place.
+
+To change an existing figure's image, add `--replace --index N`, or
+`--replace --label fig-...`. Only the image link changes; your edited caption,
+figure ID, alt text, sizing and other cell content are preserved. The new input
+is copied into managed storage, including when its format differs from the old
+image. Replace thumbnails with `post edit --thumbnail PATH` and collection covers
+with `collection edit --cover PATH`.
+
+### Collections
+
+```sh
+uv run at cms collection new "Transformers from Scratch"
+uv run at cms collection ls
+uv run at cms collection edit collection/transformers-from-scratch --description "A reading sequence"
+uv run at cms collection edit collection/transformers-from-scratch --cover /path/to/cover.png
+uv run at cms collection open collection/transformers-from-scratch
+uv run at cms collection add collection/transformers-from-scratch post/understanding-attention
+uv run at cms collection move collection/transformers-from-scratch post/understanding-attention --position 0
+uv run at cms collection remove collection/transformers-from-scratch post/understanding-attention
+uv run at cms collection show collection/transformers-from-scratch
+```
+
+`open` edits the introduction; the ordered contents list is generated from post
+IDs. Positions start at zero; adding without `--position` appends. `publish`
+requires descriptions, a cover and at least one published member; `draft` returns
+the collection to draft.
+Collection changes never publish or delete the member posts.
+
+### Résumé
+
+```sh
+uv run at cms resume ls
+uv run at cms resume ls --section employment
+uv run at cms resume show resume/employment-sr-machine-learning-engineer-afni
+uv run at cms resume open resume/employment-sr-machine-learning-engineer-afni
+uv run at cms resume edit resume/employment-sr-machine-learning-engineer-afni --subtitle "Jan 2025 -- Present"
+uv run at cms resume add "Engineer at Example" --section employment --subtitle "2026 -- Present"
+uv run at cms resume move resume/engineer-at-example --position 0
+uv run at cms resume rm resume/engineer-at-example --yes
+uv run at cms resume profile --summary "My updated opening summary."
+```
+
+Sections are `employment`, `skills`, `education` and `projects`. Editable titles,
+subtitles and bodies live in `content/resume/`. Section assignments and zero-based
+order live in `backend/resume/`; the CLI generates the section/page structure.
+
+### Writing, notes and storage
+
+`open` edits only the selected body through `$VISUAL`/`$EDITOR`; use `--file PATH`
+or `--file -` for file/stdin input. The source notebook contains your editable
+cells, outputs and attachments, with no required metadata or navigation cells.
+Renaming a title keeps its ID and notebook path.
+
+```sh
+uv run at cms notes post/understanding-attention
+uv run at cms todos post/understanding-attention --add "Add a worked example"
+uv run at cms todos post/understanding-attention --index 0 --done
+uv run at cms check
+```
+
+Notes and to-dos work on posts and collections. They remain private to the
+authoring source and do not change public modification dates. `check` reports
+invalid references and publication blockers.
+
+```text
+content/posts/<stable-id>.ipynb    # Editable notebook
+content/collections/<id>.yaml     # Editable title and descriptions
+content/resume.yaml               # Editable résumé title and summary
+content/resume/<entry-id>.yaml    # Editable title, subtitle and body
+content/images/                  # Canonical image assets
+backend/posts/<stable-id>.yaml   # CLI-managed listing fields, dates, notes/to-dos
+backend/collections/<id>.yaml    # CLI-managed membership, cover, status and dates
+backend/resume/<entry-id>.yaml   # CLI-managed section, position and dates
+backend/cms.yaml                 # Storage schema
+```
+
+### Preview and build
+
+```sh
+make docs                 # Live preview at http://localhost:4200
+make preview PORT=4300    # Use a different port
+make build               # Render frontend/_site/
+uv run at cms sync --preview  # Regenerate draft copies without rendering
+uv run at cms sync            # Regenerate published copies without rendering
+```
+
+Both targets first sync source notebooks with title, description, dates, categories
+and TOC metadata into `frontend/posts/*.ipynb`. Collection contents and post links
+are generated from ordered IDs; the résumé is generated from its YAML entries.
+These projections are gitignored. Private notes, to-dos and revision data stay out
+of the frontend. Builds never write back to or execute source notebooks.
+
+Preview includes drafts in `frontend/_site-preview/`; public builds include only
+published content in `frontend/_site/`. The existing 11 stub posts, 3 collections
+and 12 résumé entries have been imported. Incomplete samples are drafts until
+their publication requirements are met. Use `at cms check` to see blockers.
+
+The landing page and theme remain under `frontend/`. Listing and résumé templates
+live in `frontend/_cms/`; generated listings, posts, collections and résumé pages
+are ignored. The downloadable PDF is still a separate asset at
+`frontend/assets/resume.pdf`. No build reads the Watchtower checkout.
+
+During a running preview, run `uv run at cms sync --preview` after source edits
+to refresh the generated copies, or restart `make docs`.
+
+See [CMS commands and storage](docs/cms-cli.md) for publication, ordering,
+concurrency, and the complete authoring workflow. On a new workspace, run
+`uv run at cms init` once. It also migrates the former mixed `content/` layout,
+preserving IDs, text, dates, notebook bytes and collection membership. Repeated
+initialization after migration is a no-op.
+Use `at cms --json post ls` for JSON lists and `--expected-revision HASH` on edits
+to reject stale writes. `at cms --root /path/to/workspace ...` selects another
+workspace explicitly.
 
 ## Git hooks
 
@@ -84,3 +292,19 @@ secrets or a missing manifest, and `2` for invalid manifest entries, input error
 or keyring/clipboard errors.
 Python keyring chooses the credential backend; unavailable or disabled backends
 produce an error. Run `uv run keyring diagnose` to inspect backend configuration.
+
+Vault commands write a local audit log to `.atlas/logs/vault.jsonl` in the Atlas
+repository root. This directory, including lock and temporary files, is gitignored.
+Each JSON line records a UTC timestamp, operation, targeted secret names, outcome
+(`success`, `failure`, or `cancelled`), exit code, and process ID. Set the optional
+`ATLAS_VAULT_SESSION_ID` environment variable to attach a self-reported session
+label (limited to 256 characters). Secret values, stdin, and exception messages
+are never recorded.
+
+Only records within the last 30 days are kept. Expired records are removed when
+each command starts and finishes; there is no background cleanup while Vault is
+idle. Malformed, undated, or future-dated records are discarded during cleanup.
+New log files are created with owner-only permissions, and concurrent commands
+serialize updates. A logging failure emits a sanitized warning to stderr without
+changing the command result. These logs cover calls through Vault, not direct
+keyring access, and are not protected against changes by the same OS user.

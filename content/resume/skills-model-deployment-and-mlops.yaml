@@ -1,0 +1,8 @@
+title: Model Deployment and MLOps
+subtitle: ''
+body: |-
+  - REST APIs (Django, FastAPI, Flask); CI/CD (Gitlab CI/CD, GitHub Actions); uv, Typer, Makefiles
+  - Experiment tracking & model management with MLflow; task queues with Celery, SQS, RabbitMQ
+  - Containerization with Docker; unit/differential/regression testing with pytest; version control with git
+  - AWS: Lambda, SQS, RabbitMQ, S3, RDS, EC2 / Auto Scaling groups; PostgreSQL, MySQL, Redis
+  - Microsoft Azure: Azure ML / Foundry, Azure Container Registry, App Service, Blob Storage, Azure Functions

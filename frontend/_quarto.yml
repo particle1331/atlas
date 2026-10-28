@@ -1,0 +1,48 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "posts/**/*.qmd"
+    - "posts/**/*.ipynb"
+    - "collections/**/*.qmd"
+  resources:
+    - assets/
+
+website:
+  title: Ron Medina ∷ AI & ML
+  favicon: assets/favicon.jpg
+  draft-mode: gone
+  back-to-top-navigation: true
+  page-navigation: true
+  bread-crumbs: true
+  reader-mode: true
+  navbar:
+    left:
+      - href: resume.qmd
+        text: résumé
+      - href: posts.qmd
+        text: posts
+      - href: collections.qmd
+        text: collections
+    right:
+      - icon: github
+        href: https://github.com/particle1331/watchtower/tree/main/src/watchtower
+        aria-label: watchtower source on GitHub
+  sidebar: []
+
+bibliography: assets/references.bib
+
+format:
+  html:
+    theme: united
+    css: assets/styles.css
+    toc: true
+    toc-location: right
+    lightbox: true
+    html-math-method: katex
+    highlight-annotations: true
+
+execute:
+  enabled: false
+

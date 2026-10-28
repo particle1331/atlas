@@ -1,0 +1,16 @@
+---
+title: Collections
+page-layout: full
+sidebar: false
+toc: false
+listing:
+  contents: "collections/*.qmd"
+  type: grid
+  sort: false
+  fields:
+  - title
+  - description
+  - image
+---
+
+Collections of posts, arranged for reading in sequence. Click a collection below.

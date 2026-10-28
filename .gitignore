@@ -18,5 +18,24 @@ wheels/
 .env.*
 !.env.example
 
+# Local Vault audit records and temporary/lock files
+/.atlas/logs/
+/.atlas/cms/
+
+# Generated CMS projections; editable source is in content/ and records in backend/.
+/frontend/posts/*
+!/frontend/posts/_metadata.yml
+/frontend/collections/*
+!/frontend/collections/_metadata.yml
+/frontend/resume.qmd
+/frontend/posts.qmd
+/frontend/collections.qmd
+/frontend/assets/cms/
+
 # misc
-scratch.ipynb
+/scratch.ipynb
+
+# Quarto cache and rendered site
+frontend/.quarto/
+frontend/_site/
+frontend/_site-preview/

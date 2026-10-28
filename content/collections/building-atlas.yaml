@@ -1,0 +1,6 @@
+title: Building Atlas
+short_description: Build and test Atlas's local tools, starting with the Vault CLI and its audit log.
+long_description: |-
+  Start with two walkthroughs of the implemented Vault: its CLI and tests, followed
+  by audit logging, file locking, and retention. The remaining posts are stubs for
+  the notebook publishing workflow.

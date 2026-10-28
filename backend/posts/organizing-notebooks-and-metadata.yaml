@@ -1,0 +1,18 @@
+id: post/organizing-notebooks-and-metadata
+title: Organizing notebooks and metadata
+status: draft
+short_description: 'Stub post: separate notebook content, public metadata, and supporting assets.'
+created_at: '2026-10-28T00:00:00+00:00'
+updated_at: '2026-10-28T06:49:29.524861+00:00'
+internal_notes: ''
+internal_todos: []
+tags:
+- Atlas
+- Publishing
+thumbnail_path: null
+source_path: content/posts/organizing-notebooks-and-metadata.ipynb
+code_path: null
+related_post_ids: []
+toc: true
+toc_depth: 3
+source_digest: c057ea86fab7ba56844cc6dd0e277da8f45377b979a5fccfff60468bf29de78a

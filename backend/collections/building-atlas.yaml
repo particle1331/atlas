@@ -1,0 +1,15 @@
+id: collection/building-atlas
+status: draft
+created_at: '2026-10-28T06:43:02.824837+00:00'
+updated_at: '2026-10-28T11:08:41.447727+00:00'
+internal_notes: ''
+internal_todos: []
+cover_path: content/images/16a7c0f9821a9c9f1b57c10cee1679f01902c0085e74186d2ab4b2b7ef62aeb9.png
+post_ids:
+- post/building-and-testing-a-vault-cli
+- post/adding-audit-logs-to-the-vault
+- post/organizing-notebooks-and-metadata
+- post/turning-notebooks-into-a-website
+- post/grouping-posts-into-collections
+source_path: content/collections/building-atlas.yaml
+source_digest: fff3b1b78e8926579897dc47c4a7a8507cef1aa3a43f808d9ef447c1ad4b3def

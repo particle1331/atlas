@@ -2,6 +2,12 @@
 
 [Plan index](README.md) · [CMS and CLI](cli-v2-and-flet.md)
 
+**Atlas implementation updated 2026-10-28:** [the CMS CLI](cms-cli.md) implements
+this logical model with editable notebooks and prose YAML under `content/`, and
+CLI-managed metadata under `backend/`.
+Builds inject document metadata into ignored copies under `frontend/posts/`.
+The YAML storage and résumé schema below supersede the earlier Markdown choice.
+
 **Decisions recorded 2026-10-21.** Watchtower2 has two reusable content types:
 notebook posts and ordered collections of posts. The public site has Home,
 Resume, Posts and Collections. Internal authoring data persists alongside the
@@ -14,7 +20,7 @@ collections, images and publication are still design targets.
 | Page | Presentation |
 | --- | --- |
 | Home | Landing page. Its editable fields remain to be discussed. |
-| Resume | Dedicated résumé page. Its editing model remains to be discussed; preserve existing facts. |
+| Resume | Dedicated page generated from `content/resume.yaml` and ordered YAML entries in `content/resume/`; existing facts are preserved. |
 | Posts | A listing with image thumbnails beside titles, short descriptions and dates. |
 | Collections | Cards in a grid, similar to the v1 course listing, with covers, titles and short descriptions. |
 
@@ -196,12 +202,44 @@ without a running Kanban application.
 
 ## Authoring storage
 
-Authoring records are Markdown files. The user selected this during the first
-implementation slice, replacing the former database direction. No SQLite or
-hosted metadata database. Public fields live in YAML front matter; scratch notes
-and checkbox to-dos live in the Markdown body. The notebook remains `.ipynb`.
-The logical fields above still appear together in CLI context; the on-disk format
-is shown in the [implementation walkthrough](first-slice.md).
+Authoring records in Atlas are YAML files, selected by the user on 2026-10-28.
+This replaces the earlier Markdown/front-matter storage choice for this CLI.
+Editable files live under `content/`, and CLI-managed fields live under `backend/`.
+Posts have `backend/posts/<stable-id>.yaml` and a canonical
+`content/posts/<stable-id>.ipynb`. Collections have editable `title`,
+`short_description` and Markdown `long_description` in
+`content/collections/<id>.yaml`; IDs, cover, membership, status, dates and internal
+fields are in `backend/collections/<id>.yaml`. Their contents list is generated
+from backend `post_ids`. There is no database.
+
+Résumé profile fields (`title`, `summary`) live in editable `content/resume.yaml`.
+Each `content/resume/<entry-id>.yaml` contains editable `title`, `subtitle` and
+Markdown `body`. Its immutable ID, section, zero-based position and dates are in
+`backend/resume/<entry-id>.yaml`. Sections are employment, skills, education and
+projects. The CLI handles section headings, entry ordering and public layout.
+The storage schema version is recorded in `backend/cms.yaml`.
+
+Every backend record stores a `source_path` and authoring-only `source_digest`.
+Sync/build observes hand edits to notebooks, collections and résumé entries,
+updates public dates once, and preserves the authored source bytes. Combined CLI
+read/write revisions include editable collection/résumé source bytes to reject
+stale saves. Post records additionally store `toc` and `toc_depth`. Image
+imports are verified PNG/JPEG/WebP/GIF files up to 20 MiB, stored by digest under
+`content/images/`. Collection publication in this implementation requires both
+descriptions, a cover and at least one published member.
+
+Image inputs can be anywhere on the local filesystem; importing copies their
+original bytes into managed storage. `at notebook figure <post> <image-path>`
+also accepts SVG and stores each figure as
+`content/images/post/<post-id>-<uuid>.<ext>`. It appends or inserts a Quarto
+Markdown figure cell at a zero-based index. Generated notebooks reference
+copies of the used figure files under `frontend/assets/cms/post/`.
+
+`make docs` and `make build` sync source and allowlisted metadata into generated
+notebooks/pages under `frontend/`. Generated content, locks and recovery files
+are ignored; canonical content, backend records and public templates are tracked. No build edits
+or executes the source notebook. See the [CLI guide](cms-cli.md) for exact paths,
+publication requirements and source-observation timestamp semantics.
 
 Real authoring records may be tracked in Git. Metadata and internal edits
 intentionally produce readable diffs, while public projections continue to omit
@@ -212,11 +250,10 @@ output are ignored. This is a change from the earlier no-Git-diff goal.
 
 - Managed image layout, backup/restore and publication retention. Image bytes are
   ordinary files, not embedded database payloads; future hosting is separate.
-- Home and Resume editing fields and storage.
-- Exact collection publication requirements and behavior when all members are drafts.
-- Notebook creation defaults, source-change timestamps and whether supporting
-  code edits affect post modification dates.
-- Image size/type limits, routes, source-code link versioning, deletion/undo policy
+- Home editing fields and storage; résumé PDF generation.
+- Frozen release transport and retained-image cleanup beyond local builds.
+- Whether supporting code edits should eventually affect post modification dates.
+- Source-code link versioning, deletion/undo policy
   and whether context attachments are useful. Do not import the entire v1 feature
   set to answer these questions.
 

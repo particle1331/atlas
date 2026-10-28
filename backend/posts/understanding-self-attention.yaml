@@ -1,0 +1,17 @@
+id: post/understanding-self-attention
+title: Understanding self-attention
+status: draft
+short_description: 'Stub post: work through queries, keys, values, and attention weights.'
+created_at: '2026-10-28T00:00:00+00:00'
+updated_at: '2026-10-28T06:49:29.569283+00:00'
+internal_notes: ''
+internal_todos: []
+tags:
+- Transformers
+thumbnail_path: null
+source_path: content/posts/understanding-self-attention.ipynb
+code_path: null
+related_post_ids: []
+toc: true
+toc_depth: 3
+source_digest: c3a4b40384724bcea7efa5f852c3292e6f6b3f44d582de48f8ef2020bdcf6164

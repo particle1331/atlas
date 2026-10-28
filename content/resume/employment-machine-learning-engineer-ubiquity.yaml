@@ -1,0 +1,12 @@
+title: Machine Learning Engineer · Ubiquity
+subtitle: '*Aug 2022 -- Jan 2025*'
+body: |-
+  - Reduced cost by 6X and increased accuracy of speech recognition system by +10%
+  - Developed and deployed a transcription service which transcribed 1.2M+ production calls
+  - Within 3 months after hiring, presented a POC for extending the call recorder system from mono to stereo recording using socket programming and Avaya APIs — became the basis for a major project for the Telco team and subsequent realtime transcription efforts
+  - Developed and designed a fault-tolerant distributed offline task queue service to scale speech recognition
+  - Developed a Transformer-based semantic search engine that runs performant on CPU
+  - Extended an existing open-source annotation tool for human data labeling to serve our internal use-case
+  - Developed AI services for downstream processing, modeling, and analytics of call transcripts
+  - Helped develop the backend application for searching and filtering transcriptions
+  - Contributed to a masking service for images (screenshots) containing sensitive data using Tesseract

@@ -1,0 +1,29 @@
+---
+title: Posts
+page-layout: full
+sidebar: false
+toc: false
+aliases:
+- /nb/articles/index.html
+- /nb/notes/index.html
+listing:
+  contents: "posts/*.ipynb"
+  type: table
+  categories: true
+  sort: date desc
+  sort-ui: false
+  filter-ui: [title]
+  page-size: 10
+  date-format: iso
+  fields:
+  - image
+  - date
+  - title
+  - description
+  - categories
+  - reading-time
+---
+
+Posts from across the knowledge base, newest first.
+
+<script src="assets/posts-listing.js" defer></script>

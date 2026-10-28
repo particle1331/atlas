@@ -1,0 +1,6 @@
+title: Machine Learning Engineer · BrewedLogic, Inc.
+subtitle: '*Mar 2020 -- June 2021*'
+body: |-
+  - Collaborative filtering RecSys written in NumPy, Scikit-Learn, and Pandas and served via Django — deployment increased average ticket count from 3.38 to 4.86 and average ticket value from $11.49 to $14.21 after the first two months in production. Became the RecSys platform of [Crisp](https://www.crispqsr.com/post/restaurant-data-analysis-artificial-intelligence) deployed on 26 US franchises each with multiple stores
+  - Worked with a senior data scientist on customer segmentation and sales forecasting and in developing a fraud detection model for fraudulent VoIP transactions, drastically improving over previous rule-based approaches
+  - Preprocessing, feature engineering, training, and monitoring of deployed models on 1M-5M row datasets; service migration from Django to FastAPI

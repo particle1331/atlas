@@ -1,3 +1,4 @@
+import json
 from getpass import GetPassWarning
 from pathlib import Path
 from types import SimpleNamespace
@@ -44,6 +45,14 @@ def backend() -> LocalKeyring:
 
 
 @pytest.fixture(autouse=True)
+def audit_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Keep every CLI test away from the real local audit log."""
+    monkeypatch.setattr("atlas.vault_audit.ROOT_PATH", tmp_path)
+    monkeypatch.delenv("ATLAS_VAULT_SESSION_ID", raising=False)
+    return tmp_path / ".atlas" / "logs" / "vault.jsonl"
+
+
+@pytest.fixture(autouse=True)
 def get_backend(monkeypatch: pytest.MonkeyPatch, backend: LocalKeyring) -> Mock:
     get_backend = Mock(return_value=backend)
     monkeypatch.setattr("atlas.vault.keyring.get_keyring", get_backend)
@@ -58,7 +67,7 @@ def manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def test_round_trip_and_removal_preserve_the_manifest(
-    runner: CliRunner, backend: LocalKeyring, manifest: Path
+    runner: CliRunner, backend: LocalKeyring, manifest: Path, audit_log: Path
 ) -> None:
     """From a manifest declaring API_TOKEN, exercise its complete lifecycle."""
     contents = "API_TOKEN=\n"
@@ -89,6 +98,24 @@ def test_round_trip_and_removal_preserve_the_manifest(
     assert result.exit_code == 1, result.output
     assert result.stdout == " [no]  API_TOKEN\n◩ 1/1 secrets missing.\n"
     assert manifest.read_text() == contents
+    records = [json.loads(line) for line in audit_log.read_text().splitlines()]
+    assert [record["operation"] for record in records] == [
+        "set",
+        "get",
+        "check",
+        "rm",
+        "check",
+    ]
+    assert [record["outcome"] for record in records] == [
+        "success",
+        "success",
+        "success",
+        "success",
+        "failure",
+    ]
+    assert [record["exit_code"] for record in records] == [0, 0, 0, 0, 1]
+    assert all(record["secret_names"] == ["API_TOKEN"] for record in records)
+    assert "private value" not in audit_log.read_text()
 
 
 def test_check_reports_available_and_missing_secrets_and_skips_comments(
@@ -109,20 +136,25 @@ def test_check_reports_available_and_missing_secrets_and_skips_comments(
     result = runner.invoke(app, ["vault", "check"])
     assert result.exit_code == 1, result.output
     assert result.stdout == (
-        " [ok]  PRESENT\n" 
-        " [ok]  SECOND\n" 
-        " [no]  MISSING\n" 
+        " [ok]  PRESENT\n"
+        " [ok]  SECOND\n"
+        " [no]  MISSING\n"
         "◩ 1/3 secrets missing.\n"  # typer.secho adds trailing newline
     )
     assert "stored token" not in result.output
 
 
-@pytest.mark.parametrize("contents",
-    ["TOKEN\n", "TOKEN=example\n", "=\n"],
+@pytest.mark.parametrize(
+    "contents",
+    ["TOKEN\n", "TOKEN=private manifest value\n", "=\n"],
     ids=["missing-equals", "nonempty-value", "empty-name"],
 )
 def test_invalid_manifest_fails_before_accessing_keyring(
-    runner: CliRunner, manifest: Path, get_backend: Mock, contents: str
+    runner: CliRunner,
+    manifest: Path,
+    get_backend: Mock,
+    contents: str,
+    audit_log: Path,
 ) -> None:
     """Incorrect manifest entry syntax examples (one-liner each)."""
     manifest.write_text(contents)
@@ -130,7 +162,12 @@ def test_invalid_manifest_fails_before_accessing_keyring(
     result = runner.invoke(app, ["vault", "check"])
     assert result.exit_code == 2, result.output
     assert "KEY_NAME=" in result.stderr
-    get_backend.assert_not_called()     # vault not accessed
+    get_backend.assert_not_called()  # vault not accessed
+    record = json.loads(audit_log.read_text())
+    assert record["outcome"] == "failure"
+    assert record["secret_names"] == []
+    assert "private manifest value" not in result.output
+    assert "private manifest value" not in audit_log.read_text()
 
 
 def test_missing_manifest_raises_file_not_found_before_accessing_keyring(
@@ -163,8 +200,8 @@ def test_empty_manifest_succeeds_without_accessing_keyring(
 @pytest.mark.parametrize(
     ("arguments", "stdin"),
     [
-        (["vault", "set", "TOKEN"], "value\n"),         # cant expose value in tty
-        (["vault", "set", "TOKEN", "--stdin"], "\n"),   # non-empty value required
+        (["vault", "set", "TOKEN"], "value\n"),  # cant expose value in tty
+        (["vault", "set", "TOKEN", "--stdin"], "\n"),  # non-empty value required
     ],
     ids=["missing-stdin-option", "empty-secret"],
 )
@@ -200,7 +237,10 @@ def test_missing_secret_returns_one_without_stdout(
 
 
 def test_hidden_prompt_and_deletion_confirmation(
-    runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    backend: LocalKeyring,
+    monkeypatch: pytest.MonkeyPatch,
+    audit_log: Path,
 ) -> None:
     """Simulating vault set & rm confirmation from terminal."""
     # Note: in prev tests, CliRunner does not create a terminal
@@ -224,6 +264,14 @@ def test_hidden_prompt_and_deletion_confirmation(
     result = runner.invoke(app, ["vault", "rm", "TOKEN"], input="y\n")
     assert result.exit_code == 0, result.output
     assert backend.get_password(SERVICE_NAME, "TOKEN") is None
+    records = [json.loads(line) for line in audit_log.read_text().splitlines()]
+    assert [record["outcome"] for record in records] == [
+        "success",
+        "cancelled",
+        "success",
+    ]
+    assert all(record["exit_code"] == 0 for record in records)
+    assert "confirmed token" not in audit_log.read_text()
 
 
 def test_hidden_input_failure_stops_without_echo_fallback(
@@ -254,17 +302,39 @@ def test_unavailable_backends_are_rejected(
 
 
 def test_backend_exceptions_cannot_print_secret_values(
-    runner: CliRunner, backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
+    runner: CliRunner,
+    backend: LocalKeyring,
+    monkeypatch: pytest.MonkeyPatch,
+    audit_log: Path,
 ) -> None:
     """Credentials must not be printed (output = stderr + stdout)."""
-    monkeypatch.setattr(backend, 
-        "set_password", Mock(side_effect=RuntimeError("private credential"))
+    monkeypatch.setattr(
+        backend, "set_password", Mock(side_effect=RuntimeError("private credential"))
     )
 
-    result = runner.invoke(app, 
-        ["vault", "set", "TOKEN", "--stdin"], 
-        input="private credential"
+    result = runner.invoke(
+        app, ["vault", "set", "TOKEN", "--stdin"], input="private credential"
     )
     assert result.exit_code == 2, result.output
     assert "RuntimeError" in result.output
     assert "private credential" not in result.output
+    assert "private credential" not in audit_log.read_text()
+    record = json.loads(audit_log.read_text())
+    assert record["operation"] == "set"
+    assert record["outcome"] == "failure"
+    assert record["exit_code"] == 2
+
+
+def test_logging_failure_does_not_change_secret_output(
+    runner: CliRunner, backend: LocalKeyring, audit_log: Path
+) -> None:
+    """An unwritable log warns on stderr and preserves piped secret delivery."""
+    audit_log.parent.parent.write_text("not a directory")
+    backend.set_password(SERVICE_NAME, "TOKEN", "private value")
+
+    result = runner.invoke(app, ["vault", "get", "TOKEN"])
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout == "private value"
+    assert "Could not update Vault audit log" in result.stderr
+    assert "private value" not in result.stderr
