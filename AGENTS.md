@@ -6,10 +6,7 @@ content records. Run commands from the repository root with `uv run at ...`.
 Run `uv sync` if dependencies are missing. Quarto is installed separately.
 
 Read [the CMS CLI guide](docs/cms-cli.md) for the current workflow and
-[README.md](README.md) for setup. Older Watchtower/Watchtower2, `wt`/`wt2`,
-Markdown-record and Flet plans under `docs/` are historical; do not use them as
-instructions for the current Atlas CMS. Each CLI command accepts `--help`.
-
+[README.md](README.md) for setup. Each CLI command accepts `--help`. Remember to update this file (AGENTS.md) and the README.md each time the underlying code changes.
 ## Source ownership
 
 | Path | What belongs here and how to edit it |
