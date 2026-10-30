@@ -153,8 +153,15 @@ Résumé sections are `employment`, `skills`, `education` and `projects`. Keep
 section/position fields in backend records and authored text in content YAML.
 Résumé content feeds both the web page and `frontend/assets/resume.pdf`.
 `make preview` and `make build` regenerate the PDF before rendering the site.
-`frontend/_cms/resume-pdf.qmd` controls its layout/contact links. Sync alone does
-not render the PDF. Preserve existing facts and links when revising résumé prose.
+`frontend/_cms/resume-pdf.qmd` and its `resume-pdf/` support directory control the
+PDF layout/contact links. The template's `resume-pdf-main-roles` setting keeps
+the first four employment entries on page one and moves the rest to Early
+Employment after education; the web page retains the CMS section order. PDF
+subtitles use generated `.resume-subtitle` divs so the layout filter can align
+dates without treating body prose as a subtitle. The isolated render stages the
+support directory and `frontend/assets/fonts/`; body fonts and licenses are
+bundled under `resume-pdf/fonts/`. Sync alone does not render the PDF. Preserve
+existing facts and links when revising résumé prose.
 
 Use `cms notes ID --file PATH` and `cms todos ID --add "Task"` for private
 post/collection planning. To-dos support `--index N --done`, `--text`, `--position`

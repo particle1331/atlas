@@ -678,6 +678,8 @@ def test_resume_pdf_projection_shares_authored_content_and_order(store):
     ):
         assert text in pdf and text in web
     assert pdf.index("### First role") < pdf.index("### Engineer")
+    assert "::: {.resume-subtitle}\n\n2026 -- Present\n\n:::" in pdf
+    assert ".resume-subtitle" not in web
     assert "PDF contacts." in pdf
     assert "assets/resume.pdf" not in pdf
     assert "<script" not in pdf
@@ -693,6 +695,15 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
     download = store.path("frontend/assets/resume.pdf")
     download.parent.mkdir(parents=True, exist_ok=True)
     download.write_bytes(b"Previous download")
+    resources = {
+        "_cms/resume-pdf/layout.lua": b"-- Local PDF layout filter",
+        "_cms/resume-pdf/fonts/body.otf": b"Body font",
+        "assets/fonts/name.ttf": b"Name font",
+    }
+    for relative, data in resources.items():
+        path = store.path("frontend/" + relative)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
     monkeypatch.setenv("QUARTO", "custom-quarto")
 
     def which(name):
@@ -710,6 +721,8 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
             source = Path(args[2])
             assert Path(cwd) == source.parent
             assert "_quarto.yml" not in {p.name for p in source.parent.iterdir()}
+            for relative, data in resources.items():
+                assert (source.parent / relative).read_bytes() == data
             pdf = b"%PDF-1.7\n" + source.read_bytes()
             source.with_suffix(".pdf").write_bytes(pdf)
         else:

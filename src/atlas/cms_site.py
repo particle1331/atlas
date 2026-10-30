@@ -500,11 +500,13 @@ def generate(store: Store, preview: bool = False) -> dict:
             )
             meta["title"] = profile["title"]
             sections = []
+            pdf_sections = []
             for section, title in SECTIONS.items():
                 entries = [r for r in resumes if r["section"] == section]
                 if not entries:
                     continue
                 sections.append(f"## {title}")
+                pdf_sections.append(f"## {title}")
                 for entry in entries:
                     heading = (
                         f"**{entry['title']}**"
@@ -512,6 +514,12 @@ def generate(store: Store, preview: bool = False) -> dict:
                         else f"### {entry['title']}"
                     )
                     sections += [heading, entry["subtitle"], entry["body"]]
+                    subtitle = (
+                        "::: {.resume-subtitle}\n\n" + entry["subtitle"] + "\n\n:::"
+                        if entry["subtitle"]
+                        else ""
+                    )
+                    pdf_sections += [heading, subtitle, entry["body"]]
             body = template.replace("{{cms:summary}}", profile["summary"]).replace(
                 "{{cms:entries}}", "\n\n".join(sections)
             )
@@ -524,7 +532,7 @@ def generate(store: Store, preview: bool = False) -> dict:
             )
             pdf_meta["title"] = profile["title"]
             pdf_body = pdf_body.replace("{{cms:summary}}", profile["summary"]).replace(
-                "{{cms:entries}}", "\n\n".join(sections)
+                "{{cms:entries}}", "\n\n".join(pdf_sections)
             )
             # Install complete generated files together through the recoverable
             # writer. Templates, configuration and authored notebooks stay put.

@@ -231,10 +231,18 @@ their publication requirements are met. Use `at cms check` to see blockers.
 
 The landing page and theme remain under `frontend/`. Listing and résumé templates
 live in `frontend/_cms/`; generated listings, posts, collections and résumé pages
-are ignored. `frontend/_cms/resume-pdf.qmd` controls the PDF layout and contact
-links; its title, summary and entries come from the same YAML sources as the web
-page. Preview and build render it with Quarto's bundled Typst engine and replace
-`frontend/assets/resume.pdf` before Quarto copies assets into the site output.
+are ignored. `frontend/_cms/resume-pdf.qmd` and `frontend/_cms/resume-pdf/` control
+the PDF layout and contact links; its title, summary and entries come from the
+same YAML sources as the web page. The A4 PDF uses the Ubuntu name font, bundled
+Latin Modern Sans body fonts, orange bullets and right-aligned dates. Set
+`resume-pdf-main-roles` in the PDF template to choose how many employment entries
+appear before the page break; remaining roles appear under Early Employment
+after education. This grouping only affects the PDF. Its generated subtitles
+use `.resume-subtitle` divs for the layout filter. The isolated render stages
+the PDF support directory and `frontend/assets/fonts/`, so it needs no system
+font installation. Preview and build render it with Quarto's bundled Typst
+engine and replace `frontend/assets/resume.pdf` before Quarto copies assets into
+the site output.
 A failed PDF render stops the command and preserves the previous download.
 No separate LaTeX installation is needed. No build reads the Watchtower checkout.
 

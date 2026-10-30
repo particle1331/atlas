@@ -849,6 +849,10 @@ def render_resume_pdf(store: Store, executable: str):
     ) as directory:
         source = Path(directory) / "resume.qmd"
         shutil.copyfile(store.path(".atlas/cms/resume.qmd"), source)
+        for resource in ("_cms/resume-pdf", "assets/fonts"):
+            origin = store.path("frontend/" + resource)
+            if origin.is_dir():
+                shutil.copytree(origin, source.parent / resource)
         status = subprocess.call(
             [executable, "render", str(source), "--to", "typst", "--no-execute"],
             cwd=directory,

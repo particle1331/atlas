@@ -1,11 +1,9 @@
-title: Sr. Machine Learning Engineer · Afni
+title: Sr. Machine Learning Engineer (Tech & Data Lead) · Afni
 subtitle: '*Jan 2025 -- Present*'
 body: |-
-  - Developed backend predictive models and evaluation pipeline for the hiring platform, with a recruiter-facing UI serving model predictions — drove a 6% increase in lifetime value and significant KPI improvements vs BAU hiring in A/B tests
-  - Team lead for multiple AI team initiatives: owner of cloud infra & code repositories, contractor coordination on task delivery, stakeholder meetings, roadmap development, code review, mentoring, and individual contribution. Drafted the team's MLOps framework and roadmap
-  - Collaborated with multiple VPs on feature discussions, roadmap, capabilities, and communications
-  - Direct report to the VP of Software Engineering & AI on day-to-day operations and progress
-  - Built the core backend models for the hiring platform that evaluates 5,000+ monthly candidates across all PH sites — predictive models for customer and employee retention risk, and ranking/recommender-style models for employee performance across program placements
-  - Designed a document analysis pipeline processing up to 30K documents daily with failure tracking, retries, and sufficient throughput; documents are attributed to the organizational hierarchy (employee, coach, manager) supporting RBAC, tagged using NLP and LLM tools, with a monitoring and analytics dashboard that only surfaces results users have access to based on their role
-  - Implemented a RecSys-style solution for determining ideal program placement of candidate hires, by combining LOB description, contractual obligations, headcount requirements, candidate history, and interview/assessment scores
-  - Designed a repeatable feature engineering, preprocessing, training, and monitoring pipeline with a clean deployment interface for ML models served via Azure Functions; trained per-program per-KPI models, overcoming sparsity through extensive EDA and domain understanding
+  - Tech Lead for Sales and Data Lead for Talent Development in Afni innovation pods, shaping charters and technical direction for critical business problems alongside delivery leads, product owners and executive sponsors
+  - Built predictive models and evaluation pipelines for a hiring platform assessing 5,000+ candidates monthly across all PH sites; served predictions through a recruiter-facing UI, driving a 6% increase in lifetime value and KPI gains over BAU hiring in A/B tests
+  - Lead AI initiatives, owning cloud infrastructure, repositories, contractor delivery, code review and mentoring; drafted the team's MLOps framework and roadmap. Partner with VPs on features and capabilities, reporting to the VP of Software Engineering & AI
+  - Designed a document analysis pipeline processing up to 30K documents daily with retries, failure tracking and NLP/LLM tagging; linked documents to employee, coach and manager hierarchies for role-based access to monitoring and analytics
+  - Built customer and employee retention risk models and a program-placement recommender using LOB descriptions, contractual obligations, headcount requirements, candidate history and interview/assessment scores
+  - Built repeatable feature engineering, preprocessing, training and monitoring pipelines for ML models served via Azure Functions; trained per-program, per-KPI models despite sparse data through extensive EDA and domain analysis

@@ -1,21 +1,39 @@
 ---
 format:
   typst:
-    papersize: us-letter
+    papersize: a4
+    mainfont: Latin Modern Sans
     fontsize: 10pt
     margin:
-      x: 0.6in
-      y: 0.55in
+      x: 21mm
+      top: 12mm
+      bottom: 8mm
     toc: false
+    page-numbering: false
     number-sections: false
-    include-in-header:
-      text: |
-        #set par(leading: 0.45em, spacing: 0.55em, justify: false)
-        #set list(spacing: 0.25em)
+    shift-heading-level-by: 0
+    font-paths:
+      - assets/fonts
+      - _cms/resume-pdf/fonts
+    template-partials:
+      - _cms/resume-pdf/typst-show.typ
+filters:
+  - _cms/resume-pdf/layout.lua
+# Keep the recent roles on page one and group the remaining roles at the end.
+resume-pdf-main-roles: 4
 ---
 
-[GitHub](https://github.com/particle1331) · [LinkedIn](https://linkedin.com/in/ron-medina-5a411218a/) · [ron.mdn@gmail.com](mailto:ron.mdn@gmail.com) · [(+63) 962 831 6730](tel:+639628316730)
+```{=typst}
+#resume-header()
+#v(21pt)
+```
 
+::: {style="font-size: 11pt"}
 {{cms:summary}}
+:::
+
+```{=typst}
+#v(13pt)
+```
 
 {{cms:entries}}
