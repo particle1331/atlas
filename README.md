@@ -45,10 +45,9 @@ uv run at cms post ls
 uv run at cms post show post/understanding-attention
 uv run at cms post edit post/understanding-attention  # Prompt for listing fields
 uv run at cms post edit post/understanding-attention --description "How attention works"
-uv run at cms post toc post/understanding-attention --depth 3
-uv run at cms post toc post/understanding-attention --disabled
 
-# Edit cells with the notebook commands below (add/edit/insert/figure/run).
+# Inspect headings and edit cells with the notebook commands below.
+uv run at notebook outline post/understanding-attention
 uv run at notebook cat post/understanding-attention --index 0
 
 uv run at cms post edit post/understanding-attention --thumbnail /path/to/image.png
@@ -74,11 +73,17 @@ the input file afterward.
 
 ### Notebook tools
 
-Notebook navigation and cell operations are separate from CMS record editing:
+Notebook navigation and cell operations are separate from CMS record editing.
+`outline` reads headings from the Markdown cells inside a post's source `.ipynb`.
+It includes headings inside lists and blockquotes and skips code cells, code
+blocks, HTML blocks and comments. Website TOC visibility and depth are configured
+globally under `format.html` in `frontend/_quarto.yml` with `toc: true` and
+`toc-depth: 3`.
 
 ```sh
 uv run at notebook map
 uv run at notebook find "attention weights"
+uv run at notebook outline post/understanding-attention
 uv run at notebook count post/understanding-attention
 uv run at notebook cat post/understanding-attention --index 0:4 --context 1
 uv run at notebook cat post/understanding-attention --with-revision
@@ -99,12 +104,18 @@ uv run at notebook diff post/understanding-attention
 uv run at notebook kernels
 ```
 
-Cell indices are zero-based. `cat` prints cell source without notebook JSON and
-filters by index/range, tag, or Quarto label. Long edits open `$VISUAL`/`$EDITOR`,
-accept `--file`, or read stdin. Cell edits preserve outputs and metadata; explicitly
-run code to refresh saved outputs. `run` is the only notebook command that
-executes code, and site renders keep execution disabled. See the
-[Notebook tools](#notebook-tools) section for command options.
+`outline` prints JSON with the post `id`, notebook `revision`, and a `headings`
+list. Each heading has `text`, `level` (1–6), a zero-based `cell_index`, and a
+one-based `line` within that cell. Use `cell_index` with `cat --index` or
+`edit-cell --index`. Re-run the outline after inserting or removing cells.
+Its `revision` token can be passed to notebook mutations as `--expected-revision`.
+
+`cat` prints cell source without notebook JSON and filters by index/range, tag,
+or Quarto label. Long edits open `$VISUAL`/`$EDITOR`, accept `--file`, or read
+stdin. Cell edits preserve outputs and metadata; explicitly run code to refresh
+saved outputs. `run` is the only notebook command that executes code, and site
+renders keep execution disabled. Use `uv run at notebook <command> --help` for
+command options.
 
 `figure <notebook> <image-path>` copies the image into
 `content/images/post/<post-id>-<uuid>.<ext>` and inserts a Markdown figure cell.
@@ -207,8 +218,9 @@ uv run at cms sync            # Regenerate published copies without rendering
 ```
 
 Both targets first sync source notebooks with title, description, dates, categories
-and TOC metadata into `frontend/posts/*.ipynb`. Collection contents and post links
-are generated from ordered IDs; the résumé is generated from its YAML entries.
+and publication metadata into `frontend/posts/*.ipynb`. Quarto applies the global
+TOC settings when rendering. Collection contents and post links are generated
+from ordered IDs; the résumé is generated from its YAML entries.
 These projections are gitignored. Private notes, to-dos and revision data stay out
 of the frontend. Builds never write back to or execute source notebooks.
 
@@ -233,9 +245,8 @@ render the PDF; restart `make preview` to refresh the download as well.
 See [Posts](#posts), [Collections](#collections) and
 [Writing, notes and storage](#writing-notes-and-storage) for publication,
 ordering, concurrency and the complete authoring workflow. On a new workspace, run
-`uv run at cms init` once. It also migrates the former mixed `content/` layout,
-preserving IDs, text, dates, notebook bytes and collection membership. Repeated
-initialization after migration is a no-op.
+`uv run at cms init` once to import the frontend scaffold. Repeated initialization
+of the same workspace is a no-op.
 Use `at cms --json post ls` for JSON lists and `--expected-revision HASH` on edits
 to reject stale writes. `at cms --root /path/to/workspace ...` selects another
 workspace explicitly.

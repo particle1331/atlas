@@ -29,59 +29,11 @@ from atlas.cms_store import (
 
 
 def imported_body(body: str) -> str:
-    """Discard the scaffold's legacy navigation paragraph."""
+    """Discard the scaffold's generated post-navigation paragraph."""
     parts = body.rsplit("\n\n", 1)
     if len(parts) == 2 and parts[1].startswith("[←") and "[All posts](" in parts[1]:
         return parts[0].rstrip()
     return body
-
-
-def migrate_content_records(store: Store) -> dict:
-    """Split the previous mixed content/ records without changing authored values."""
-    profile_path = store.path("content/resume.yaml")
-    profile = decode(profile_path.read_bytes())
-    if (
-        set(profile) != {"schema", "title", "summary"}
-        or type(profile["schema"]) is not int
-        or profile["schema"] != 1
-    ):
-        raise ValueError(
-            "Content exists without backend records; preserve it for repair."
-        )
-    if (
-        not isinstance(profile["title"], str)
-        or not profile["title"].strip()
-        or not isinstance(profile["summary"], str)
-    ):
-        raise ValueError("Résumé title and summary must be text.")
-    changes = {
-        profile_path: encode({key: profile[key] for key in ("title", "summary")})
-    }
-    migrated = {"post": 0, "collection": 0, "resume": 0}
-    for kind, directory in (
-        ("post", "posts"),
-        ("collection", "collections"),
-        ("resume", "resume"),
-    ):
-        for path in sorted(store.path(f"content/{directory}").glob("*.yaml")):
-            record = decode(path.read_bytes())
-            identity = f"{kind}/{path.stem}"
-            if record.get("id") != identity:
-                raise ValueError(
-                    f"Record identity does not match {path}; nothing has been saved."
-                )
-            if kind in CONTENT_FIELDS:
-                source_path, source_raw = store.prepare_content(record)
-                changes[source_path] = source_raw
-            else:
-                changes[path] = None
-            store.validate(record)
-            changes[store.record_path(identity)] = store.record_bytes(record)
-            migrated[kind] += 1
-    changes[store.path("backend/cms.yaml")] = encode({"schema": 2})
-    store.commit(changes)
-    store.require_initialized()
-    return {"initialized": True, "changed": True, "migrated": migrated}
 
 
 def initialize(store: Store, empty: bool = False) -> dict:
@@ -99,7 +51,9 @@ def initialize(store: Store, empty: bool = False) -> dict:
                 "Backend records exist without backend/cms.yaml; preserve them for repair."
             )
         if store.path("content/resume.yaml").exists():
-            return migrate_content_records(store)
+            raise ValueError(
+                "A résumé profile exists without CMS records; convert it before initialization."
+            )
         if any(
             path
             for directory in ("posts", "collections", "resume")
@@ -143,8 +97,6 @@ def initialize(store: Store, empty: bool = False) -> dict:
                         source_path=source,
                         code_path=None,
                         related_post_ids=[],
-                        toc=bool(meta.get("toc", True)),
-                        toc_depth=meta.get("toc-depth", 3),
                         source_digest=digest(raw),
                     )
                     if store.path(source).exists():
@@ -264,7 +216,7 @@ def initialize(store: Store, empty: bool = False) -> dict:
             template = document(meta, header + "\n\n{{cms:entries}}" + footer)
         else:
             template = document(
-                {"title": "Résumé", "toc": True}, "{{cms:summary}}\n\n{{cms:entries}}"
+                {"title": "Résumé"}, "{{cms:summary}}\n\n{{cms:entries}}"
             )
         layout = store.path("frontend/_cms/resume.qmd")
         if layout.exists():
@@ -280,7 +232,7 @@ def initialize(store: Store, empty: bool = False) -> dict:
                 )
             changes[target] = store.path(f"frontend/{page}.qmd").read_bytes()
         changes[store.path("content/resume.yaml")] = encode(profile)
-        changes[marker] = encode({"schema": 2})
+        changes[marker] = encode({"schema": 3})
         store.commit(changes)
         return {"initialized": True, "changed": True, "imported": imported}
 
@@ -292,10 +244,9 @@ def public_meta(record: dict) -> dict:
         "date": record["created_at"],
         "date-modified": record["updated_at"],
         "draft": record["status"] == "draft",
-        "toc": record.get("toc", True),
     }
     if "tags" in record:
-        meta.update(categories=record["tags"], **{"toc-depth": record["toc_depth"]})
+        meta.update(categories=record["tags"])
     image = record.get("thumbnail_path", record.get("cover_path"))
     if image:
         meta["image"] = "../assets/cms/" + Path(image).name

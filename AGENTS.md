@@ -33,6 +33,7 @@ notebook-relative sidecars into the frontend.
 ```sh
 uv run at notebook map
 uv run at notebook find "attention weights"
+uv run at notebook outline post/attention
 uv run at cms post ls
 uv run at cms --json collection ls
 uv run at cms resume ls --section employment
@@ -51,17 +52,26 @@ uv run at notebook cat post/attention --label fig-attention
 uv run at notebook cat post/attention --tag hide-input
 ```
 
-Use `map`/`find`/`cat` before reading raw notebook JSON or writing ad hoc notebook
-scripts. `find` searches cell source, excluding outputs. Indices are zero-based;
-`cat --index` accepts Python slices (such as `0:4` when there are at least four
-cells) and negative indices. Source is truncated at
+`notebook outline post/attention` reads Markdown cells inside the source `.ipynb`
+and prints JSON with `id`, notebook `revision` and `headings`. Each heading has
+`text`, `level` (1–6), zero-based `cell_index` and one-based `line` within its cell.
+Use `cell_index` with `cat --index` or `edit-cell --index`; refresh the outline
+after inserting or removing cells. It includes headings inside lists and
+blockquotes and skips code cells, code blocks, HTML blocks and comments.
+Site TOC settings are global: `toc: true` and `toc-depth: 3` under `format.html`
+in `frontend/_quarto.yml`.
+
+Use `map`/`find`/`outline`/`cat` before reading raw notebook JSON or writing ad hoc
+notebook scripts. `find` searches cell source, excluding outputs. Cell indices
+are zero-based; `cat --index` accepts Python slices (such as `0:4` when there
+are at least four cells) and negative indices. Source is truncated at
 4096 characters per cell by default; use `--offset`/`--limit` to page or
 `--limit 0` for the full source. Add `--with-outputs` only when outputs matter.
 
 For an isolated workspace, put `--root /path/to/workspace` immediately after
 `cms` or `notebook`. The default root is this checkout regardless of the shell's
 current directory. Use `cms init` once for a new workspace (`--empty` skips
-sample import); ordinary authoring in this initialized repo needs no migration.
+sample import).
 
 ## Edit notebook cells
 
@@ -98,9 +108,9 @@ after inserting or removing cells. `remove-cell --tag` removes every matching
 cell, so inspect matches first.
 
 Use the standalone notebook tools for every cell operation; keep source
-notebooks as ordinary cells. The CMS supplies document metadata and TOC settings
-during sync. Do not add required front matter, planning cells or generated
-navigation/contents lists.
+notebooks as ordinary cells. Quarto supplies the global TOC settings; the CMS
+adds post document metadata during sync. Do not add required front matter,
+planning cells or generated navigation/contents lists.
 
 ## Manage posts, collections and résumé entries
 
@@ -108,7 +118,6 @@ navigation/contents lists.
 uv run at cms post new "Attention" --description "How attention works" --tags "python,transformers"
 uv run at cms post edit post/attention --title "Understanding Attention" --description "An introduction to attention"
 uv run at cms post edit post/attention --related post/another-post
-uv run at cms post toc post/attention --depth 3
 uv run at cms post rm post/attention --yes
 
 uv run at cms collection new "Transformers" --description "A reading sequence"
@@ -179,8 +188,8 @@ preserves its caption.
 
 When saving changes based on an earlier read, pass `--expected-revision`:
 CMS mutations use the record revision returned by `show`; notebook mutations
-use the `notebook:<hash>` token from `cat --with-revision`. These tokens are
-different. Refresh the relevant token after each mutation.
+use the `notebook:<hash>` token from `cat --with-revision` or `outline`. These
+tokens are different. Refresh the relevant token after each mutation.
 
 On a stale-write conflict, re-read the current record/cells and reconcile the
 edit. Failed editor input is preserved in `.atlas/cms/edits/`; keep it available.

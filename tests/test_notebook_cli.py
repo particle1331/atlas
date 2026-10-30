@@ -14,14 +14,14 @@ from atlas import cms_notebooks as nb
 from atlas.cli import app
 from atlas.cms_store import Conflict, Store, digest, encode
 from atlas.notebook_cli import source_input
-from atlas.notebook_ops import figure
+from atlas.notebook_ops import figure, outline
 
 
 @pytest.fixture
 def store(tmp_path):
     (tmp_path / "content").mkdir()
     (tmp_path / "backend").mkdir()
-    (tmp_path / "backend/cms.yaml").write_bytes(encode({"schema": 2}))
+    (tmp_path / "backend/cms.yaml").write_bytes(encode({"schema": 3}))
     (tmp_path / "content/resume.yaml").write_bytes(
         encode({"title": "Résumé", "summary": ""})
     )
@@ -51,6 +51,80 @@ def invoke(store, *args, code=0):
 
 def notebook(store):
     return nb.load(store.path("content/posts/example.ipynb").read_bytes())
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        (
+            "# Introduction\n\n### Results ###",
+            [(1, 1, "Introduction"), (3, 3, "Results")],
+        ),
+        ("<!--\n# Hidden\n-->\n\n## Visible", [(5, 2, "Visible")]),
+        ("<pre>\n# Hidden\n</pre>\n\n## Visible", [(5, 2, "Visible")]),
+        (
+            "```md\n# Hidden\n```\n\n~~~text\n## Also hidden\n~~~\n\n# Visible",
+            [(9, 1, "Visible")],
+        ),
+        ("    # Python comment\n\n## Visible", [(3, 2, "Visible")]),
+        ("***\n---", []),
+        (
+            "> ## Quoted\n\n- ### Listed",
+            [(1, 2, "Quoted"), (3, 3, "Listed")],
+        ),
+        (
+            "First line\nSecond line\n---\n\nChapter\n====",
+            [(1, 2, "First line Second line"), (5, 1, "Chapter")],
+        ),
+        ("Ordinary prose with # inline markers", []),
+    ],
+    ids=[
+        "atx",
+        "comment",
+        "html",
+        "fences",
+        "indented-code",
+        "rules",
+        "containers",
+        "setext",
+        "no-headings",
+    ],
+)
+def test_outline_follows_markdown_blocks(source, expected):
+    assert outline(nb.notebook(source)) == [
+        {"cell_index": 0, "line": line, "level": level, "text": text}
+        for line, level, text in expected
+    ]
+
+
+def test_outline_cli_reports_cell_indices_and_revision_without_writing(store):
+    invoke(store, "edit-cell", "example", "--index", "0", "--content", "> ## Quoted")
+    invoke(
+        store,
+        "edit-cell",
+        "example",
+        "--index",
+        "1",
+        "--content",
+        "# Not a Markdown heading",
+    )
+    invoke(store, "append-cell", "example", "--content", "## Results")
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+
+    result = json.loads(invoke(store, "outline", "Example").stdout)
+
+    assert result == {
+        "id": "post/example",
+        "revision": "notebook:" + digest(before),
+        "headings": [
+            {"cell_index": 0, "line": 1, "level": 2, "text": "Quoted"},
+            {"cell_index": 2, "line": 1, "level": 2, "text": "Results"},
+        ],
+    }
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
 
 
 def test_cell_mutations_finish_and_preserve_other_content(store):

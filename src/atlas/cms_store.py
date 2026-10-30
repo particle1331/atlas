@@ -42,8 +42,6 @@ FIELDS = {
         "source_path",
         "code_path",
         "related_post_ids",
-        "toc",
-        "toc_depth",
         "source_digest",
     },
     "collection": COMMON
@@ -335,10 +333,8 @@ class Store:
     def require_initialized(self):
         marker = self.path("backend/cms.yaml")
         if not marker.exists():
-            raise ValueError(
-                "Run 'at cms init' to initialize or migrate this workspace."
-            )
-        if decode(marker.read_bytes()) != {"schema": 2}:
+            raise ValueError("Run 'at cms init' to initialize this workspace.")
+        if decode(marker.read_bytes()) != {"schema": 3}:
             raise ValueError("Unsupported or malformed CMS schema.")
         path = self.path("content/resume.yaml")
         if not path.exists():
@@ -479,12 +475,6 @@ class Store:
                 raise ValueError("Tags must be normalized.")
             if record["code_path"] is not None:
                 self.path(record["code_path"])
-            if (
-                type(record["toc"]) is not bool
-                or type(record["toc_depth"]) is not int
-                or not 1 <= record["toc_depth"] <= 6
-            ):
-                raise ValueError("TOC depth must be between 1 and 6.")
         else:
             if not isinstance(record["long_description"], str):
                 raise ValueError("Collection introduction must be text.")
@@ -613,8 +603,6 @@ class Store:
                         source_path=source_path,
                         code_path=None,
                         related_post_ids=[],
-                        toc=True,
-                        toc_depth=3,
                         source_digest=digest(raw),
                     )
                     changes[self.path(source_path)] = raw

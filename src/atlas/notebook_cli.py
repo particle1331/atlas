@@ -112,6 +112,24 @@ def notebook_count(ctx: typer.Context, name: str):
     )
 
 
+@app.command("outline")
+@guard
+def notebook_outline(ctx: typer.Context, name: str):
+    """List Markdown headings with their zero-based cell indices and levels."""
+    from atlas.notebook_ops import load, outline
+
+    store = ctx.obj["store"]
+    with store.lock():
+        item = load(store, name)
+    emit(
+        {
+            "id": item["record"]["id"],
+            "revision": item["token"],
+            "headings": outline(item["notebook"]),
+        }
+    )
+
+
 @app.command("cat")
 @guard
 def notebook_cat(

@@ -135,99 +135,6 @@ def test_initialization_imports_yaml_and_bare_notebooks_once(workspace):
     assert run(workspace, "init")["changed"] is False
 
 
-def legacy_layout(store):
-    """Recreate the previous stored format from the same logical authoring data."""
-    records = [
-        item["record"]
-        for kind in ("post", "collection", "resume")
-        for item in store.ls(kind)
-    ]
-    profile_path = store.path("content/resume.yaml")
-    profile = decode(profile_path.read_bytes())
-    expected = {}
-    for record in records:
-        old = record.copy()
-        if not record["id"].startswith("post/"):
-            old.pop("source_path")
-            old.pop("source_digest")
-        kind, key = record["id"].split("/")
-        directory = {"post": "posts", "collection": "collections", "resume": "resume"}[
-            kind
-        ]
-        store.path(f"content/{directory}/{key}.yaml").write_bytes(encode(old))
-        store.record_path(record["id"]).unlink()
-        expected[record["id"]] = old
-    profile_path.write_bytes(encode({"schema": 1, **profile}))
-    store.path("backend/cms.yaml").unlink()
-    return expected, profile
-
-
-def test_migration_separates_editable_fields_and_preserves_existing_values(store):
-    expected, profile = legacy_layout(store)
-    notebooks = {
-        path: path.read_bytes() for path in store.path("content/posts").glob("*.ipynb")
-    }
-    result = initialize(store)
-    assert result["migrated"] == {"post": 1, "collection": 1, "resume": 3}
-    for identity, old in expected.items():
-        current = store.get(identity)["record"]
-        assert {key: current[key] for key in old} == old
-    assert decode(store.path("content/resume.yaml").read_bytes()) == profile
-    assert not list(store.path("content/posts").glob("*.yaml"))
-    assert decode(store.path("content/collections/guide.yaml").read_bytes()) == {
-        "title": "Guide",
-        "short_description": "An ordered guide",
-        "long_description": "Introduction.",
-    }
-    assert "long_description" not in decode(
-        store.record_path("collection/guide").read_bytes()
-    )
-    assert "body" not in decode(
-        store.record_path("resume/employment-engineer-example").read_bytes()
-    )
-    assert all(path.read_bytes() == raw for path, raw in notebooks.items())
-    assert initialize(store)["changed"] is False
-
-
-def test_failed_migration_leaves_the_old_files_intact(store):
-    legacy_layout(store)
-    path = store.path("content/resume/employment-engineer-example.yaml")
-    record = decode(path.read_bytes())
-    record["section"] = "unknown"
-    path.write_bytes(encode(record))
-    originals = {
-        path: path.read_bytes()
-        for path in store.path("content").rglob("*")
-        if path.is_file()
-    }
-    with pytest.raises(ValueError):
-        initialize(store)
-    assert all(path.read_bytes() == raw for path, raw in originals.items())
-    assert not store.path("backend/cms.yaml").exists()
-    assert not list(store.path("backend/posts").glob("*.yaml"))
-
-
-def test_interrupted_migration_completes_on_the_next_command(store, monkeypatch):
-    expected, _ = legacy_layout(store)
-    install = store._install
-
-    def interrupt(path, raw):
-        if path == store.record_path("collection/guide"):
-            raise OSError("Interrupted migration")
-        install(path, raw)
-
-    monkeypatch.setattr(store, "_install", interrupt)
-    with pytest.raises(OSError):
-        initialize(store)
-    assert store.path(".atlas/cms/pending.json").exists()
-    monkeypatch.setattr(store, "_install", install)
-    initialize(store)
-    for identity, old in expected.items():
-        current = store.get(identity)["record"]
-        assert {key: current[key] for key in old} == old
-    assert not store.path(".atlas/cms/pending.json").exists()
-
-
 def test_direct_collection_and_resume_edits_are_observed_without_rewriting_content(
     store,
 ):
@@ -326,7 +233,6 @@ def test_sync_injects_metadata_without_mutating_source_and_is_deterministic(stor
         "-",
         input="## First heading\n\nMy actual prose.",
     )
-    run(store, "post", "toc", "post/attention", "--depth", "4")
     canonical = store.path("content/posts/attention.ipynb")
     value = nb.load(canonical.read_bytes())
     code = nb.cell("raise RuntimeError('must never execute')", "code")
@@ -347,7 +253,8 @@ def test_sync_injects_metadata_without_mutating_source_and_is_deterministic(stor
     assert metadata["title"] == "Attention"
     assert metadata["categories"] == ["python", "Python"]
     assert metadata["description"] == "An explanation"
-    assert metadata["toc-depth"] == 4
+    assert "toc" not in metadata
+    assert "toc-depth" not in metadata
     assert metadata["draft"] is True
     assert "date" in metadata and "date-modified" in metadata
     assert generated["cells"][1:] == value["cells"]

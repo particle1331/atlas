@@ -13,6 +13,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import yaml
+from markdown_it import MarkdownIt
 
 from atlas import cms_notebooks as nb
 from atlas.cms_store import Conflict, NotFound, Store, digest
@@ -69,6 +70,28 @@ def load(store: Store, name: str, expected_revision: str | None = None) -> dict:
         "token": token,
         "notebook": nb.load(raw),
     }
+
+
+def outline(notebook: dict) -> list[dict]:
+    """Return Markdown headings with their cell and line locations."""
+    parser = MarkdownIt("commonmark")
+    headings = []
+    for cell_index, cell in enumerate(notebook["cells"]):
+        if cell["cell_type"] != "markdown":
+            continue
+        tokens = parser.parse(nb.source(cell))
+        for token_index, token in enumerate(tokens):
+            if token.type != "heading_open":
+                continue
+            headings.append(
+                {
+                    "cell_index": cell_index,
+                    "line": token.map[0] + 1,
+                    "level": int(token.tag[1:]),
+                    "text": " ".join(tokens[token_index + 1].content.splitlines()),
+                }
+            )
+    return headings
 
 
 def save(

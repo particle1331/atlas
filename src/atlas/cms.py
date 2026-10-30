@@ -176,7 +176,7 @@ def init(
         typer.Option(help="Start empty instead of importing frontend sample content."),
     ] = False,
 ):
-    """Initialize backend records or migrate the former mixed content/ layout."""
+    """Initialize backend records and import the frontend scaffold."""
     emit(initialize(store_for(ctx), empty))
 
 
@@ -453,25 +453,6 @@ def notes(
 ):
     """Edit private scratch notes without changing the public modification date."""
     write_field(ctx, identity, "internal_notes", file, expected_revision)
-
-
-@post.command("toc")
-@guard
-def post_toc(
-    ctx: typer.Context,
-    identity: Identity,
-    enabled: Annotated[bool, typer.Option("--enabled/--disabled")] = True,
-    depth: Annotated[int, typer.Option(min=1, max=6)] = 3,
-    expected_revision: Revision = None,
-):
-    """Set generated TOC options; headings in the body populate it automatically."""
-    if not identity.startswith("post/"):
-        raise ValueError("Expected a post/ ID.")
-    emit(
-        store_for(ctx).update(
-            identity, {"toc": enabled, "toc_depth": depth}, expected_revision
-        )
-    )
 
 
 def status(ctx, identity, kind, value, expected):

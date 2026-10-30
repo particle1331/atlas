@@ -16,6 +16,4 @@ thumbnail_path: null
 source_path: content/posts/building-and-testing-a-vault-cli.ipynb
 code_path: null
 related_post_ids: []
-toc: false
-toc_depth: 3
 source_digest: 5f584a3672df48017e225721906e05b26686cc98d9f8853faf04be1c87171f0f
