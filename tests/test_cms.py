@@ -729,7 +729,6 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
             assert Path(cwd) == store.root
             assert args[1] == ("preview" if command == "preview" else "render")
             assert args[2] == str(store.path("frontend"))
-            assert "typst" in calls[-2]
             assert download.read_bytes().startswith(b"%PDF-")
             assert ("--profile" in args) == (command == "preview")
             if command == "preview":
@@ -739,7 +738,19 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
     monkeypatch.setattr(cms.subprocess, "call", quarto)
     args = [command] + (["--port", "4300"] if command == "preview" else [])
     invoke(store, *args)
+    assert len(calls) == 2 and "typst" in calls[0]
     first = download.read_bytes()
+    modified = download.stat().st_mtime_ns
+    cache = store.path(".atlas/cms/resume-pdf.cache.yaml").read_bytes()
+    records = {
+        path: path.read_bytes() for path in store.path("backend/resume").glob("*.yaml")
+    }
+    invoke(store, *args)
+    assert len(calls) == 3 and "typst" not in calls[-1]
+    assert download.read_bytes() == first
+    assert download.stat().st_mtime_ns == modified
+    assert store.path(".atlas/cms/resume-pdf.cache.yaml").read_bytes() == cache
+    assert all(path.read_bytes() == raw for path, raw in records.items())
     run(store, "resume", "profile", "--summary", "A freshly edited summary.")
     run(
         store,
@@ -751,11 +762,58 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
         input="- A freshly edited accomplishment.",
     )
     invoke(store, *args)
-    assert len(calls) == 4
+    assert len(calls) == 5 and "typst" in calls[-2]
     assert download.read_bytes() != first
     assert b"A freshly edited summary." in download.read_bytes()
     assert b"A freshly edited accomplishment." in download.read_bytes()
     assert not list(store.path(".atlas/cms").glob("resume-pdf-*"))
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["template", "layout", "font", "removed_font", "pdf", "missing_pdf", "cache"],
+)
+def test_resume_pdf_cache_rebuilds_after_input_or_output_changes(
+    store, monkeypatch, change
+):
+    from atlas import cms
+
+    resources = {
+        "frontend/_cms/resume-pdf.qmd": b"---\nformat: typst\n---\n{{cms:entries}}",
+        "frontend/_cms/resume-pdf/layout.lua": b"-- Layout",
+        "frontend/assets/fonts/name.ttf": b"Name font",
+    }
+    for relative, raw in resources.items():
+        path = store.path(relative)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(raw)
+    calls = []
+
+    def quarto(args, cwd):
+        calls.append(args)
+        Path(args[2]).with_suffix(".pdf").write_bytes(b"%PDF-1.7\nRendered resume")
+        return 0
+
+    monkeypatch.setattr(cms.subprocess, "call", quarto)
+    generate(store)
+    cms.render_resume_pdf(store, "/bin/quarto")
+    if change in ("template", "layout", "font"):
+        relative = list(resources)[["template", "layout", "font"].index(change)]
+        path = store.path(relative)
+        path.write_bytes(path.read_bytes() + b"\nChanged")
+    elif change == "removed_font":
+        store.path("frontend/assets/fonts/name.ttf").unlink()
+    elif change == "pdf":
+        store.path("frontend/assets/resume.pdf").write_bytes(b"Changed PDF")
+    elif change == "missing_pdf":
+        store.path("frontend/assets/resume.pdf").unlink()
+    else:
+        store.path(".atlas/cms/resume-pdf.cache.yaml").write_bytes(b"Stale cache")
+    generate(store)
+    cms.render_resume_pdf(store, "/bin/quarto")
+    assert len(calls) == 2
+    cms.render_resume_pdf(store, "/bin/quarto")
+    assert len(calls) == 2
 
 
 @pytest.mark.parametrize("failure", ["exit", "missing", "invalid"])
@@ -767,6 +825,8 @@ def test_failed_resume_pdf_render_preserves_download_and_stops_site(
     download = store.path("frontend/assets/resume.pdf")
     download.parent.mkdir(parents=True, exist_ok=True)
     download.write_bytes(b"Previous download")
+    cache = store.path(".atlas/cms/resume-pdf.cache.yaml")
+    cache.write_bytes(b"Previous cache")
     monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
     calls = []
 
@@ -780,6 +840,7 @@ def test_failed_resume_pdf_render_preserves_download_and_stops_site(
     invoke(store, "build", code=7 if failure == "exit" else 2)
     assert len(calls) == 1
     assert download.read_bytes() == b"Previous download"
+    assert cache.read_bytes() == b"Previous cache"
     assert not list(store.path(".atlas/cms").glob("resume-pdf-*"))
 
 

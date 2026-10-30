@@ -152,7 +152,12 @@ another post; repair the ownership conflict first.
 Résumé sections are `employment`, `skills`, `education` and `projects`. Keep
 section/position fields in backend records and authored text in content YAML.
 Résumé content feeds both the web page and `frontend/assets/resume.pdf`.
-`make preview` and `make build` regenerate the PDF before rendering the site.
+`make preview` and `make build` refresh the PDF before rendering the site only
+when its generated content, layout/support files, fonts or renderer change.
+Unchanged inputs reuse the PDF without rewriting it. Input/output hashes live
+in the ignored `.atlas/cms/resume-pdf.cache.yaml`; a missing cache or a missing
+or changed PDF also triggers rendering. Keep résumé sync enabled in both modes
+so actual YAML edits still appear on the web page and in the PDF.
 `frontend/_cms/resume-pdf.qmd` and its `resume-pdf/` support directory control the
 PDF layout/contact links. The template's `resume-pdf-main-roles` setting keeps
 the first four employment entries on page one and moves the rest to Early

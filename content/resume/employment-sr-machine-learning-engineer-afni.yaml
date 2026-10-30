@@ -1,7 +1,7 @@
 title: Sr. Machine Learning Engineer (Tech & Data Lead) · Afni
 subtitle: '*Jan 2025 -- Present*'
 body: |-
-  - Tech Lead for Sales and Data Lead for Talent Development in Afni innovation pods, shaping charters and technical direction for critical business problems alongside delivery leads, product owners and executive sponsors
+  - ① Tech Lead for Sales and ② Data Lead for Talent Development in Afni innovation pods, shaping charters and technical direction for critical business problems alongside delivery leads, product owners and executive sponsors
   - Built predictive models and evaluation pipelines for a hiring platform assessing 5,000+ candidates monthly across all PH sites; served predictions through a recruiter-facing UI, driving a 6% increase in lifetime value and KPI gains over BAU hiring in A/B tests
   - Lead AI initiatives, owning cloud infrastructure, repositories, contractor delivery, code review and mentoring; drafted the team's MLOps framework and roadmap. Partner with VPs on features and capabilities, reporting to the VP of Software Engineering & AI
   - Designed a document analysis pipeline processing up to 30K documents daily with retries, failure tracking and NLP/LLM tagging; linked documents to employee, coach and manager hierarchies for role-based access to monitoring and analytics

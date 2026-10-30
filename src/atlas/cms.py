@@ -843,7 +843,7 @@ def sync(ctx: typer.Context, preview: bool = False):
 
 
 def render_resume_pdf(store: Store, executable: str):
-    """Replace the download only after an isolated PDF render succeeds."""
+    """Reuse an unchanged PDF; replace it only after an isolated render succeeds."""
     with tempfile.TemporaryDirectory(
         prefix="resume-pdf-", dir=store.path(".atlas/cms")
     ) as directory:
@@ -853,6 +853,27 @@ def render_resume_pdf(store: Store, executable: str):
             origin = store.path("frontend/" + resource)
             if origin.is_dir():
                 shutil.copytree(origin, source.parent / resource)
+        renderer = Path(executable)
+        inputs = {
+            "renderer": str(renderer.resolve()),
+            "renderer_mtime": (
+                renderer.stat().st_mtime_ns if renderer.exists() else None
+            ),
+            "files": {
+                path.relative_to(source.parent).as_posix(): digest(path.read_bytes())
+                for path in sorted(source.parent.rglob("*"))
+                if path.is_file()
+            },
+        }
+        input_digest = digest(json.dumps(inputs, sort_keys=True).encode())
+        target = store.path("frontend/assets/resume.pdf")
+        cache = store.path(".atlas/cms/resume-pdf.cache.yaml")
+        if target.exists() and cache.exists():
+            expected = encode(
+                {"inputs": input_digest, "pdf": digest(target.read_bytes())}
+            )
+            if cache.read_bytes() == expected:
+                return
         status = subprocess.call(
             [executable, "render", str(source), "--to", "typst", "--no-execute"],
             cwd=directory,
@@ -863,7 +884,12 @@ def render_resume_pdf(store: Store, executable: str):
         if not pdf.startswith(b"%PDF-"):
             raise ValueError("Quarto did not generate a résumé PDF.")
         with store.lock():
-            store.commit({store.path("frontend/assets/resume.pdf"): pdf})
+            store.commit(
+                {
+                    target: pdf,
+                    cache: encode({"inputs": input_digest, "pdf": digest(pdf)}),
+                }
+            )
 
 
 def run_quarto(ctx, preview, port=4200):

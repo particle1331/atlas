@@ -174,8 +174,8 @@ uv run at cms resume profile --summary "My updated opening summary."
 Sections are `employment`, `skills`, `education` and `projects`. Editable titles,
 subtitles and bodies live in `content/resume/`. Section assignments and zero-based
 order live in `backend/resume/`; the CLI generates the section/page structure.
-`make preview` and `make build` regenerate the downloadable PDF from
-the same saved résumé title, summary and ordered entries before rendering the site.
+`make preview` and `make build` refresh the downloadable PDF when its inputs
+change, using the same saved résumé title, summary and ordered entries as the site.
 
 ### Writing, notes and storage
 
@@ -241,8 +241,11 @@ after education. This grouping only affects the PDF. Its generated subtitles
 use `.resume-subtitle` divs for the layout filter. The isolated render stages
 the PDF support directory and `frontend/assets/fonts/`, so it needs no system
 font installation. Preview and build render it with Quarto's bundled Typst
-engine and replace `frontend/assets/resume.pdf` before Quarto copies assets into
-the site output.
+engine before Quarto copies assets into the site output. Unchanged content,
+PDF layout/support files and fonts reuse `frontend/assets/resume.pdf` without
+rewriting it, avoiding PDF timestamp changes in Git. The ignored
+`.atlas/cms/resume-pdf.cache.yaml` records input and output hashes; a missing
+cache, missing/changed PDF or changed renderer triggers a fresh render.
 A failed PDF render stops the command and preserves the previous download.
 No separate LaTeX installation is needed. No build reads the Watchtower checkout.
 
