@@ -1,13 +1,10 @@
 id: collection/text-classification
 status: draft
 created_at: '2026-10-28T06:43:02.824837+00:00'
-updated_at: '2026-10-28T06:43:02.824837+00:00'
+updated_at: '2026-10-30T20:42:41.281176+00:00'
 internal_notes: ''
 internal_todos: []
 cover_path: content/images/7b3410b232df4471397de51106244800adcb6001ec345ab839ef9ff8b24d712a.png
-post_ids:
-- post/preparing-a-text-dataset
-- post/training-a-first-classifier
-- post/evaluating-predictions-and-confidence
+post_ids: []
 source_path: content/collections/text-classification.yaml
-source_digest: b8f646987cb943b2599e9be8670f371ec746f0b49430a39051fcabf636f227f1
+source_digest: b5568403778ead1eee76847ffde894f613942922963815bc6f1f43e6e676133a

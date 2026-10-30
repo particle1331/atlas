@@ -1,19 +1,23 @@
 id: post/building-and-testing-a-vault-cli
-title: Building and testing a local secrets CLI
+title: 'Building Atlas: the Vault CLI and audit log'
 status: draft
-short_description: Build a macOS Vault with Typer and Keychain, then test its command contract without
-  touching real credentials.
+short_description: Build and test a local secrets CLI, then trace its audit history, retention, and concurrency.
 created_at: '2026-10-28T00:00:00+00:00'
-updated_at: '2026-10-28T06:49:29.456297+00:00'
-internal_notes: ''
-internal_todos: []
+updated_at: '2026-10-30T20:53:32.974127+00:00'
+internal_notes: hello
+internal_todos:
+- text: todo 1
+  done: true
+- text: todo 2
+  done: false
 tags:
 - Atlas
 - Python
 - Security
 - Testing
+- Concurrency
 thumbnail_path: null
 source_path: content/posts/building-and-testing-a-vault-cli.ipynb
 code_path: null
 related_post_ids: []
-source_digest: 5f584a3672df48017e225721906e05b26686cc98d9f8853faf04be1c87171f0f
+source_digest: ec4241fe5d5f7b884c6f86b0ddcd74efdea077e6e907362c775cbaab80d02ac8
