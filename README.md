@@ -48,21 +48,25 @@ uv run at cms post edit post/understanding-attention --description "How attentio
 uv run at cms post toc post/understanding-attention --depth 3
 uv run at cms post toc post/understanding-attention --disabled
 
-# Optional terminal editing: only a cell's source, without notebook JSON.
-uv run at cms post cells post/understanding-attention
-uv run at cms post open post/understanding-attention --cell 0
-uv run at cms post open post/understanding-attention --append --code
-uv run at cms post open post/understanding-attention --cell 0 --file body.md
+# Edit cells with the notebook commands below (add/edit/insert/figure/run).
+uv run at notebook cat post/understanding-attention --index 0
 
 uv run at cms post edit post/understanding-attention --thumbnail /path/to/image.png
 uv run at cms post publish post/understanding-attention
 uv run at cms post draft post/understanding-attention
+uv run at cms post rm post/understanding-attention --yes
 ```
 
 A new post starts as a draft with an empty notebook. `edit` handles title,
 description, tags, thumbnail, code path and related-post IDs. A published post
 needs a description, verified thumbnail and notebook content; publishing makes
-it eligible for a build and does not deploy anything.
+it eligible for a build and does not deploy anything. `rm` deletes the record
+and its notebook, detaches the post from collections and related-post lists, and
+keeps managed images in `content/images/`. It prompts unless `--yes` is used.
+
+Each post owns one notebook source path; sharing a source path is invalid.
+`check` and both sync modes reject duplicate ownership across drafts and
+published posts. `post rm` rejects a conflicting source before changing files.
 
 Thumbnail and cover paths can point anywhere, including your Desktop. The CLI
 copies the original image bytes into `content/images/`; you can move or delete
@@ -99,8 +103,8 @@ Cell indices are zero-based. `cat` prints cell source without notebook JSON and
 filters by index/range, tag, or Quarto label. Long edits open `$VISUAL`/`$EDITOR`,
 accept `--file`, or read stdin. Cell edits preserve outputs and metadata; explicitly
 run code to refresh saved outputs. `run` is the only notebook command that
-executes code, and site renders keep execution disabled. See the [notebook CLI
-guide](docs/cms-cli.md#notebook-navigation-and-cell-tools) for command options.
+executes code, and site renders keep execution disabled. See the
+[Notebook tools](#notebook-tools) section for command options.
 
 `figure <notebook> <image-path>` copies the image into
 `content/images/post/<post-id>-<uuid>.<ext>` and inserts a Markdown figure cell.
@@ -128,13 +132,16 @@ uv run at cms collection add collection/transformers-from-scratch post/understan
 uv run at cms collection move collection/transformers-from-scratch post/understanding-attention --position 0
 uv run at cms collection remove collection/transformers-from-scratch post/understanding-attention
 uv run at cms collection show collection/transformers-from-scratch
+uv run at cms collection rm collection/transformers-from-scratch --yes
 ```
 
 `open` edits the introduction; the ordered contents list is generated from post
 IDs. Positions start at zero; adding without `--position` appends. `publish`
 requires descriptions, a cover and at least one published member; `draft` returns
-the collection to draft.
-Collection changes never publish or delete the member posts.
+the collection to draft. `rm` deletes the collection record and introduction but
+leaves its member posts and managed images untouched. Collection changes never
+publish or delete the member posts; after deleting a member post, `check` may
+report a published collection that no longer has a published member.
 `--cover-caption` adds a Markdown caption beneath the cover on the collection
 page. Edit `cover_caption` in the collection YAML or pass `--cover-caption ""`
 to clear it. Replacing the image preserves the caption.
@@ -223,8 +230,9 @@ During a running preview, run `uv run at cms sync --preview` after source edits
 to refresh the generated copies, or restart `make preview`. Sync alone does not
 render the PDF; restart `make preview` to refresh the download as well.
 
-See [CMS commands and storage](docs/cms-cli.md) for publication, ordering,
-concurrency, and the complete authoring workflow. On a new workspace, run
+See [Posts](#posts), [Collections](#collections) and
+[Writing, notes and storage](#writing-notes-and-storage) for publication,
+ordering, concurrency and the complete authoring workflow. On a new workspace, run
 `uv run at cms init` once. It also migrates the former mixed `content/` layout,
 preserving IDs, text, dates, notebook bytes and collection membership. Repeated
 initialization after migration is a no-op.

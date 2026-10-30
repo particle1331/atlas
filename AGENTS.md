@@ -5,8 +5,9 @@ Atlas is a notebook-first content CMS with a Quarto website. Use the local
 content records. Run commands from the repository root with `uv run at ...`.
 Run `uv sync` if dependencies are missing. Quarto is installed separately.
 
-Read [the CMS CLI guide](docs/cms-cli.md) for the current workflow and
-[README.md](README.md) for setup. Each CLI command accepts `--help`. Remember to update this file (AGENTS.md) and the README.md each time the underlying code changes.
+Read [README.md](README.md#content-cms-and-quarto-frontend) for the current
+authoring workflow and setup. Each CLI command accepts `--help`. Remember to update this file (AGENTS.md) and the README.md each time the underlying code changes.
+
 ## Source ownership
 
 | Path | What belongs here and how to edit it |
@@ -96,11 +97,10 @@ replacement text. Use a unique `--label` or `--tag` when useful; re-read indices
 after inserting or removing cells. `remove-cell --tag` removes every matching
 cell, so inspect matches first.
 
-The older `cms post open --cell N --file PATH` is also supported, but clears
-outputs and execution count when code changes. Prefer the standalone notebook
-tools for consistent cell operations. Keep source notebooks as ordinary cells;
-the CMS supplies document metadata and TOC settings during sync. Do not add
-required front matter, planning cells or generated navigation/contents lists.
+Use the standalone notebook tools for every cell operation; keep source
+notebooks as ordinary cells. The CMS supplies document metadata and TOC settings
+during sync. Do not add required front matter, planning cells or generated
+navigation/contents lists.
 
 ## Manage posts, collections and résumé entries
 
@@ -109,12 +109,14 @@ uv run at cms post new "Attention" --description "How attention works" --tags "p
 uv run at cms post edit post/attention --title "Understanding Attention" --description "An introduction to attention"
 uv run at cms post edit post/attention --related post/another-post
 uv run at cms post toc post/attention --depth 3
+uv run at cms post rm post/attention --yes
 
 uv run at cms collection new "Transformers" --description "A reading sequence"
 uv run at cms collection open collection/transformers --file /path/to/introduction.md
 uv run at cms collection add collection/transformers post/attention
 uv run at cms collection move collection/transformers post/attention --position 0
 uv run at cms collection remove collection/transformers post/attention
+uv run at cms collection rm collection/transformers --yes
 
 uv run at cms resume add "Engineer · Company" --section employment --subtitle "2026 -- Present"
 uv run at cms resume open resume/engineer-company --file /path/to/entry.md
@@ -128,7 +130,15 @@ notebook edits affect the post body. Repeat `--related` to set ordered related
 post IDs; `--clear-related` clears them. Tags are comma-separated; `--tags ""`
 clears them. Collection membership stores post IDs and uses zero-based
 positions. Adding without a position appends; removing membership preserves the
-post. The CMS generates the collection contents table.
+post. The CMS generates the collection contents table. Removing a post deletes
+its record and notebook, detaches it from collection and related-post lists, and
+keeps managed images. Removing a collection deletes its record and introduction
+and leaves member posts untouched. Both prompt unless `--yes` is supplied.
+
+Each post owns one notebook source path. `check` and both sync modes reject
+duplicate ownership across drafts and published posts before sync changes any
+records or generated files. `post rm` refuses to delete a source claimed by
+another post; repair the ownership conflict first.
 
 Résumé sections are `employment`, `skills`, `education` and `projects`. Keep
 section/position fields in backend records and authored text in content YAML.

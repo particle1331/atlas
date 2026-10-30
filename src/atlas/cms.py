@@ -18,7 +18,6 @@ from PIL import Image
 from rich.console import Console
 from rich.table import Table
 
-from atlas import cms_notebooks as nb
 from atlas.cms_site import generate, initialize
 from atlas.cms_store import (
     Conflict,
@@ -26,6 +25,7 @@ from atlas.cms_store import (
     Store,
     decode,
     digest,
+    duplicate_sources,
     encode,
     normalized_tags,
     now,
@@ -455,74 +455,6 @@ def notes(
     write_field(ctx, identity, "internal_notes", file, expected_revision)
 
 
-@post.command("cells")
-@guard
-def post_cells(ctx: typer.Context, identity: Identity):
-    """List cell indices, types and source; outputs stay in the notebook."""
-    store = store_for(ctx)
-    with store.lock():
-        loaded = store.get(identity)
-        raw = store.path(loaded["record"]["source_path"]).read_bytes()
-    value = nb.load(raw)
-    emit(
-        {
-            "revision": loaded["revision"],
-            "source_revision": digest(raw),
-            "cells": [
-                {"index": index, "type": item["cell_type"], "source": nb.source(item)}
-                for index, item in enumerate(value["cells"])
-            ],
-        }
-    )
-
-
-@post.command("open")
-@guard
-def post_open(
-    ctx: typer.Context,
-    identity: Identity,
-    file: File = None,
-    cell: Annotated[
-        int | None,
-        typer.Option(
-            help="Zero-based cell index; required for existing multi-cell notebooks."
-        ),
-    ] = None,
-    append: Annotated[bool, typer.Option(help="Append a new Markdown cell.")] = False,
-    code: Annotated[
-        bool, typer.Option(help="With --append, create a code cell.")
-    ] = False,
-    expected_revision: Revision = None,
-):
-    """Open an editor for a cell's source. Code edits clear its old outputs."""
-    if not identity.startswith("post/"):
-        raise ValueError("Expected a post/ ID.")
-    if (append and cell is not None) or (code and not append):
-        raise ValueError(
-            "Use --code with --append, and choose either --cell or --append."
-        )
-    store = store_for(ctx)
-    with store.lock():
-        loaded = store.get(identity)
-        store.check_revision(loaded, expected_revision)
-        raw = store.path(loaded["record"]["source_path"]).read_bytes()
-    value = nb.load(raw)
-    # Validate selection before launching an editor or consuming stdin.
-    nb.replace(value, "", cell, append, code)
-    selected = None if append else value["cells"][cell if cell is not None else 0]
-    extension = (
-        ".py" if code or (selected and selected["cell_type"] == "code") else ".md"
-    )
-    text = read_text(file, "" if append else nb.source(selected), extension)
-    if text is None:
-        return
-    changed = nb.dump(nb.replace(value, text, cell, append, code))
-    try:
-        emit(store.write_notebook(identity, changed, loaded["revision"], digest(raw)))
-    except (ValueError, OSError, yaml.YAMLError) as error:
-        preserve_edit(store, text, error)
-
-
 @post.command("toc")
 @guard
 def post_toc(
@@ -564,6 +496,89 @@ def post_draft(
 ):
     """Return a post to draft; keep its source and metadata."""
     status(ctx, identity, "post", "draft", expected_revision)
+
+
+@post.command("rm")
+@guard
+def post_rm(
+    ctx: typer.Context,
+    identity: Identity,
+    yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
+    expected_revision: Revision = None,
+):
+    """Remove a post and its notebook; detach it from collections and related posts."""
+    if not identity.startswith("post/"):
+        raise ValueError("Expected a post/ ID.")
+    if not yes:
+        typer.confirm(f"Remove {identity} and its notebook?", abort=True)
+    store = store_for(ctx)
+    with store.lock():
+        loaded = store.get(identity)
+        store.check_revision(loaded, expected_revision)
+        records = {
+            kind: [item["record"] for item in store.ls(kind)]
+            for kind in ("post", "collection")
+        }
+        source_path = loaded["record"]["source_path"]
+        owners = duplicate_sources(records["post"]).get(source_path)
+        if owners:
+            raise ValueError(
+                "A notebook source path can belong to only one post: "
+                f"{source_path} ({', '.join(owners)})."
+            )
+        changes = {
+            store.record_path(identity): None,
+            store.path(source_path): None,
+        }
+        collections = []
+        posts = []
+        for kind, field in (
+            ("collection", "post_ids"),
+            ("post", "related_post_ids"),
+        ):
+            for record in records[kind]:
+                if record["id"] == identity or identity not in record[field]:
+                    continue
+                updated = record | {
+                    field: [value for value in record[field] if value != identity],
+                    "updated_at": now(),
+                }
+                changes[store.record_path(record["id"])] = store.record_bytes(updated)
+                (collections if kind == "collection" else posts).append(record["id"])
+        store.commit(changes)
+    emit(
+        {
+            "removed": identity,
+            "detached_collections": collections,
+            "detached_posts": posts,
+        }
+    )
+
+
+@collection.command("rm")
+@guard
+def collection_rm(
+    ctx: typer.Context,
+    identity: Identity,
+    yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
+    expected_revision: Revision = None,
+):
+    """Remove a collection; member posts and managed images are unchanged."""
+    if not identity.startswith("collection/"):
+        raise ValueError("Expected a collection/ ID.")
+    if not yes:
+        typer.confirm(f"Remove {identity}?", abort=True)
+    store = store_for(ctx)
+    with store.lock():
+        loaded = store.get(identity)
+        store.check_revision(loaded, expected_revision)
+        store.commit(
+            {
+                store.record_path(identity): None,
+                store.path(loaded["record"]["source_path"]): None,
+            }
+        )
+    emit({"removed": identity})
 
 
 @collection.command("publish")
@@ -801,9 +816,27 @@ def check(ctx: typer.Context):
     store = store_for(ctx)
     diagnostics = []
     with store.lock():
-        for kind in ("post", "collection", "resume"):
-            for item in store.ls(kind):
-                record = item["record"]
+        records = {
+            kind: [item["record"] for item in store.ls(kind)]
+            for kind in ("post", "collection", "resume")
+        }
+        shared = duplicate_sources(records["post"])
+        posts_by_id = {record["id"]: record for record in records["post"]}
+        for path, identities in shared.items():
+            for identity in identities:
+                record = posts_by_id[identity]
+                diagnostics.append(
+                    {
+                        "id": identity,
+                        "status": record.get("status"),
+                        "message": (
+                            "A notebook source path can belong to only one post: "
+                            f"{path} ({', '.join(identities)})."
+                        ),
+                    }
+                )
+        for kind, items in records.items():
+            for record in items:
                 try:
                     store.references(record)
                     if kind != "resume":

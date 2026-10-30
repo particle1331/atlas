@@ -179,6 +179,15 @@ def normalized_tags(values: list) -> list[str]:
     return result
 
 
+def duplicate_sources(records: list[dict]) -> dict[str, list[str]]:
+    """Map notebook source paths shared by more than one post to their IDs."""
+    owners: dict[str, list[str]] = {}
+    for record in records:
+        if record["id"].startswith("post/"):
+            owners.setdefault(record["source_path"], []).append(record["id"])
+    return {path: ids for path, ids in owners.items() if len(ids) > 1}
+
+
 class Store:
     def __init__(self, root: Path):
         self.root = root.resolve()
@@ -485,20 +494,9 @@ class Store:
                 raise ValueError("Cover caption must be single-line Markdown text.")
 
     def references(self, record: dict):
-        kind = record["id"].split("/")[0]
         links = record.get("related_post_ids", record.get("post_ids", []))
         for identity in links:
             self.get(identity)
-        if kind == "post":
-            for item in self.ls("post"):
-                other = item["record"]
-                if (
-                    other["id"] != record["id"]
-                    and other["source_path"] == record["source_path"]
-                ):
-                    raise ValueError(
-                        "A notebook source path can belong to only one post."
-                    )
 
     def check_revision(self, loaded: dict, expected: str | None):
         if expected is not None and expected != loaded["revision"]:

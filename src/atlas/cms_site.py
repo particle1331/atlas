@@ -20,6 +20,7 @@ from atlas.cms_store import (
     decode,
     digest,
     document,
+    duplicate_sources,
     encode,
     now,
     slug,
@@ -368,6 +369,13 @@ def generate(store: Store, preview: bool = False) -> dict:
         posts = [item["record"] for item in store.ls("post")]
         collections = [item["record"] for item in store.ls("collection")]
         resumes = [item["record"] for item in store.ls("resume")]
+        shared = duplicate_sources(posts)
+        if shared:
+            path, identities = next(iter(shared.items()))
+            raise ValueError(
+                "A notebook source path can belong to only one post: "
+                f"{path} ({', '.join(identities)})."
+            )
         changes = {}
         notebooks = {}
         for record in posts + collections + resumes:

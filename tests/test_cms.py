@@ -1,5 +1,6 @@
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -79,6 +80,14 @@ def run(store, *args, **kwargs):
     return json.loads(invoke(store, *args, **kwargs).stdout)
 
 
+def notebook_invoke(store, *args, input=None, code=0):
+    result = CliRunner().invoke(
+        app, ["notebook", "--root", str(store.root), *args], input=input
+    )
+    assert result.exit_code == code, (result.output, result.exception)
+    return result
+
+
 def new_post(store, title="Attention"):
     return run(
         store,
@@ -95,11 +104,12 @@ def new_post(store, title="Attention"):
 def publish(store, identity):
     image = store.root / "thumbnail.png"
     Image.new("RGB", (8, 8), "blue").save(image)
-    run(
+    notebook_invoke(
         store,
-        "post",
-        "open",
+        "edit-cell",
         identity,
+        "--index",
+        "0",
         "--file",
         "-",
         input="## Explanation\n\nMeaningful prose.",
@@ -306,11 +316,12 @@ def test_post_creation_and_renaming_keep_identity_and_source(store):
 
 def test_sync_injects_metadata_without_mutating_source_and_is_deterministic(store):
     new_post(store)
-    run(
+    notebook_invoke(
         store,
-        "post",
-        "open",
+        "edit-cell",
         "post/attention",
+        "--index",
+        "0",
         "--file",
         "-",
         input="## First heading\n\nMy actual prose.",
@@ -397,6 +408,114 @@ def test_collections_keep_order_and_never_own_posts(store):
     assert page.index("| 1 | [Renamed second post]") < page.index("| 2 | [One]")
     run(store, "collection", "remove", "collection/course", "post/two")
     assert store.get("post/two")["record"]["title"] == "Renamed second post"
+
+
+def test_removing_a_post_detaches_references_and_preserves_images(store):
+    new_post(store, "One")
+    new_post(store, "Two")
+    run(store, "collection", "new", "Course")
+    run(store, "collection", "add", "collection/course", "post/one")
+    run(store, "post", "edit", "post/two", "--related", "post/one")
+    source = store.get("post/one")["record"]["source_path"]
+    image = store.root / "thumbnail.png"
+    Image.new("RGB", (8, 8), "blue").save(image)
+    run(store, "post", "edit", "post/one", "--thumbnail", str(image))
+    thumbnail = store.get("post/one")["record"]["thumbnail_path"]
+    removed = run(store, "post", "rm", "post/one", "--yes")
+    assert removed == {
+        "removed": "post/one",
+        "detached_collections": ["collection/course"],
+        "detached_posts": ["post/two"],
+    }
+    assert not store.record_path("post/one").exists()
+    assert not store.path(source).exists()
+    assert store.path(thumbnail).exists()
+    assert store.get("collection/course")["record"]["post_ids"] == []
+    assert store.get("post/two")["record"]["related_post_ids"] == []
+
+
+@pytest.mark.parametrize("identity", ["post/one", "post/two"])
+def test_removing_a_post_rejects_shared_notebook_sources(store, identity):
+    new_post(store, "One")
+    publish(store, "post/one")
+    new_post(store, "Two")
+    run(store, "collection", "new", "Course")
+    for member in ("post/one", "post/two"):
+        run(store, "collection", "add", "collection/course", member)
+    run(store, "post", "edit", "post/two", "--related", "post/one")
+    second = decode(store.record_path("post/two").read_bytes())
+    second["source_path"] = store.get("post/one")["record"]["source_path"]
+    store.record_path("post/two").write_bytes(encode(second))
+    before = {
+        path: path.read_bytes()
+        for directory in ("backend", "content")
+        for path in store.path(directory).rglob("*")
+        if path.is_file()
+    }
+
+    result = invoke(store, "post", "rm", identity, "--yes", code=2)
+
+    assert "belong to only one post" in result.stderr
+    assert all(path.read_bytes() == raw for path, raw in before.items())
+
+
+def test_removing_a_collection_preserves_member_posts(store):
+    new_post(store, "One")
+    run(store, "collection", "new", "Course")
+    run(store, "collection", "add", "collection/course", "post/one")
+    source = store.get("collection/course")["record"]["source_path"]
+    assert run(store, "collection", "rm", "collection/course", "--yes") == {
+        "removed": "collection/course"
+    }
+    assert not store.record_path("collection/course").exists()
+    assert not store.path(source).exists()
+    assert store.get("post/one")["record"]["title"] == "One"
+
+
+@pytest.mark.parametrize("published_count", [0, 1, 2])
+@pytest.mark.parametrize("preview", [False, True])
+def test_check_and_sync_report_duplicate_notebook_sources(
+    store, published_count, preview
+):
+    new_post(store, "One")
+    new_post(store, "Two")
+    for identity in ("post/one", "post/two")[:published_count]:
+        publish(store, identity)
+    run(store, "sync", "--preview")
+    projection = store.path("frontend/posts/two.ipynb")
+    previous_projection = projection.read_bytes()
+    second = decode(store.record_path("post/two").read_bytes())
+    second["source_path"] = store.get("post/one")["record"]["source_path"]
+    store.record_path("post/two").write_bytes(encode(second))
+    result = invoke(store, "check", code=1)
+    diagnostics = json.loads(result.stdout)["diagnostics"]
+    assert {
+        item["id"]
+        for item in diagnostics
+        if "belong to only one post" in item["message"]
+    } == {"post/one", "post/two"}
+    before = {path: path.read_bytes() for path in store.path("backend").rglob("*.yaml")}
+
+    result = invoke(store, "sync", *(["--preview"] if preview else []), code=2)
+
+    assert "belong to only one post" in result.stderr
+    assert all(path.read_bytes() == raw for path, raw in before.items())
+    assert projection.read_bytes() == previous_projection
+
+
+def test_check_reads_each_record_a_bounded_number_of_times(store, monkeypatch):
+    for index in range(6):
+        new_post(store, f"Extra {index}")
+    counts = Counter()
+    original = Store.get
+
+    def counting(self, identity):
+        counts[identity] += 1
+        return original(self, identity)
+
+    monkeypatch.setattr(Store, "get", counting)
+    invoke(store, "check", code=1)
+    assert max(counts.values()) <= 2
 
 
 def test_collection_cover_captions_support_markdown_replacement_and_clearing(store):
@@ -510,7 +629,7 @@ def test_publication_and_public_projection_filter_drafts(store):
     assert store.path("frontend/posts/public.ipynb").read_bytes() == previous
 
 
-def test_stale_revision_and_editor_conflict_preserve_entered_text(store, monkeypatch):
+def test_stale_record_revision_is_rejected(store):
     created = new_post(store)
     run(store, "post", "edit", "post/attention", "--title", "New")
     invoke(
@@ -526,22 +645,6 @@ def test_stale_revision_and_editor_conflict_preserve_entered_text(store, monkeyp
     )
     assert store.get("post/attention")["record"]["title"] == "New"
 
-    def edit(*args, **kwargs):
-        store.update("post/attention", {"title": "Another writer"})
-        return "My unsaved prose"
-
-    monkeypatch.setattr("atlas.cms.edit_text", edit)
-    result = invoke(store, "post", "open", "post/attention", code=3)
-    assert "preserved at" in result.stderr
-    assert (
-        next(store.path(".atlas/cms/edits").glob("*.txt")).read_text()
-        == "My unsaved prose"
-    )
-    assert (
-        "My unsaved prose"
-        not in store.path("content/posts/attention.ipynb").read_text()
-    )
-
 
 def test_direct_notebook_write_during_editor_is_rejected(store, monkeypatch):
     new_post(store)
@@ -551,8 +654,8 @@ def test_direct_notebook_write_during_editor_is_rejected(store, monkeypatch):
         path.write_bytes(nb.dump(nb.notebook("External writer")))
         return "My new prose"
 
-    monkeypatch.setattr("atlas.cms.edit_text", edit)
-    invoke(store, "post", "open", "post/attention", code=3)
+    monkeypatch.setattr("atlas.notebook_cli.source_input", edit)
+    notebook_invoke(store, "edit-cell", "post/attention", "--index", "0", code=3)
     assert nb.source(nb.load(path.read_bytes())["cells"][0]) == "External writer"
 
 
@@ -563,8 +666,8 @@ def test_malformed_metadata_during_edit_preserves_authored_text(store, monkeypat
         store.record_path("post/attention").write_text("broken: [yaml")
         return "My unsaved prose"
 
-    monkeypatch.setattr("atlas.cms.edit_text", edit)
-    invoke(store, "post", "open", "post/attention", code=2)
+    monkeypatch.setattr("atlas.notebook_cli.source_input", edit)
+    notebook_invoke(store, "edit-cell", "post/attention", "--index", "0", code=2)
     assert (
         next(store.path(".atlas/cms/edits").glob("*.txt")).read_text()
         == "My unsaved prose"
@@ -588,53 +691,6 @@ def test_failed_resume_creation_preserves_the_entered_body(store):
         next(store.path(".atlas/cms/edits").glob("*.txt")).read_text()
         == "My entered résumé body"
     )
-
-
-def test_code_edit_clears_only_edited_cell_outputs(store):
-    new_post(store)
-    run(
-        store,
-        "post",
-        "open",
-        "post/attention",
-        "--append",
-        "--code",
-        "--file",
-        "-",
-        input="print('new')",
-    )
-    path = store.path("content/posts/attention.ipynb")
-    value = nb.load(path.read_bytes())
-    value["cells"][1].update(
-        execution_count=2,
-        outputs=[{"output_type": "stream", "name": "stdout", "text": "old"}],
-    )
-    path.write_bytes(nb.dump(value))
-    invoke(
-        store,
-        "post",
-        "open",
-        "post/attention",
-        "--file",
-        "-",
-        input="ambiguous",
-        code=2,
-    )
-    run(
-        store,
-        "post",
-        "open",
-        "post/attention",
-        "--cell",
-        "1",
-        "--file",
-        "-",
-        input="print('changed')",
-    )
-    after = nb.load(path.read_bytes())
-    assert after["cells"][0] == value["cells"][0]
-    assert after["cells"][1]["outputs"] == []
-    assert after["cells"][1]["execution_count"] is None
 
 
 def test_resume_entry_edit_order_and_profile(store):
