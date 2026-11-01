@@ -66,6 +66,8 @@ FIELDS = {
     },
 }
 INTERNAL = {"internal_notes", "internal_todos"}
+KINDS = ("post", "collection", "resume")
+SITE_DIRECTORY = {"post": "posts", "collection": "collections"}
 PROFILE = {"title", "summary"}
 CONTENT_FIELDS = {
     "collection": ("title", "short_description", "long_description", "cover_caption"),
@@ -80,6 +82,15 @@ class Conflict(ValueError):
 
 class NotFound(ValueError):
     """A requested record does not exist."""
+
+
+class Ambiguous(ValueError):
+    """A query matched more than one record."""
+
+    def __init__(self, query: str, matches: list[str]):
+        super().__init__(f"Ambiguous ID {query!r}; matches: {', '.join(matches)}.")
+        self.query = query
+        self.matches = matches
 
 
 class StrictLoader(yaml.SafeLoader):
@@ -177,6 +188,12 @@ def normalized_tags(values: list) -> list[str]:
     return result
 
 
+def url_path(identity: str) -> str:
+    """The site path where a synced page for this identity is rendered."""
+    kind, key = identity.split("/")
+    return f"/{SITE_DIRECTORY[kind]}/{key}.html"
+
+
 def duplicate_sources(records: list[dict]) -> dict[str, list[str]]:
     """Map notebook source paths shared by more than one post to their IDs."""
     owners: dict[str, list[str]] = {}
@@ -212,6 +229,42 @@ class Store:
             kind
         ]
         return self.path(f"backend/{directory}/{key}.yaml")
+
+    def record_keys(self, kind: str) -> list[str]:
+        """Keys recorded in backend/, read without validating their YAML."""
+        directory = self.record_path(f"{kind}/placeholder").parent
+        return [path.stem for path in sorted(directory.glob("*.yaml"))]
+
+    def resolve(self, identity: str, kind: str | None = None) -> str:
+        """Resolve an exact ID, unique ID prefix or unique stem to one record ID."""
+        self.require_initialized()
+        try:
+            exact = self.record_path(identity)
+        except ValueError:
+            pass
+        else:
+            if exact.exists():
+                return identity
+        if kind is not None and "/" in identity and identity.split("/", 1)[0] != kind:
+            if identity.split("/", 1)[0] in KINDS:
+                return identity  # the caller's kind check reports the mismatch.
+        query = identity
+        if kind is not None:
+            kinds = [kind]
+        elif "/" in identity:
+            head, query = identity.split("/", 1)
+            if head not in KINDS:
+                raise NotFound(f"Unknown record: {identity}")
+            kinds = [head]
+        else:
+            kinds = list(KINDS)
+        ids = [f"{entry}/{stem}" for entry in kinds for stem in self.record_keys(entry)]
+        matches = [value for value in ids if value.split("/", 1)[1].startswith(query)]
+        if len(matches) == 1:
+            return matches[0]
+        if matches:
+            raise Ambiguous(identity, matches)
+        raise NotFound(f"Unknown record: {identity}")
 
     def record_bytes(self, record: dict) -> bytes:
         """Persist CLI bookkeeping separately from editable source fields."""

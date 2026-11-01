@@ -20,6 +20,7 @@ from rich.table import Table
 
 from atlas.cms_site import generate, initialize
 from atlas.cms_store import (
+    Ambiguous,
     Conflict,
     NotFound,
     Store,
@@ -29,6 +30,7 @@ from atlas.cms_store import (
     encode,
     normalized_tags,
     now,
+    url_path,
 )
 from atlas.config import ROOT_PATH
 
@@ -46,7 +48,8 @@ app.add_typer(post, name="post")
 app.add_typer(collection, name="collection")
 app.add_typer(resume, name="resume")
 Identity = Annotated[
-    str, typer.Argument(help="Exact immutable ID returned by new or ls.")
+    str,
+    typer.Argument(help="Exact ID from new or ls. Resolve a prefix with `at cms id`."),
 ]
 Revision = Annotated[
     str | None,
@@ -81,7 +84,15 @@ def guard(function):
                 if isinstance(error, Conflict)
                 else 4 if isinstance(error, NotFound) else 2
             )
-            typer.echo(json.dumps({"error": str(error)}, ensure_ascii=False), err=True)
+            payload = (
+                {
+                    "error": f"Multiple matches for {error.query!r}.",
+                    "matches": error.matches,
+                }
+                if isinstance(error, Ambiguous)
+                else {"error": str(error)}
+            )
+            typer.echo(json.dumps(payload, ensure_ascii=False), err=True)
             raise typer.Exit(code) from error
 
     return wrapped
@@ -106,6 +117,23 @@ def configure(
 
 def store_for(ctx: typer.Context) -> Store:
     return ctx.obj["store"]
+
+
+@app.command("id")
+@guard
+def id(ctx: typer.Context, query: str):
+    """Resolve an exact ID or unique prefix for piping into commands.
+
+    A bare 'query' matches post/query*, collection/query*, and resume/query*.
+    Use 'post/query' to search only post IDs.
+
+    Existing exact IDs are returned directly. Multiple prefix matches fail and
+    list the matching IDs.
+    """
+    store = store_for(ctx)
+    with store.lock():
+        identity = store.resolve(query)
+    typer.echo(identity)
 
 
 def read_text(
@@ -206,7 +234,10 @@ def show(ctx, identity, kind):
         raise ValueError(f"Expected a {kind}/ ID.")
     store = store_for(ctx)
     with store.lock():
-        emit(store.get(identity))
+        loaded = store.get(identity)
+    if kind in ("post", "collection"):
+        loaded["url_path"] = url_path(identity)
+    emit(loaded)
 
 
 @post.command("show")

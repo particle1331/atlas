@@ -1039,3 +1039,71 @@ def test_terminal_editor_supports_arguments_and_preserves_failed_edit(
     saved = Path(str(error.value).split("preserved at ", 1)[1].rstrip("."))
     assert saved.read_text() == "Unfinished prose"
     saved.unlink()
+
+
+def test_show_reports_the_site_url_path(store):
+    created = new_post(store)
+    assert (
+        run(store, "post", "show", created["record"]["id"])["url_path"]
+        == "/posts/attention.html"
+    )
+    run(store, "collection", "new", "Course", "--description", "A tour")
+    shown = run(store, "collection", "show", "collection/course")
+    assert shown["url_path"] == "/collections/course.html"
+    run(store, "resume", "add", "Role", "--section", "employment", "--file", "-")
+    shown = run(store, "resume", "show", "resume/role")
+    assert "url_path" not in shown
+
+
+def test_cms_id_resolves_a_unique_prefix_and_reports_ambiguity(store):
+    assert invoke(store, "id", "example").output.strip() == "post/example"
+    new_post(store)
+    run(store, "post", "new", "Attitudes", "--description", "More attention")
+    run(store, "collection", "new", "Course", "--description", "Lessons")
+    ambiguous = invoke(store, "id", "att", code=2)
+    assert json.loads(ambiguous.output) == {
+        "error": "Multiple matches for 'att'.",
+        "matches": ["post/attention", "post/attitudes"],
+    }
+    assert invoke(store, "id", "attenti").output.strip() == "post/attention"
+    assert invoke(store, "id", "attitudes").output.strip() == "post/attitudes"
+    assert invoke(store, "id", "post/attitude").output.strip() == "post/attitudes"
+    assert invoke(store, "id", "course").output.strip() == "collection/course"
+    invoke(store, "id", "zzz", code=4)
+    identity = run(store, "post", "show", "post/attention")["record"]["id"]
+    assert identity == "post/attention"
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["invalid-kind/example", "invalid-kind/exam", "/example", "posts/example"],
+)
+def test_cms_id_rejects_unknown_kind_prefixes(store, query):
+    result = invoke(store, "id", query, code=4)
+    assert result.stdout == ""
+    assert json.loads(result.stderr) == {"error": f"Unknown record: {query}"}
+
+
+def test_cms_id_recovers_interrupted_creation_before_matching(store, monkeypatch):
+    new_post(store, "Alpha")
+    install = store._install
+
+    def fail_record(path, raw):
+        if path == store.record_path("post/alpine"):
+            raise OSError("simulated interrupted creation")
+        install(path, raw)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(store, "_install", fail_record)
+        with pytest.raises(OSError, match="simulated interrupted creation"):
+            store.new("post", "Alpine")
+    pending = store.path(".atlas/cms/pending.json")
+    assert pending.exists()
+
+    result = invoke(store, "id", "al", code=2)
+    assert result.stdout == ""
+    assert json.loads(result.stderr) == {
+        "error": "Multiple matches for 'al'.",
+        "matches": ["post/alpha", "post/alpine"],
+    }
+    assert not pending.exists()
