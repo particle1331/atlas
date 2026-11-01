@@ -5,7 +5,8 @@ currently targets macOS. The CMS manages posts, collections and résumé entries
 The vault uses the system keyring; secret names and values are shared across
 projects for the current operating system user.
 
-See [AGENTS.md](AGENTS.md) for agent workflows for navigating, authoring and editing content.
+This README covers setup, user workflows and site behavior.
+[AGENTS.md](AGENTS.md) contains working rules for agents editing this repository.
 
 ```sh
 uv sync
@@ -20,21 +21,52 @@ command fails if either check fails.
 
 Install [Quarto](https://quarto.org/docs/get-started/) separately from the Python
 dependencies. Editable sources live in `content/`; CLI-managed records live in
-`backend/`. The build generates the Quarto copies. Start with `uv run at cms --help`; every command
-also accepts `--help`.
+`backend/`. The build generates the Quarto copies. Start with
+`uv run at cms --help`; every command also accepts `--help`.
+
+### Source layout
 
 | Where | How to edit |
 | --- | --- |
-| `content/posts/*.ipynb` | Edit normally in VS Code/Jupyter or use `at notebook`. |
-| `content/collections/*.yaml` | Edit title, short description and introduction by hand, or use the CMS commands. |
-| `content/resume.yaml`, `content/resume/*.yaml` | Edit résumé text by hand, or use the CMS commands. |
-| `backend/` | Use the CLI for metadata, membership, ordering, publication, notes and to-dos. |
-| Generated posts, collections, listings and résumé under `frontend/` | Recreate with sync/build. |
+| `content/posts/<id>.ipynb` | Canonical cells, code, outputs, attachments and cell options. Edit in VS Code/Jupyter or use `at notebook`. |
+| `content/collections/<id>.yaml` | Authored `title`, `short_description`, Markdown `long_description` and optional `cover_caption`. Edit directly or through the CMS. |
+| `content/resume.yaml` | Authored résumé `title` and `summary`. |
+| `content/resume/<entry-id>.yaml` | Authored entry `title`, `subtitle` and Markdown `body`. |
+| `backend/posts/<id>.yaml`, `backend/collections/<id>.yaml`, `backend/resume/<entry-id>.yaml` | CLI-managed IDs, metadata, source paths/digests, dates, publication, membership, ordering, notes and to-dos. |
+| `backend/cms.yaml` | CLI-managed storage schema. |
+| `content/images/` | Canonical imported images; use CLI image commands to copy and link them. |
+| `frontend/_cms/`, `frontend/index.qmd`, frontend configuration, theme/assets and `_metadata.yml` files | Editable site templates and presentation. |
+| `frontend/posts/*.ipynb`, `frontend/collections/*.qmd`, `frontend/{posts,collections,resume}.qmd`, `frontend/assets/cms/` | Ignored generated copies; recreate with CMS sync/build. |
+| `frontend/_site/`, `frontend/_site-preview/`, `.atlas/cms/` | Ignored render output and CMS runtime/recovery files. |
 
 Commit both `content/` and `backend/`. Hand edits to notebooks and collection or
 résumé entries are observed at sync/build and update their public modification
-dates. The authored files are never rewritten by a build. Site templates under
-`frontend/_cms/`, the landing page, theme and configuration are editable directly.
+dates. The authored files are never rewritten by a build. Keep only public
+supporting assets beside notebooks: sync copies notebook-relative sidecars into
+the frontend.
+
+### Workspace and record IDs
+
+Run commands from the repository root with `uv run at ...`. On a new workspace,
+run `uv run at cms init` once to import the frontend scaffold; `--empty` skips
+sample import. Repeated initialization is a no-op. To select another workspace,
+put `--root /path/to/workspace` immediately after `cms` or `notebook`. The default
+root is this checkout regardless of the shell's current directory.
+
+CMS commands take an exact ID, and `uv run at cms id <query>` resolves a typed
+prefix or stem to that exact ID. A bare `query` matches `post/query*`,
+`collection/query*` and `resume/query*`; `post/query` searches only post IDs.
+Existing exact IDs are returned directly. Ambiguous queries fail and list the
+matching IDs; unknown values and unrecognized kind prefixes exit with status 4.
+Resolution takes the CMS lock and recovers interrupted saves before matching.
+Notebook commands also accept a unique source stem or title; prefer exact IDs
+in scripts.
+
+Get IDs from `new`, `ls` or `show`; collisions can produce suffixed IDs. Changing
+a title preserves the immutable ID and source filename. `post show` and
+`collection show` also report the record's site `url_path`, such as
+`/posts/understanding-attention.html`; résumé entries have no site page.
+Use `uv run at cms --json post ls` for JSON lists.
 
 ### Posts
 
@@ -42,6 +74,7 @@ dates. The authored files are never rewritten by a build. Site templates under
 uv run at cms post new "Understanding Attention" --tags "python,transformers"
 # Edit content/posts/understanding-attention.ipynb in VS Code or Jupyter.
 uv run at cms post ls
+uv run at cms id understanding-attention  # -> post/understanding-attention
 uv run at cms post show post/understanding-attention
 uv run at cms post edit post/understanding-attention  # Prompt for listing fields
 uv run at cms post edit post/understanding-attention --description "How attention works"
@@ -63,13 +96,14 @@ it eligible for a build and does not deploy anything. `rm` deletes the record
 and its notebook, detaches the post from collections and related-post lists, and
 keeps managed images in `content/images/`. It prompts unless `--yes` is used.
 
+Repeat `--related` to set ordered related-post IDs; `--clear-related` clears
+them. Tags are comma-separated; `--tags ""` clears them.
+
 Each post owns one notebook source path; sharing a source path is invalid.
 `check` and both sync modes reject duplicate ownership across drafts and
 published posts. `post rm` rejects a conflicting source before changing files.
 
-Thumbnail and cover paths can point anywhere, including your Desktop. The CLI
-copies the original image bytes into `content/images/`; you can move or delete
-the input file afterward.
+See [Images](#images) for importing and replacing figures, thumbnails and covers.
 
 ### Notebook tools
 
@@ -87,21 +121,14 @@ uv run at notebook outline post/understanding-attention
 uv run at notebook count post/understanding-attention
 uv run at notebook cat post/understanding-attention --index 0:4 --context 1
 uv run at notebook cat post/understanding-attention --with-revision
+uv run at notebook cat post/understanding-attention --label fig-attention
+uv run at notebook cat post/understanding-attention --tag hide-input
 
 uv run at notebook edit-cell post/understanding-attention --index 0
 uv run at notebook append-cell post/understanding-attention --type code
 uv run at notebook insert-cell post/understanding-attention --before 2 --content "## Results"
-uv run at notebook figure post/understanding-attention ~/Desktop/plot.png
-uv run at notebook figure post/understanding-attention ~/Desktop/plot.svg --index 2 --caption "Attention weights"
-uv run at notebook figure post/understanding-attention ~/Desktop/updated-plot.svg --replace --index 2
 uv run at notebook remove-cell post/understanding-attention --index 3
 uv run at notebook tag post/understanding-attention --index 1 --add hide-input
-uv run at notebook clear-outputs post/understanding-attention --from 4
-
-uv run at notebook output post/understanding-attention --index 8
-uv run at notebook run post/understanding-attention --index 8
-uv run at notebook diff post/understanding-attention
-uv run at notebook kernels
 ```
 
 `outline` prints JSON with the post `id`, notebook `revision`, and a `headings`
@@ -110,25 +137,85 @@ one-based `line` within that cell. Use `cell_index` with `cat --index` or
 `edit-cell --index`. Re-run the outline after inserting or removing cells.
 Its `revision` token can be passed to notebook mutations as `--expected-revision`.
 
-`cat` prints cell source without notebook JSON and filters by index/range, tag,
-or Quarto label. Long edits open `$VISUAL`/`$EDITOR`, accept `--file`, or read
-stdin. Cell edits preserve outputs and metadata; explicitly run code to refresh
-saved outputs. `run` is the only notebook command that executes code, and site
-renders keep execution disabled. Use `uv run at notebook <command> --help` for
-command options.
+`find` searches cell source, excluding outputs. `cat` prints cell source without
+notebook JSON and filters by index/range, tag or Quarto label. `--index` accepts
+Python slices and negative indices. Source is truncated at 4096 characters per
+cell by default; use `--offset`/`--limit` to page or `--limit 0` for full source.
+Add `--with-outputs` when stored outputs matter.
+
+Notebook edits accept `--content`, `--file PATH` or `--file -` for stdin.
+Without explicit input, they read piped stdin or open `$VISUAL`/`$EDITOR`.
+A quoted heredoc avoids shell expansion in multiline source:
+
+```sh
+uv run at notebook edit-cell post/understanding-attention --index 0 --file - <<'EOF'
+## Attention
+
+Write the replacement cell source here.
+EOF
+```
+
+Cell source is limited to 20,000 characters. `edit-cell` replaces the entire
+selected source and preserves metadata, attachments and stored outputs. Keep
+Quarto options and labels in the replacement text. A unique `--label` or `--tag`
+can locate a cell across index changes. `remove-cell --tag` removes every
+matching cell.
+
+Source notebooks contain ordinary cells. The CMS supplies document metadata
+during sync, and Quarto supplies the TOC; no front matter, planning cells or
+generated navigation/contents lists are required. Use
+`uv run at notebook <command> --help` for command options.
+
+### Saved execution
+
+```sh
+uv run at notebook output post/understanding-attention --index 8
+uv run at notebook kernels
+uv run at notebook run post/understanding-attention --index 8 --kernel python3 --timeout 300
+uv run at notebook clear-outputs post/understanding-attention --from 4
+uv run at notebook diff post/understanding-attention --base HEAD
+```
+
+`run` explicitly executes code; editing and site builds never run it. With
+`--index N`, it executes the prefix in a fresh kernel but saves outputs only for
+the selected cell. Omit `--index` to run the whole notebook. Code errors are
+saved and produce exit status 1. Execution conflicts preserve results in
+`.atlas/cms/execution-conflicts/`.
+
+`output` reads stored outputs and extracts embedded images under
+`.atlas/cms/notebook-output/`. `clear-outputs` clears outputs for a locator or
+from `--from N`; omitting both clears every code cell's output.
+
+### Images
+
+```sh
+uv run at notebook figure post/understanding-attention ~/Desktop/plot.png
+uv run at notebook figure post/understanding-attention ~/Desktop/plot.svg --index 2 --caption "Attention weights" --alt "A heatmap of attention weights."
+uv run at notebook figure post/understanding-attention ~/Desktop/updated-plot.svg --replace --label fig-attention
+uv run at cms post edit post/understanding-attention --thumbnail ~/Desktop/thumbnail.png
+uv run at cms collection edit collection/transformers-from-scratch --cover ~/Desktop/cover.png
+```
+
+Input paths can point anywhere, including your Desktop. The CLI copies the
+original image bytes into `content/images/` and leaves the input file in place;
+you can move or delete the input file afterward. Thumbnails and covers accept
+verified PNG, JPEG (`.jpg`/`.jpeg`), WebP or GIF up to 20 MiB; notebook figures
+additionally accept SVG.
 
 `figure <notebook> <image-path>` copies the image into
 `content/images/post/<post-id>-<uuid>.<ext>` and inserts a Markdown figure cell.
 It appends by default; `--index 0` inserts before the first cell. Optional
-`--caption` and `--alt` set the caption and accessible description. PNG, JPEG
-(`.jpg`/`.jpeg`), SVG, WebP and GIF are supported. The original image stays in place.
+`--caption` and `--alt` set the caption and accessible description.
 
 To change an existing figure's image, add `--replace --index N`, or
 `--replace --label fig-...`. Only the image link changes; your edited caption,
 figure ID, alt text, sizing and other cell content are preserved. The new input
 is copied into managed storage, including when its format differs from the old
-image. Replace thumbnails with `post edit --thumbnail PATH` and collection covers
-with `collection edit --cover PATH`.
+image. Replacement requires exactly one of `--index` or `--label`; omit
+`--caption`/`--alt` to preserve them. Use the returned `fig-...` label for later
+replacement, and keep existing managed copies that may still have references.
+Replace thumbnails with `post edit --thumbnail PATH` and collection covers with
+`collection edit --cover PATH`. Replacing a cover preserves its caption.
 
 ### Collections
 
@@ -146,8 +233,9 @@ uv run at cms collection show collection/transformers-from-scratch
 uv run at cms collection rm collection/transformers-from-scratch --yes
 ```
 
-`open` edits the introduction; the ordered contents list is generated from post
-IDs. Positions start at zero; adding without `--position` appends. `publish`
+New collections start as drafts. `open` edits the introduction; the ordered
+contents list is generated from post IDs. Positions start at zero; adding
+without `--position` appends. Removing membership preserves the post. `publish`
 requires descriptions, a cover and at least one published member; `draft` returns
 the collection to draft. `rm` deletes the collection record and introduction but
 leaves its member posts and managed images untouched. Collection changes never
@@ -176,13 +264,14 @@ subtitles and bodies live in `content/resume/`. Section assignments and zero-bas
 order live in `backend/resume/`; the CLI generates the section/page structure.
 `make preview` and `make build` refresh the downloadable PDF when its inputs
 change, using the same saved résumé title, summary and ordered entries as the site.
+See [Résumé PDF](#résumé-pdf) for layout, fonts and caching.
 
 ### Writing, notes and storage
 
 `open` edits only the selected body through `$VISUAL`/`$EDITOR`; use `--file PATH`
-or `--file -` for file/stdin input. The source notebook contains your editable
-cells, outputs and attachments, with no required metadata or navigation cells.
-Renaming a title keeps its ID and notebook path.
+or `--file -` for file/stdin input. `notes` also accepts `--file`. Metadata `edit`
+commands can prompt if no field flags are supplied. Supply explicit inputs for
+noninteractive work.
 
 ```sh
 uv run at cms notes post/understanding-attention
@@ -192,20 +281,22 @@ uv run at cms check
 ```
 
 Notes and to-dos work on posts and collections. They remain private to the
-authoring source and do not change public modification dates. `check` reports
-invalid references and publication blockers.
+authoring source, do not change public modification dates and do not gate
+publication. To-dos support `--index N --done`, `--text`, `--position` and
+`--remove`. `check` reports invalid references and publication blockers.
 
-```text
-content/posts/<stable-id>.ipynb    # Editable notebook
-content/collections/<id>.yaml     # Editable title and descriptions
-content/resume.yaml               # Editable résumé title and summary
-content/resume/<entry-id>.yaml    # Editable title, subtitle and body
-content/images/                  # Canonical image assets
-backend/posts/<stable-id>.yaml   # CLI-managed listing fields, dates, notes/to-dos
-backend/collections/<id>.yaml    # CLI-managed membership, cover, status and dates
-backend/resume/<entry-id>.yaml   # CLI-managed section, position and dates
-backend/cms.yaml                 # Storage schema
-```
+#### Revisions
+
+When saving changes based on an earlier read, pass `--expected-revision` to
+reject stale writes. CMS mutations use the record revision returned by `show`;
+notebook mutations use the `notebook:<hash>` token from `cat --with-revision` or
+`outline`. These tokens are different. Refresh the relevant token after each
+mutation.
+
+On a stale-write conflict, re-read the current record/cells and reconcile the
+edit. Failed editor input is preserved in `.atlas/cms/edits/`; keep it available.
+Do not bypass conflicts by dropping revision checks or deleting recovery files.
+Avoid simultaneous CLI and IDE saves to the same source.
 
 ### Preview and build
 
@@ -227,40 +318,40 @@ of the frontend. Builds never write back to or execute source notebooks.
 Preview includes drafts in `frontend/_site-preview/`; public builds include only
 published content in `frontend/_site/`. The existing 11 stub posts, 3 collections
 and 12 résumé entries have been imported. Incomplete samples are drafts until
-their publication requirements are met. Use `at cms check` to see blockers.
-
-The landing page and theme remain under `frontend/`. Listing and résumé templates
-live in `frontend/_cms/`; generated listings, posts, collections and résumé pages
-are ignored. `frontend/_cms/resume-pdf.qmd` and `frontend/_cms/resume-pdf/` control
-the PDF layout and contact links; its title, summary and entries come from the
-same YAML sources as the web page. The A4 PDF uses the Ubuntu name font, bundled
-Latin Modern Sans body fonts, orange bullets and right-aligned dates. Set
-`resume-pdf-main-roles` in the PDF template to choose how many employment entries
-appear before the page break; remaining roles appear under Early Employment
-after education. This grouping only affects the PDF. Its generated subtitles
-use `.resume-subtitle` divs for the layout filter. The isolated render stages
-the PDF support directory and `frontend/assets/fonts/`, so it needs no system
-font installation. Preview and build render it with Quarto's bundled Typst
-engine before Quarto copies assets into the site output. Unchanged content,
-PDF layout/support files and fonts reuse `frontend/assets/resume.pdf` without
-rewriting it, avoiding PDF timestamp changes in Git. The ignored
-`.atlas/cms/resume-pdf.cache.yaml` records input and output hashes; a missing
-cache, missing/changed PDF or changed renderer triggers a fresh render.
-A failed PDF render stops the command and preserves the previous download.
-No separate LaTeX installation is needed. No build reads the Watchtower checkout.
+their publication requirements are met. `uv run at cms check` reports references
+and publication blockers for drafts as well as published records; exit status 1
+can be expected for unfinished drafts.
 
 During a running preview, run `uv run at cms sync --preview` after source edits
 to refresh the generated copies, or restart `make preview`. Sync alone does not
 render the PDF; restart `make preview` to refresh the download as well.
 
-See [Posts](#posts), [Collections](#collections) and
-[Writing, notes and storage](#writing-notes-and-storage) for publication,
-ordering, concurrency and the complete authoring workflow. On a new workspace, run
-`uv run at cms init` once to import the frontend scaffold. Repeated initialization
-of the same workspace is a no-op.
-Use `at cms --json post ls` for JSON lists and `--expected-revision HASH` on edits
-to reject stale writes. `at cms --root /path/to/workspace ...` selects another
-workspace explicitly.
+#### Résumé PDF
+
+`frontend/_cms/resume-pdf.qmd` and `frontend/_cms/resume-pdf/` control
+the PDF layout and contact links; its title, summary and entries come from the
+same YAML sources as the web page.
+
+The A4 PDF uses the Ubuntu name font, bundled Latin Modern Sans body fonts,
+orange bullets and right-aligned dates. Set
+`resume-pdf-main-roles` in the PDF template to choose how many employment entries
+appear before the page break (default: four); remaining roles appear under Early
+Employment after education. The web page retains the CMS section order.
+PDF subtitles use generated `.resume-subtitle` divs for the layout filter.
+
+Body fonts and licenses are bundled under `frontend/_cms/resume-pdf/fonts/`.
+The isolated render stages the PDF support directory and
+`frontend/assets/fonts/`, so it needs no system font installation. Preview and
+build render it with Quarto's bundled Typst engine before Quarto copies assets
+into the site output. No separate LaTeX installation is needed. No build reads
+the Watchtower checkout.
+
+Unchanged content, PDF layout/support files and fonts reuse
+`frontend/assets/resume.pdf` without rewriting it, avoiding PDF timestamp
+changes in Git. The ignored
+`.atlas/cms/resume-pdf.cache.yaml` records input and output hashes; a missing
+cache, missing/changed PDF or changed renderer triggers a fresh render.
+A failed PDF render stops the command and preserves the previous download.
 
 ## Git hooks
 
