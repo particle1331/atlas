@@ -4,6 +4,8 @@ repos:
     hooks:
       - id: detect-secrets
         args:
+          - --baseline
+          - .secrets.baseline
           - --no-verify
           # CMS source checksums are SHA-256 digests, not credentials.
           - --exclude-lines
