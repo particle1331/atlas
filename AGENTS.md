@@ -1,8 +1,9 @@
 # Working in Atlas
 
 Atlas is a notebook-first content CMS with a Quarto website. Use `at notebook`
-for notebook cell operations and `at cms` for managed content records. Run
-commands from the repository root with `uv run at ...`.
+for notebook cell operations, `at cms` for managed content records, and `at
+pdf` to inspect and read local PDF documents. Run commands from the repository
+root with `uv run at ...`.
 
 [README.md](README.md#content-cms-and-quarto-frontend) is the reference for setup,
 user workflows, examples and site/PDF behavior. Read the relevant section before

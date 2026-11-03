@@ -17,6 +17,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "pyyaml>=6.0",
     "pillow>=11.0",
+    "pdfminer.six>=20250506",
+    "pypdf>=5.0",
     "typer>=0.15",
 ]
 

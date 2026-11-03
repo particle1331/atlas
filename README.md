@@ -222,6 +222,25 @@ saved and produce exit status 1. Execution conflicts preserve results in
 `.atlas/cms/notebook-output/`. `clear-outputs` clears outputs for a locator or
 from `--from N`; omitting both clears every code cell's output.
 
+### PDF tools
+
+```sh
+uv run at pdf info ~/Downloads/some-book.pdf
+uv run at pdf outline ~/Downloads/some-book.pdf
+uv run at pdf read ~/Downloads/some-book.pdf --pages 25-53
+uv run at pdf find ~/Downloads/some-book.pdf "handoff" --pages 54-72
+```
+
+Read local PDFs without leaving the terminal. `info` prints page count, title,
+author and bookmark count; `outline` prints the bookmark tree with one-based
+PDF page numbers; `read` prints extracted text for a page range; `find`
+searches text case-insensitively and prints matching lines with page numbers.
+Page ranges accept `25-53`, a single page `25`, `25-` (to the end) and `-25`
+(from the start), always as one-based positions in the file. `~` in paths is
+expanded. Text extraction uses pdfminer.six; structure and metadata use pypdf.
+PDF page numbers can differ from printed page numbers when a document has
+unlabeled front matter.
+
 ### Images
 
 ```sh
