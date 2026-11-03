@@ -15,10 +15,17 @@ rules here. Keep shared explanations in one place and link to them.
 ## Source ownership
 
 - Edit canonical notebooks under `content/posts/` through the notebook tools.
-  Use CMS commands for IDs, metadata, publication, membership, ordering, notes
-  and to-dos under `backend/`.
+  Use CMS commands for IDs, managed metadata, publication, membership, ordering,
+  notes and to-dos under `backend/`.
+- Edit authored post `title`, `short_description` and `tags` in
+  `content/posts/<id>.yaml` directly or through the CMS. This file contains only
+  those three fields; preserve its filename and the notebook filename on renames.
+  See [posts](README.md#posts) for the direct-edit workflow and validation rules.
 - Edit authored collection and résumé text under `content/` directly or through
-  the CMS. Keep résumé section/position fields in backend records.
+  the CMS. Collection introductions live in `content/collections/<id>.md`;
+  keep title, short description and optional cover caption in the matching YAML.
+  Preserve both filenames on title changes. Keep résumé section/position fields
+  in backend records.
 - Import images with the CLI. Keep existing managed copies that may still have
   references, and keep only public supporting assets beside notebooks because
   sync copies notebook-relative sidecars into the frontend.
@@ -84,6 +91,33 @@ Preserve existing facts and links when revising résumé prose. Keep résumé sy
 enabled in preview and public modes so authored changes reach both the web page
 and PDF. See [résumé PDF](README.md#résumé-pdf) for rendering and layout details.
 Use CMS notes/to-dos for private planning; see [writing, notes and storage](README.md#writing-notes-and-storage).
+
+## Writing style for posts and collections
+
+Use the [AI-Native Software Development introduction](content/collections/ai-assistant-development.md)
+and its [listing description](content/collections/ai-assistant-development.yaml)
+as voice references when proposing or revising collection descriptions. Adapt
+the emphasis to the collection; keep the tone concrete and understated. Apply
+the same voice principles to post introductions.
+
+- Use first person for the author's specific work, choices, observations or
+  results, supported by the available material. Attribute general course
+  activities and learning objectives to "the course" or "the module" instead
+  of turning them into personal plans or experience. For example, write "The
+  course compares development tools" for a module overview; use "I chose this
+  tool because..." only for an actual choice the author has described.
+- Make `short_description` a concise sentence telling readers what to expect.
+  Name the subject and the kind of work collected, such as notes or projects.
+- Keep `long_description` to one or two focused paragraphs by default: establish
+  the context, then explain the work and questions that connect the entries.
+  For course-based collections, preserve attribution and links while centering
+  the author's learning rather than reproducing the syllabus.
+- Prefer plain verbs and specific activities to hype, broad promises, generic
+  slogans or lists of tools. Explain what the tools help the author do.
+- Keep claims grounded in the source material and actual progress. Distinguish
+  planned exploration from completed work; do not invent experience or results.
+- Make subtle improvements that preserve the author's intent and scope. Apply
+  these principles without forcing every collection into the same template.
 
 ## Revisions and saved execution
 

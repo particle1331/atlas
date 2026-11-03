@@ -127,9 +127,25 @@ def test_initialization_imports_yaml_and_bare_notebooks_once(workspace):
     raw = workspace.path("content/posts/example.ipynb").read_bytes()
     assert nb.source(nb.load(raw)["cells"][0]) == "## Original body\n\nWrite freely."
     assert workspace.path("backend/posts/example.yaml").exists()
+    assert decode(workspace.path("content/posts/example.yaml").read_bytes()) == {
+        "title": "Example",
+        "short_description": "Sample",
+        "tags": ["Python"],
+    }
+    assert not {"title", "short_description", "tags"} & set(
+        decode(workspace.path("backend/posts/example.yaml").read_bytes())
+    )
     assert workspace.path("backend/collections/guide.yaml").exists()
     assert workspace.path("backend/cms.yaml").exists()
     assert workspace.path("content/collections/guide.yaml").exists()
+    assert "long_description" not in decode(
+        workspace.path("content/collections/guide.yaml").read_bytes()
+    )
+    assert workspace.path("content/collections/guide.md").read_text() == "Introduction."
+    assert (
+        workspace.get("collection/guide")["record"]["source_path"]
+        == "content/collections/guide.md"
+    )
     assert workspace.path("content/resume.yaml").exists()
     assert not workspace.path("frontend/posts/example.qmd").exists()
     assert run(workspace, "init")["changed"] is False
@@ -144,7 +160,8 @@ def test_direct_collection_and_resume_edits_are_observed_without_rewriting_conte
         identity: store.get(identity) for identity in (collection_id, resume_id)
     }
     edited = {
-        "content/collections/guide.yaml": b"# Editable collection text\ntitle: Hand-edited guide\nshort_description: A new summary\nlong_description: |\n  Hand-edited introduction.\n",
+        "content/collections/guide.yaml": b"# Editable collection text\ntitle: Hand-edited guide\nshort_description: A new summary\n",
+        "content/collections/guide.md": b"Hand-edited introduction.\n",
         "content/resume/employment-engineer-example.yaml": b"# Editable resume text\ntitle: Hand-edited role\nsubtitle: 2026 -- Present\nbody: |\n  - A hand-edited accomplishment.\n",
         "content/resume.yaml": b"title: Hand-edited resume\nsummary: A hand-edited summary.\n",
     }
@@ -161,6 +178,10 @@ def test_direct_collection_and_resume_edits_are_observed_without_rewriting_conte
         assert current["source_digest"] == digest(
             store.path(current["source_path"]).read_bytes()
         )
+        if identity == collection_id:
+            assert current["metadata_digest"] == digest(
+                store.path("content/collections/guide.yaml").read_bytes()
+            )
     assert (
         "Hand-edited introduction"
         in store.path("frontend/collections/guide.qmd").read_text()
@@ -217,8 +238,460 @@ def test_post_creation_and_renaming_keep_identity_and_source(store):
     assert changed["record"]["id"] == "post/attention"
     assert changed["record"]["source_path"] == "content/posts/attention.ipynb"
     assert path.read_bytes() == original
+    assert decode(store.path("content/posts/attention.yaml").read_bytes()) == {
+        "title": "New title",
+        "short_description": "An explanation",
+        "tags": ["python", "Python"],
+    }
+    assert changed["record"]["metadata_digest"] == digest(
+        store.path("content/posts/attention.yaml").read_bytes()
+    )
+    assert changed["record"]["source_digest"] == created["record"]["source_digest"]
     assert new_post(store)["record"]["id"] != "post/attention"
     invoke(store, "post", "edit", "post/attention", "--tags", "a,,b", code=2)
+
+
+@pytest.mark.parametrize("preview", [False, True])
+def test_direct_post_yaml_edits_are_observed_without_rewriting_sources(store, preview):
+    created = publish(store, new_post(store)["record"]["id"])
+    path = store.path("content/posts/attention.yaml")
+    notebook = store.path(created["record"]["source_path"])
+    notebook_bytes = notebook.read_bytes()
+    raw = (
+        b"# Keep my comments and formatting\n"
+        b"title: Hand-edited title\nshort_description: A hand-edited summary.\n"
+        b"tags: [' python ', hand-edited, python]\n"
+    )
+    path.write_bytes(raw)
+    edited = run(store, "post", "show", "post/attention")
+    assert edited["record"]["title"] == "Hand-edited title"
+    assert edited["record"]["tags"] == ["python", "hand-edited"]
+    assert edited["record"]["status"] == "published"
+    assert edited["revision"] != created["revision"]
+    with pytest.raises(Conflict):
+        store.update("post/attention", {"title": "Stale title"}, created["revision"])
+    with pytest.raises(Conflict):
+        store.write_notebook(
+            "post/attention",
+            notebook_bytes,
+            created["revision"],
+            digest(notebook_bytes),
+        )
+    generate(store, preview=preview)
+    observed = store.get("post/attention")
+    assert observed["record"]["updated_at"] != created["record"]["updated_at"]
+    assert observed["record"]["metadata_digest"] == digest(raw)
+    assert observed["record"]["source_digest"] == digest(notebook_bytes)
+    projected = store.path("frontend/posts/attention.ipynb")
+    meta, _ = split_document(nb.source(nb.load(projected.read_bytes())["cells"][0]))
+    assert meta["title"] == "Hand-edited title"
+    assert meta["description"] == "A hand-edited summary."
+    assert meta["categories"] == ["python", "hand-edited"]
+    assert not store.path("frontend/posts/attention.yaml").exists()
+    before = projected.read_bytes()
+    generate(store, preview=preview)
+    assert store.get("post/attention") == observed
+    assert projected.read_bytes() == before
+    assert path.read_bytes() == raw
+    assert notebook.read_bytes() == notebook_bytes
+
+
+def test_cli_bookkeeping_preserves_direct_post_yaml_edits(store):
+    new_post(store)
+    path = store.path("content/posts/attention.yaml")
+    raw = b"# My formatting\ntitle: My title\nshort_description: My summary\ntags: [new]\n"
+    path.write_bytes(raw)
+    edited = store.get("post/attention")
+    run(store, "notes", "post/attention", "--file", "-", input="Private notes")
+    assert path.read_bytes() == raw
+    run(store, "post", "edit", "post/attention", "--code-path", "examples")
+    assert path.read_bytes() == raw
+    changed = store.update("post/attention", {"short_description": "CLI summary"})
+    assert changed["record"]["title"] == "My title"
+    assert changed["record"]["tags"] == ["new"]
+    assert changed["record"]["metadata_digest"] == digest(path.read_bytes())
+    assert changed["record"]["source_digest"] == edited["record"]["source_digest"]
+    assert decode(path.read_bytes())["short_description"] == "CLI summary"
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b"title: [broken",
+        b"title: Title\ntitle: Duplicate\nshort_description: Summary\ntags: []\n",
+        b"title: Title\nshort_description: Summary\n",  # Missing tags.
+        b"title: Title\nshort_description: Summary\ntags: []\nstatus: published\n",
+        b"title: 123\nshort_description: Summary\ntags: []\n",
+        b"title: Title\nshort_description: null\ntags: []\n",
+        b"title: Title\nshort_description: Summary\ntags: python\n",
+        b"title: Title\nshort_description: Summary\ntags: [123]\n",
+        None,
+    ],
+)
+def test_invalid_direct_post_yaml_does_not_overwrite_sources_or_projection(store, raw):
+    new_post(store)
+    generate(store, preview=True)
+    path = store.path("content/posts/attention.yaml")
+    if raw is None:
+        path.unlink()
+    else:
+        path.write_bytes(raw)
+    backend = store.record_path("post/attention")
+    projection = store.path("frontend/posts/attention.ipynb")
+    before = backend.read_bytes(), projection.read_bytes()
+    invoke(store, "sync", "--preview", code=2)
+    invoke(store, "post", "edit", "post/attention", "--title", "Do not erase", code=2)
+    assert (backend.read_bytes(), projection.read_bytes()) == before
+    assert (path.read_bytes() if path.exists() else None) == raw
+
+
+def legacy_collections(store, schema=4):
+    """Construct collection YAML with an embedded introduction for upgrade tests."""
+    records = [item["record"] for item in store.ls("collection")]
+    for record in records:
+        record.pop("metadata_digest")
+        path, _ = store.content_source(record)
+        raw = encode(
+            {
+                key: record[key]
+                for key in (
+                    "title",
+                    "short_description",
+                    "long_description",
+                    "cover_caption",
+                )
+                if key != "cover_caption" or record[key]
+            }
+        )
+        path.write_bytes(raw)
+        store.path(record["source_path"]).unlink()
+        record.update(
+            source_path=path.relative_to(store.root).as_posix(),
+            source_digest=digest(raw),
+        )
+        store.record_path(record["id"]).write_bytes(store.record_bytes(record))
+    store.path("backend/cms.yaml").write_bytes(encode({"schema": schema}))
+    return records
+
+
+def legacy_posts(store):
+    """Construct the previous on-disk layout for migration tests."""
+    records = [item["record"] for item in store.ls("post")]
+    for record in records:
+        record.pop("metadata_digest")
+        store.record_path(record["id"]).write_bytes(encode(record))
+        store.content_source(record)[0].unlink()
+    legacy_collections(store, schema=3)
+    return records
+
+
+def test_init_migrates_post_metadata_without_changing_identity_dates_or_notebooks(
+    store,
+):
+    new_post(store)
+    publish(store, "post/attention")
+    originals = legacy_posts(store)
+    sources = {
+        r["source_path"]: store.path(r["source_path"]).read_bytes() for r in originals
+    }
+    assert "at cms init" in invoke(store, "post", "ls", code=2).stderr
+    result = run(store, "init")
+    assert result == {
+        "initialized": True,
+        "changed": True,
+        "migrated": {"post": 2, "collection": 1},
+    }
+    assert decode(store.path("backend/cms.yaml").read_bytes()) == {"schema": 5}
+    for original in originals:
+        current = store.get(original["id"])["record"]
+        assert {key: current[key] for key in original} == original
+        path, _ = store.content_source(current)
+        assert decode(path.read_bytes()) == {
+            key: original[key] for key in ("title", "short_description", "tags")
+        }
+        assert current["metadata_digest"] == digest(path.read_bytes())
+        assert not {"title", "short_description", "tags"} & set(
+            decode(store.record_path(original["id"]).read_bytes())
+        )
+    assert all(store.path(path).read_bytes() == raw for path, raw in sources.items())
+    generate(store, preview=True)
+    assert all(
+        store.get(r["id"])["record"]["updated_at"] == r["updated_at"] for r in originals
+    )
+    assert run(store, "init")["changed"] is False
+
+
+@pytest.mark.parametrize("problem", ["existing_yaml", "malformed_record"])
+def test_post_metadata_migration_validates_every_post_before_writing(store, problem):
+    new_post(store, "Z-last")
+    legacy_posts(store)
+    if problem == "existing_yaml":
+        store.path("content/posts/z-last.yaml").write_text(
+            "# Keep this authored file\n"
+        )
+    else:
+        path = store.record_path("post/z-last")
+        record = decode(path.read_bytes())
+        record["tags"] = "invalid"
+        path.write_bytes(encode(record))
+    before = {
+        p: p.read_bytes()
+        for d in ("content", "backend")
+        for p in store.path(d).rglob("*")
+        if p.is_file()
+    }
+    invoke(store, "init", code=2)
+    after = {
+        p: p.read_bytes()
+        for d in ("content", "backend")
+        for p in store.path(d).rglob("*")
+        if p.is_file()
+    }
+    assert after == before
+
+
+def test_post_metadata_migration_recovers_an_interrupted_save(store, monkeypatch):
+    legacy_posts(store)
+    install = store._install
+
+    def fail_record(path, raw):
+        if path == store.record_path("post/example"):
+            raise OSError("simulated interruption")
+        install(path, raw)
+
+    monkeypatch.setattr(store, "_install", fail_record)
+    with pytest.raises(OSError):
+        initialize(store)
+    assert store.path(".atlas/cms/pending.json").exists()
+    monkeypatch.setattr(store, "_install", install)
+    assert initialize(store)["changed"] is False
+    assert store.get("post/example")["record"]["title"] == "Example"
+    assert not store.path(".atlas/cms/pending.json").exists()
+
+
+def test_new_post_preserves_an_existing_metadata_file(store):
+    path = store.path("content/posts/attention.yaml")
+    raw = b"# Pre-existing authored metadata\n"
+    path.write_bytes(raw)
+    invoke(store, "post", "new", "Attention", code=2)
+    assert path.read_bytes() == raw
+    assert not store.record_path("post/attention").exists()
+    assert not store.path("content/posts/attention.ipynb").exists()
+
+
+def test_collection_cli_edits_keep_yaml_and_markdown_separate(store):
+    created = run(store, "collection", "new", "A course")
+    identity = created["record"]["id"]
+    metadata = store.path("content/collections/a-course.yaml")
+    body = store.path("content/collections/a-course.md")
+    assert created["record"]["source_path"] == "content/collections/a-course.md"
+    assert body.read_bytes() == b""
+    assert set(decode(metadata.read_bytes())) == {"title", "short_description"}
+    raw_yaml = b"# Keep my comment\ntitle: A course\nshort_description: A summary\ncover_caption: '*A cover*'\n"
+    metadata.write_bytes(raw_yaml)
+    opened = run(
+        store,
+        "collection",
+        "open",
+        identity,
+        "--file",
+        "-",
+        input="## Introduction\n\n[Reference](https://example.com).",
+    )
+    assert metadata.read_bytes() == raw_yaml
+    assert body.read_text() == opened["record"]["long_description"]
+    assert opened["record"]["source_digest"] == digest(body.read_bytes())
+    raw_body = b"\n<!-- Keep my formatting -->\n\n**Directly edited**.\n\n"
+    body.write_bytes(raw_body)
+    renamed = run(store, "collection", "edit", identity, "--title", "Renamed course")
+    assert body.read_bytes() == raw_body
+    assert renamed["record"]["id"] == identity
+    assert renamed["record"]["source_path"] == created["record"]["source_path"]
+    assert renamed["record"]["cover_caption"] == "*A cover*"
+    assert "long_description" not in decode(metadata.read_bytes())
+
+
+@pytest.mark.parametrize("extension", ["md", "yaml"])
+@pytest.mark.parametrize("preview", [False, True])
+def test_direct_collection_sources_update_revision_dates_and_projection(
+    store, extension, preview
+):
+    publish(store, "post/example")
+    image = store.root / "thumbnail.png"
+    run(store, "collection", "edit", "collection/guide", "--cover", str(image))
+    created = run(store, "collection", "publish", "collection/guide")
+    path = store.path(f"content/collections/guide.{extension}")
+    raw = (
+        b"<!-- Keep this -->\n\n## Direct introduction\n\n[My link](https://example.com).\n"
+        if extension == "md"
+        else b"# Keep this\ntitle: Direct title\nshort_description: Direct summary\n"
+    )
+    path.write_bytes(raw)
+    edited = store.get("collection/guide")
+    assert edited["revision"] != created["revision"]
+    assert edited["record"]["status"] == "published"
+    with pytest.raises(Conflict):
+        store.update(
+            "collection/guide", {"long_description": "Stale body"}, created["revision"]
+        )
+    generate(store, preview=preview)
+    observed = store.get("collection/guide")
+    changed_digest = "source_digest" if extension == "md" else "metadata_digest"
+    other_digest = "metadata_digest" if extension == "md" else "source_digest"
+    assert observed["record"][changed_digest] == digest(raw)
+    assert observed["record"][other_digest] == created["record"][other_digest]
+    assert observed["record"]["updated_at"] != created["record"]["updated_at"]
+    page = store.path("frontend/collections/guide.qmd")
+    assert (
+        "## Direct introduction" if extension == "md" else "Direct title"
+    ) in page.read_text()
+    before = page.read_bytes()
+    generate(store, preview=preview)
+    assert store.get("collection/guide") == observed
+    assert path.read_bytes() == raw
+    assert page.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "problem", ["missing_md", "invalid_utf8", "embedded_long_description"]
+)
+def test_invalid_collection_source_preserves_content_and_projection(store, problem):
+    generate(store, preview=True)
+    body = store.path("content/collections/guide.md")
+    metadata = store.path("content/collections/guide.yaml")
+    if problem == "missing_md":
+        body.unlink()
+    elif problem == "invalid_utf8":
+        body.write_bytes(b"\xff")
+    else:
+        metadata.write_bytes(metadata.read_bytes() + b"long_description: Old layout\n")
+    paths = [
+        body,
+        metadata,
+        store.record_path("collection/guide"),
+        store.path("frontend/collections/guide.qmd"),
+    ]
+    before = {p: p.read_bytes() if p.exists() else None for p in paths}
+    invoke(store, "sync", "--preview", code=2)
+    invoke(
+        store,
+        "collection",
+        "open",
+        "collection/guide",
+        "--file",
+        "-",
+        input="Do not erase",
+        code=2,
+    )
+    assert {p: p.read_bytes() if p.exists() else None for p in paths} == before
+
+
+@pytest.mark.parametrize("caption", ["", "*Cover* by Artist"])
+def test_init_migrates_collection_body_preserving_values_dates_and_post_sources(
+    store, caption
+):
+    body = "First paragraph with [a link](https://example.com).\n\n## Résumé\n\n- A point.\n"
+    store.update(
+        "collection/guide", {"long_description": body, "cover_caption": caption}
+    )
+    original = legacy_collections(store)[0]
+    post_files = {
+        p: p.read_bytes()
+        for d in ("backend/posts", "content/posts")
+        for p in store.path(d).glob("*")
+        if p.is_file()
+    }
+    assert "at cms init" in invoke(store, "collection", "ls", code=2).stderr
+    assert run(store, "init")["migrated"] == {"collection": 1}
+    current = store.get("collection/guide")["record"]
+    assert {
+        key: current[key]
+        for key in original
+        if key not in {"source_path", "source_digest"}
+    } == {
+        key: value
+        for key, value in original.items()
+        if key not in {"source_path", "source_digest"}
+    }
+    assert current["source_path"] == "content/collections/guide.md"
+    assert store.path(current["source_path"]).read_text() == body
+    assert current["source_digest"] == digest(body.encode())
+    metadata = store.path("content/collections/guide.yaml")
+    assert "long_description" not in decode(metadata.read_bytes())
+    assert current["metadata_digest"] == digest(metadata.read_bytes())
+    assert all(p.read_bytes() == raw for p, raw in post_files.items())
+    generate(store, preview=True)
+    assert (
+        store.get("collection/guide")["record"]["updated_at"] == original["updated_at"]
+    )
+    assert run(store, "init")["changed"] is False
+
+
+@pytest.mark.parametrize("schema", [3, 4])
+@pytest.mark.parametrize("problem", ["existing_md", "malformed_yaml"])
+def test_collection_migration_failure_preserves_all_legacy_sources(
+    store, schema, problem
+):
+    run(store, "collection", "new", "Z-last")
+    if schema == 3:
+        legacy_posts(store)
+    else:
+        legacy_collections(store)
+    if problem == "existing_md":
+        store.path("content/collections/z-last.md").write_text(
+            "Keep this authored body."
+        )
+    else:
+        store.path("content/collections/z-last.yaml").write_text("broken: [yaml")
+    before = {
+        p: p.read_bytes()
+        for d in ("backend", "content")
+        for p in store.path(d).rglob("*")
+        if p.is_file()
+    }
+    invoke(store, "init", code=2)
+    after = {
+        p: p.read_bytes()
+        for d in ("backend", "content")
+        for p in store.path(d).rglob("*")
+        if p.is_file()
+    }
+    assert after == before
+
+
+def test_collection_migration_recovers_yaml_markdown_and_backend_together(
+    store, monkeypatch
+):
+    original = legacy_collections(store)[0]
+    install = store._install
+
+    def fail_record(path, raw):
+        if path == store.record_path("collection/guide"):
+            raise OSError("simulated interruption")
+        install(path, raw)
+
+    monkeypatch.setattr(store, "_install", fail_record)
+    with pytest.raises(OSError):
+        initialize(store)
+    assert store.path(".atlas/cms/pending.json").exists()
+    monkeypatch.setattr(store, "_install", install)
+    assert initialize(store)["changed"] is False
+    assert (
+        store.get("collection/guide")["record"]["long_description"]
+        == original["long_description"]
+    )
+    assert not store.path(".atlas/cms/pending.json").exists()
+
+
+@pytest.mark.parametrize("extension", ["md", "yaml"])
+def test_new_collection_preserves_existing_authored_sources(store, extension):
+    path = store.path(f"content/collections/course.{extension}")
+    path.write_bytes(b"Keep this file.")
+    invoke(store, "collection", "new", "Course", code=2)
+    assert path.read_bytes() == b"Keep this file."
+    other = "yaml" if extension == "md" else "md"
+    assert not store.path(f"content/collections/course.{other}").exists()
+    assert not store.record_path("collection/course").exists()
 
 
 def test_sync_injects_metadata_without_mutating_source_and_is_deterministic(store):
@@ -336,6 +809,7 @@ def test_removing_a_post_detaches_references_and_preserves_images(store):
     }
     assert not store.record_path("post/one").exists()
     assert not store.path(source).exists()
+    assert not store.path("content/posts/one.yaml").exists()
     assert store.path(thumbnail).exists()
     assert store.get("collection/course")["record"]["post_ids"] == []
     assert store.get("post/two")["record"]["related_post_ids"] == []
@@ -376,6 +850,7 @@ def test_removing_a_collection_preserves_member_posts(store):
     }
     assert not store.record_path("collection/course").exists()
     assert not store.path(source).exists()
+    assert not store.path("content/collections/course.yaml").exists()
     assert store.get("post/one")["record"]["title"] == "One"
 
 
@@ -448,7 +923,7 @@ def test_collection_cover_captions_support_markdown_replacement_and_clearing(sto
     )
     assert decode(source.read_bytes())["cover_caption"] == caption
     assert "cover_caption" not in decode(store.record_path(identity).read_bytes())
-    assert changed["record"]["source_digest"] == digest(source.read_bytes())
+    assert changed["record"]["metadata_digest"] == digest(source.read_bytes())
     assert changed["record"]["updated_at"] != original["record"]["updated_at"]
     assert (
         run(store, "collection", "edit", identity, "--cover-caption", caption)

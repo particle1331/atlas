@@ -43,6 +43,7 @@ FIELDS = {
         "code_path",
         "related_post_ids",
         "source_digest",
+        "metadata_digest",
     },
     "collection": COMMON
     | {
@@ -52,6 +53,7 @@ FIELDS = {
         "post_ids",
         "source_path",
         "source_digest",
+        "metadata_digest",
     },
     "resume": {
         "id",
@@ -70,10 +72,14 @@ KINDS = ("post", "collection", "resume")
 SITE_DIRECTORY = {"post": "posts", "collection": "collections"}
 PROFILE = {"title", "summary"}
 CONTENT_FIELDS = {
+    "post": ("title", "short_description", "tags"),
     "collection": ("title", "short_description", "long_description", "cover_caption"),
     "resume": ("title", "subtitle", "body"),
 }
 CONTENT_DEFAULTS = {"collection": {"cover_caption": ""}}
+YAML_FIELDS = CONTENT_FIELDS | {
+    "collection": ("title", "short_description", "cover_caption"),
+}
 
 
 class Conflict(ValueError):
@@ -279,20 +285,38 @@ class Store:
         return encode(
             {
                 key: record[key]
-                for key in CONTENT_FIELDS[kind]
+                for key in YAML_FIELDS[kind]
                 if key not in defaults or record[key] != defaults[key]
             }
         )
 
-    def prepare_content(self, record: dict) -> tuple[Path, bytes]:
+    def prepare_content(self, record: dict) -> dict[Path, bytes]:
         kind, key = record["id"].split("/")
         for field, default in CONTENT_DEFAULTS.get(kind, {}).items():
             record.setdefault(field, default)
-        directory = {"collection": "collections", "resume": "resume"}[kind]
-        relative = f"content/{directory}/{key}.yaml"
+        if kind != "post":
+            directory = {"collection": "collections", "resume": "resume"}[kind]
+            extension = "md" if kind == "collection" else "yaml"
+            record["source_path"] = f"content/{directory}/{key}.{extension}"
+        path, digest_field = self.content_source(record)
         raw = self.content_bytes(record)
-        record.update(source_path=relative, source_digest=digest(raw))
-        return self.path(relative), raw
+        record[digest_field] = digest(raw)
+        changes = {path: raw}
+        if kind == "collection":
+            if not isinstance(record["long_description"], str):
+                raise ValueError("Collection introduction must be text.")
+            body = record["long_description"].encode()
+            record["source_digest"] = digest(body)
+            changes[self.path(record["source_path"])] = body
+        return changes
+
+    def content_source(self, record: dict) -> tuple[Path, str]:
+        """Locate authored YAML separately from notebook/Markdown body sources."""
+        kind, key = record["id"].split("/")
+        if kind in SITE_DIRECTORY:
+            directory = SITE_DIRECTORY[kind]
+            return self.path(f"content/{directory}/{key}.yaml"), "metadata_digest"
+        return self.path(record["source_path"]), "source_digest"
 
     @contextmanager
     def lock(self):
@@ -387,7 +411,10 @@ class Store:
         marker = self.path("backend/cms.yaml")
         if not marker.exists():
             raise ValueError("Run 'at cms init' to initialize this workspace.")
-        if decode(marker.read_bytes()) != {"schema": 3}:
+        schema = decode(marker.read_bytes())
+        if schema in ({"schema": 3}, {"schema": 4}):
+            raise ValueError("Run 'at cms init' to upgrade CMS content storage.")
+        if schema != {"schema": 5}:
             raise ValueError("Unsupported or malformed CMS schema.")
         path = self.path("content/resume.yaml")
         if not path.exists():
@@ -421,14 +448,21 @@ class Store:
             )
         revision_raw = raw
         if authored:
-            source_raw = self.path(record.get("source_path")).read_bytes()
+            content_path, _ = self.content_source(record)
+            source_raw = content_path.read_bytes()
             content = CONTENT_DEFAULTS.get(kind, {}) | decode(source_raw)
-            if set(content) != set(authored):
+            if set(content) != set(YAML_FIELDS[kind]):
                 raise ValueError(
-                    f"Expected only {', '.join(authored)} in {record['source_path']}."
+                    f"Expected only {', '.join(YAML_FIELDS[kind])} in {content_path.relative_to(self.root)}."
                 )
+            if kind == "post":
+                content["tags"] = normalized_tags(content["tags"])
             record.update(content)
             revision_raw += b"\0" + source_raw
+            if kind == "collection":
+                body_raw = self.path(record.get("source_path")).read_bytes()
+                record["long_description"] = body_raw.decode()
+                revision_raw += b"\0" + body_raw
         self.validate(record)
         return {"record": record, "revision": digest(revision_raw)}
 
@@ -467,13 +501,18 @@ class Store:
             if value.tzinfo is None:
                 raise ValueError(f"{key} must include a timezone.")
         self.path(record["source_path"])
-        extension = ".ipynb" if kind == "post" else ".yaml"
+        extension = {"post": ".ipynb", "collection": ".md", "resume": ".yaml"}[kind]
         if not record["source_path"].endswith(extension):
             raise ValueError(f"{kind} source must be a {extension} file.")
-        if not isinstance(record["source_digest"], str) or not re.fullmatch(
-            r"[0-9a-f]{64}", record["source_digest"]
+        for field in (
+            ("source_digest", "metadata_digest")
+            if kind in SITE_DIRECTORY
+            else ("source_digest",)
         ):
-            raise ValueError("Invalid source digest.")
+            if not isinstance(record[field], str) or not re.fullmatch(
+                r"[0-9a-f]{64}", record[field]
+            ):
+                raise ValueError(f"Invalid {field}.")
         if kind == "resume":
             if (
                 not isinstance(record["section"], str)
@@ -663,12 +702,12 @@ class Store:
                     record.update(cover_path=None, long_description="", post_ids=[])
             record.update(fields)
             if kind in CONTENT_FIELDS:
-                source_path, source_raw = self.prepare_content(record)
-                if source_path.exists():
-                    raise ValueError(
-                        f"Content source already exists: {record['source_path']}"
-                    )
-                changes[source_path] = source_raw
+                for source_path, source_raw in self.prepare_content(record).items():
+                    if source_path.exists():
+                        raise ValueError(
+                            f"Content source already exists: {source_path.relative_to(self.root)}"
+                        )
+                    changes[source_path] = source_raw
             self.validate(record)
             self.references(record)
             changes[self.record_path(identity)] = self.record_bytes(record)
@@ -692,6 +731,7 @@ class Store:
                 "created_at",
                 "updated_at",
                 "source_digest",
+                "metadata_digest",
                 "source_path",
             }
             if set(patch) & forbidden or not set(patch) <= set(old):
@@ -725,10 +765,18 @@ class Store:
                 # without changing public metadata or its modification date.
                 self.commit(changes)
                 return loaded
-            if any(record[key] != old[key] for key in CONTENT_FIELDS.get(kind, ())):
+            if any(record[key] != old[key] for key in YAML_FIELDS.get(kind, ())):
                 source_raw = self.content_bytes(record)
-                changes[self.path(record["source_path"])] = source_raw
-                record["source_digest"] = digest(source_raw)
+                content_path, digest_field = self.content_source(record)
+                changes[content_path] = source_raw
+                record[digest_field] = digest(source_raw)
+            if (
+                kind == "collection"
+                and record["long_description"] != old["long_description"]
+            ):
+                body_raw = record["long_description"].encode()
+                changes[self.path(record["source_path"])] = body_raw
+                record["source_digest"] = digest(body_raw)
             if any(record[key] != old[key] for key in record.keys() - INTERNAL):
                 record["updated_at"] = now()
             if kind == "resume" and record["section"] != old["section"]:

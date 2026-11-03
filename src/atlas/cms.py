@@ -37,9 +37,13 @@ from atlas.config import ROOT_PATH
 app = typer.Typer(
     no_args_is_help=True, help="Create and edit posts, collections and résumé entries."
 )
-post = typer.Typer(no_args_is_help=True, help="Notebook posts and listing metadata.")
+post = typer.Typer(
+    no_args_is_help=True,
+    help="Notebook posts. Edit title, short_description and tags directly in content/posts/<id>.yaml or with edit.",
+)
 collection = typer.Typer(
-    no_args_is_help=True, help="Collections and their ordered contents."
+    no_args_is_help=True,
+    help="Collections and ordered contents. Edit metadata in content/collections/<id>.yaml and introductions in <id>.md.",
 )
 resume = typer.Typer(
     no_args_is_help=True, help="Résumé profile and ordered YAML entries."
@@ -204,7 +208,7 @@ def init(
         typer.Option(help="Start empty instead of importing frontend sample content."),
     ] = False,
 ):
-    """Initialize backend records and import the frontend scaffold."""
+    """Initialize/import a workspace, or upgrade post YAML and collection Markdown storage."""
     emit(initialize(store_for(ctx), empty))
 
 
@@ -264,7 +268,7 @@ def resume_show(ctx: typer.Context, identity: Identity):
 @post.command("new")
 @guard
 def post_new(ctx: typer.Context, title: str, description: str = "", tags: str = ""):
-    """Create a draft and an empty notebook. No planning step is required."""
+    """Create a draft, empty notebook and editable title/description/tags YAML."""
     emit(
         store_for(ctx).new(
             "post",
@@ -278,7 +282,7 @@ def post_new(ctx: typer.Context, title: str, description: str = "", tags: str = 
 @collection.command("new")
 @guard
 def collection_new(ctx: typer.Context, title: str, description: str = ""):
-    """Create an empty draft collection."""
+    """Create a draft collection with metadata YAML and an empty Markdown introduction."""
     emit(store_for(ctx).new("collection", title, short_description=description))
 
 
@@ -362,7 +366,11 @@ def post_edit(
     ] = None,
     expected_revision: Revision = None,
 ):
-    """Edit listing fields with flags, or prompt when no flags are supplied."""
+    """Edit listing fields with flags, or prompt when no flags are supplied.
+
+    Title, short_description and tags live in content/posts/<id>.yaml and can
+    also be edited there directly. YAML tags are a list; --tags is comma-separated.
+    """
     patch = {}
     for key, value in (
         ("title", title),
@@ -456,7 +464,11 @@ def collection_open(
     file: File = None,
     expected_revision: Revision = None,
 ):
-    """Open an editor for the collection introduction; contents are automatic."""
+    """Edit content/collections/<id>.md; contents are automatic.
+
+    Edit this Markdown file directly in your editor, or use --file for file/stdin
+    input. Title, short_description and optional cover_caption stay in <id>.yaml.
+    """
     write_field(
         ctx, identity, "long_description", file, expected_revision, "collection"
     )
@@ -518,11 +530,11 @@ def post_rm(
     yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
     expected_revision: Revision = None,
 ):
-    """Remove a post and its notebook; detach it from collections and related posts."""
+    """Remove a post, notebook and metadata YAML; detach collection/related links."""
     if not identity.startswith("post/"):
         raise ValueError("Expected a post/ ID.")
     if not yes:
-        typer.confirm(f"Remove {identity} and its notebook?", abort=True)
+        typer.confirm(f"Remove {identity}, its notebook and metadata YAML?", abort=True)
     store = store_for(ctx)
     with store.lock():
         loaded = store.get(identity)
@@ -541,6 +553,7 @@ def post_rm(
         changes = {
             store.record_path(identity): None,
             store.path(source_path): None,
+            store.content_source(loaded["record"])[0]: None,
         }
         collections = []
         posts = []
@@ -575,7 +588,7 @@ def collection_rm(
     yes: Annotated[bool, typer.Option("--yes", "-y")] = False,
     expected_revision: Revision = None,
 ):
-    """Remove a collection; member posts and managed images are unchanged."""
+    """Remove a collection, its metadata YAML and introduction Markdown; keep member posts/images."""
     if not identity.startswith("collection/"):
         raise ValueError("Expected a collection/ ID.")
     if not yes:
@@ -588,6 +601,7 @@ def collection_rm(
             {
                 store.record_path(identity): None,
                 store.path(loaded["record"]["source_path"]): None,
+                store.content_source(loaded["record"])[0]: None,
             }
         )
     emit({"removed": identity})

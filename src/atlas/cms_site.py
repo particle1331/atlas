@@ -14,7 +14,10 @@ import yaml
 
 from atlas import cms_notebooks as nb
 from atlas.cms_store import (
+    CONTENT_DEFAULTS,
     CONTENT_FIELDS,
+    FIELDS,
+    INTERNAL,
     SECTIONS,
     Store,
     decode,
@@ -40,6 +43,9 @@ def initialize(store: Store, empty: bool = False) -> dict:
     with store.lock():
         marker = store.path("backend/cms.yaml")
         if marker.exists():
+            schema = decode(marker.read_bytes())
+            if schema in ({"schema": 3}, {"schema": 4}):
+                return migrate_content(store, schema["schema"])
             store.require_initialized()
             return {"initialized": True, "changed": False}
         if any(
@@ -57,7 +63,10 @@ def initialize(store: Store, empty: bool = False) -> dict:
         if any(
             path
             for directory in ("posts", "collections", "resume")
-            for path in store.path(f"content/{directory}").glob("*.yaml")
+            for pattern in (
+                ("*.yaml", "*.md") if directory == "collections" else ("*.yaml",)
+            )
+            for path in store.path(f"content/{directory}").glob(pattern)
         ):
             raise ValueError(
                 "Content sources exist without CMS initialization; preserve them for repair."
@@ -138,12 +147,14 @@ def initialize(store: Store, empty: bool = False) -> dict:
                 ):
                     record["status"] = "draft"
                 if kind in CONTENT_FIELDS:
-                    source_path, source_raw = store.prepare_content(record)
-                    if source_path.exists():
-                        raise ValueError(
-                            f"Import would overwrite {record['source_path']}; nothing has been saved."
-                        )
-                    changes[source_path] = source_raw
+                    for source_path, source_raw in store.prepare_content(
+                        record
+                    ).items():
+                        if source_path.exists():
+                            raise ValueError(
+                                f"Import would overwrite {source_path.relative_to(store.root)}; nothing has been saved."
+                            )
+                        changes[source_path] = source_raw
                 store.validate(record)
                 changes[store.record_path(identity)] = store.record_bytes(record)
                 # The body now lives in the canonical notebook/record. This path
@@ -204,12 +215,14 @@ def initialize(store: Store, empty: bool = False) -> dict:
                         "created_at": timestamp,
                         "updated_at": timestamp,
                     }
-                    source_path, source_raw = store.prepare_content(record)
-                    if source_path.exists():
-                        raise ValueError(
-                            f"Import would overwrite {record['source_path']}; nothing has been saved."
-                        )
-                    changes[source_path] = source_raw
+                    for source_path, source_raw in store.prepare_content(
+                        record
+                    ).items():
+                        if source_path.exists():
+                            raise ValueError(
+                                f"Import would overwrite {source_path.relative_to(store.root)}; nothing has been saved."
+                            )
+                        changes[source_path] = source_raw
                     store.validate(record)
                     changes[store.record_path(identity)] = store.record_bytes(record)
                     imported["resume"] += 1
@@ -232,9 +245,69 @@ def initialize(store: Store, empty: bool = False) -> dict:
                 )
             changes[target] = store.path(f"frontend/{page}.qmd").read_bytes()
         changes[store.path("content/resume.yaml")] = encode(profile)
-        changes[marker] = encode({"schema": 3})
+        changes[marker] = encode({"schema": 5})
         store.commit(changes)
         return {"initialized": True, "changed": True, "imported": imported}
+
+
+def migrate_content(store: Store, schema: int) -> dict:
+    """Upgrade schema 3/4 together under the writer lock, preserving values/dates."""
+    changes = {}
+    migrated = {}
+    if schema == 3:
+        keys = store.record_keys("post")
+        for key in keys:
+            identity = f"post/{key}"
+            backend_path = store.record_path(identity)
+            record = decode(backend_path.read_bytes())
+            legacy_fields = (FIELDS["post"] - {"metadata_digest"}) | INTERNAL
+            if record.get("id") != identity or set(record) != legacy_fields:
+                raise ValueError(f"Malformed legacy post record: {backend_path.name}")
+            for path, raw in store.prepare_content(record).items():
+                if path.exists():
+                    raise ValueError(
+                        f"Upgrade would overwrite {path.relative_to(store.root)}; nothing has been saved."
+                    )
+                changes[path] = raw
+            store.validate(record)
+            changes[backend_path] = store.record_bytes(record)
+        migrated["post"] = len(keys)
+    keys = store.record_keys("collection")
+    for key in keys:
+        identity = f"collection/{key}"
+        backend_path = store.record_path(identity)
+        record = decode(backend_path.read_bytes())
+        legacy_fields = (
+            FIELDS["collection"]
+            - set(CONTENT_FIELDS["collection"])
+            - {"metadata_digest"}
+        ) | INTERNAL
+        if record.get("id") != identity or set(record) != legacy_fields:
+            raise ValueError(f"Malformed legacy collection record: {backend_path.name}")
+        old_path = store.path(record["source_path"])
+        metadata_path, _ = store.content_source(record)
+        if old_path != metadata_path:
+            raise ValueError(
+                f"Expected collection YAML at {metadata_path.relative_to(store.root)}; nothing has been saved."
+            )
+        content = CONTENT_DEFAULTS["collection"] | decode(old_path.read_bytes())
+        if set(content) != set(CONTENT_FIELDS["collection"]):
+            raise ValueError(
+                f"Malformed legacy collection YAML: {old_path.relative_to(store.root)}"
+            )
+        record.update(content)
+        for path, raw in store.prepare_content(record).items():
+            if path != old_path and path.exists():
+                raise ValueError(
+                    f"Upgrade would overwrite {path.relative_to(store.root)}; nothing has been saved."
+                )
+            changes[path] = raw
+        store.validate(record)
+        changes[backend_path] = store.record_bytes(record)
+    migrated["collection"] = len(keys)
+    changes[store.path("backend/cms.yaml")] = encode({"schema": 5})
+    store.commit(changes)
+    return {"initialized": True, "changed": True, "migrated": migrated}
 
 
 def public_meta(record: dict) -> dict:
@@ -261,16 +334,6 @@ def table_text(text: str) -> str:
 def link(record: dict, prefix: str = "../posts/") -> str:
     title = table_text(record["title"])
     return f"[{title}]({prefix}{record['id'].split('/')[1]}.html)"
-
-
-def reading_time(value: dict) -> int:
-    """Estimate minutes from saved notebook prose at 200 words per minute."""
-    words = sum(
-        len(nb.source(item).split())
-        for item in value.get("cells", [])
-        if item["cell_type"] == "markdown"
-    )
-    return max(1, (words + 199) // 200)
 
 
 def project_images(store: Store, source: str, text: str, assets: Path) -> str:
@@ -342,6 +405,14 @@ def generate(store: Store, preview: bool = False) -> dict:
                     )
             elif record.get("status") == "published":
                 raise ValueError(f"Missing notebook: {record['source_path']}")
+            if record["id"].startswith(("post/", "collection/")):
+                metadata_path, digest_field = store.content_source(record)
+                observed = digest(metadata_path.read_bytes())
+                if observed != record[digest_field]:
+                    record.update({digest_field: observed, "updated_at": now()})
+                    changes[store.record_path(record["id"])] = store.record_bytes(
+                        record
+                    )
         # Source dates describe observation at explicit sync, never filesystem mtime.
         store.commit(changes)
         selected_posts = [r for r in posts if preview or r["status"] == "published"]
@@ -464,16 +535,14 @@ def generate(store: Store, preview: bool = False) -> dict:
                     if identity in by_id
                 ]
                 rows = [
-                    "| # | Title | Short description | Reading time | Created at |",
-                    "| --- | --- | --- | --- | --- |",
+                    "| # | Title | Short description | Created at |",
+                    "| --- | --- | --- | --- |",
                 ]
                 for index, member in enumerate(members, 1):
-                    minutes = reading_time(notebooks.get(member["id"], {}))
                     created = datetime.fromisoformat(member["created_at"]).date()
                     rows.append(
                         f"| {index} | {link(member)} | "
-                        f"{table_text(member['short_description'])} | "
-                        f"{minutes} min | {created} |"
+                        f"{table_text(member['short_description'])} | {created} |"
                     )
                 lines.append(
                     "::: {.collection-contents}\n\n" + "\n".join(rows) + "\n\n:::"

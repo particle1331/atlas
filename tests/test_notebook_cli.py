@@ -21,7 +21,7 @@ from atlas.notebook_ops import figure, outline
 def store(tmp_path):
     (tmp_path / "content").mkdir()
     (tmp_path / "backend").mkdir()
-    (tmp_path / "backend/cms.yaml").write_bytes(encode({"schema": 3}))
+    (tmp_path / "backend/cms.yaml").write_bytes(encode({"schema": 5}))
     (tmp_path / "content/resume.yaml").write_bytes(
         encode({"title": "Résumé", "summary": ""})
     )

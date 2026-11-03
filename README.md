@@ -29,7 +29,9 @@ dependencies. Editable sources live in `content/`; CLI-managed records live in
 | Where | How to edit |
 | --- | --- |
 | `content/posts/<id>.ipynb` | Canonical cells, code, outputs, attachments and cell options. Edit in VS Code/Jupyter or use `at notebook`. |
-| `content/collections/<id>.yaml` | Authored `title`, `short_description`, Markdown `long_description` and optional `cover_caption`. Edit directly or through the CMS. |
+| `content/posts/<id>.yaml` | Authored `title`, `short_description` and `tags`. Edit directly in your editor or through the CMS. |
+| `content/collections/<id>.yaml` | Authored `title`, `short_description` and optional `cover_caption`. Edit directly or through the CMS. |
+| `content/collections/<id>.md` | Authored collection long description/introduction as ordinary Markdown. Edit directly or with `collection open`. |
 | `content/resume.yaml` | Authored résumé `title` and `summary`. |
 | `content/resume/<entry-id>.yaml` | Authored entry `title`, `subtitle` and Markdown `body`. |
 | `backend/posts/<id>.yaml`, `backend/collections/<id>.yaml`, `backend/resume/<entry-id>.yaml` | CLI-managed IDs, metadata, source paths/digests, dates, publication, membership, ordering, notes and to-dos. |
@@ -39,18 +41,24 @@ dependencies. Editable sources live in `content/`; CLI-managed records live in
 | `frontend/posts/*.ipynb`, `frontend/collections/*.qmd`, `frontend/{posts,collections,resume}.qmd`, `frontend/assets/cms/` | Ignored generated copies; recreate with CMS sync/build. |
 | `frontend/_site/`, `frontend/_site-preview/`, `.atlas/cms/` | Ignored render output and CMS runtime/recovery files. |
 
-Commit both `content/` and `backend/`. Hand edits to notebooks and collection or
-résumé entries are observed at sync/build and update their public modification
-dates. The authored files are never rewritten by a build. Keep only public
-supporting assets beside notebooks: sync copies notebook-relative sidecars into
-the frontend.
+Commit both `content/` and `backend/`. Hand edits to notebooks, post metadata,
+collections and résumé entries are observed at sync/build and update their
+public modification dates. The authored files are never rewritten by a build.
+Keep only public supporting assets beside notebooks: sync copies notebook-relative
+sidecars into the frontend.
 
 ### Workspace and record IDs
 
 Run commands from the repository root with `uv run at ...`. On a new workspace,
 run `uv run at cms init` once to import the frontend scaffold; `--empty` skips
-sample import. Repeated initialization is a no-op. To select another workspace,
-put `--root /path/to/workspace` immediately after `cms` or `notebook`. The default
+sample import. For an existing schema 3 or 4 workspace, run `uv run at cms init`
+once to upgrade the content layout. This moves post titles, descriptions and
+tags into `content/posts/<id>.yaml` where needed, and extracts collection long
+descriptions from YAML into `content/collections/<id>.md`. The upgrade preserves
+IDs, notebook paths, authored values, dates and publication state, and refuses
+to overwrite existing destination files. Repeated initialization after the
+upgrade is a no-op. To select another workspace, put `--root /path/to/workspace`
+immediately after `cms` or `notebook`. The default
 root is this checkout regardless of the shell's current directory.
 
 CMS commands take an exact ID, and `uv run at cms id <query>` resolves a typed
@@ -73,6 +81,7 @@ Use `uv run at cms --json post ls` for JSON lists.
 ```sh
 uv run at cms post new "Understanding Attention" --tags "python,transformers"
 # Edit content/posts/understanding-attention.ipynb in VS Code or Jupyter.
+# Edit title, short_description and tags in content/posts/understanding-attention.yaml.
 uv run at cms post ls
 uv run at cms id understanding-attention  # -> post/understanding-attention
 uv run at cms post show post/understanding-attention
@@ -89,15 +98,42 @@ uv run at cms post draft post/understanding-attention
 uv run at cms post rm post/understanding-attention --yes
 ```
 
-A new post starts as a draft with an empty notebook. `edit` handles title,
-description, tags, thumbnail, code path and related-post IDs. A published post
-needs a description, verified thumbnail and notebook content; publishing makes
-it eligible for a build and does not deploy anything. `rm` deletes the record
-and its notebook, detaches the post from collections and related-post lists, and
-keeps managed images in `content/images/`. It prompts unless `--yes` is used.
+A new post starts as a draft with an empty notebook and a matching YAML file.
+Edit the YAML directly in VS Code or another editor; no CLI command is needed
+to save these fields:
+
+```yaml
+title: Understanding Attention
+short_description: Notes on how attention weights are computed.
+tags:
+  - python
+  - transformers
+```
+
+These are the only three fields in the post YAML. Use `tags: []` to clear tags
+and `short_description: ''` for a draft without a description. Tags must be a
+list of nonempty text labels without commas or line breaks; surrounding spaces
+and repeated tags are normalized when read without rewriting the file. Keep
+text values as strings (quote values such as `123` or `true`). Reads use saved
+edits immediately. Sync/build validates the YAML, updates the backend metadata
+digest and public modification date, and uses the fields in post pages,
+listings and collection contents. It preserves the authored YAML, including
+comments and formatting. Invalid or missing YAML stops the operation without
+replacing the file or the existing generated pages.
+
+Keep both source filenames when changing a title. IDs, publication settings,
+thumbnail, code path, related-post IDs, dates, notes and to-dos remain in
+`backend/` and are managed through the CMS. The optional `post edit` command
+writes title, description and tag changes to the same authored YAML.
+
+A published post needs a description, verified thumbnail and notebook content;
+publishing makes it eligible for a build and does not deploy anything. `rm`
+deletes the record and its notebook and metadata YAML, detaches the post from
+collections and related-post lists, and keeps managed images in `content/images/`. It prompts
+unless `--yes` is used.
 
 Repeat `--related` to set ordered related-post IDs; `--clear-related` clears
-them. Tags are comma-separated; `--tags ""` clears them.
+them. CLI `--tags` values are comma-separated; `--tags ""` clears them.
 
 Each post owns one notebook source path; sharing a source path is invalid.
 `check` and both sync modes reject duplicate ownership across drafts and
@@ -221,6 +257,8 @@ Replace thumbnails with `post edit --thumbnail PATH` and collection covers with
 
 ```sh
 uv run at cms collection new "Transformers from Scratch"
+# Edit metadata in content/collections/transformers-from-scratch.yaml.
+# Edit the introduction in content/collections/transformers-from-scratch.md.
 uv run at cms collection ls
 uv run at cms collection edit collection/transformers-from-scratch --description "A reading sequence"
 uv run at cms collection edit collection/transformers-from-scratch --cover /path/to/cover.png
@@ -233,12 +271,24 @@ uv run at cms collection show collection/transformers-from-scratch
 uv run at cms collection rm collection/transformers-from-scratch --yes
 ```
 
-New collections start as drafts. `open` edits the introduction; the ordered
-contents list is generated from post IDs. Positions start at zero; adding
+New collections start as drafts with metadata YAML and an empty Markdown file.
+The YAML contains `title`, `short_description` and optional `cover_caption`;
+the matching `.md` file contains the long description/introduction as ordinary
+Markdown, without required front matter or a `long_description:` wrapper. Edit
+either file directly in your editor without a CLI save step. Saved edits are
+read immediately and reach generated pages on the next sync/build, which
+preserves both files' comments and formatting. Both sources participate in
+revision checks and public modification dates; missing files or invalid YAML
+stop the operation without replacing authored files or existing generated pages.
+Keep both filenames when changing the collection title.
+
+`open` edits only the Markdown introduction; the ordered contents table is
+generated from post IDs and shows each member's position, title, short description
+and creation date. Positions start at zero; adding
 without `--position` appends. Removing membership preserves the post. `publish`
 requires descriptions, a cover and at least one published member; `draft` returns
-the collection to draft. `rm` deletes the collection record and introduction but
-leaves its member posts and managed images untouched. Collection changes never
+the collection to draft. `rm` deletes the collection record, metadata YAML and
+Markdown introduction but leaves its member posts and managed images untouched. Collection changes never
 publish or delete the member posts; after deleting a member post, `check` may
 report a published collection that no longer has a published member.
 `--cover-caption` adds a Markdown caption beneath the cover on the collection
