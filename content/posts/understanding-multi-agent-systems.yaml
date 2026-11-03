@@ -1,0 +1,6 @@
+title: Understanding Multi-Agent Systems
+short_description: Chapter 1 notes on what makes an agent, why some tasks need several, and a first round-robin system built with two agents.
+tags:
+- ai
+- multi-agent
+- autogen
