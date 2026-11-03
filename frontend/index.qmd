@@ -29,7 +29,7 @@ My work spans predictive models, applied LLMs, agentic systems, and the engineer
 
 [View my résumé →](resume.qmd)
 <br>
-[View my collections →](collections.qmd)
+[View collections →](collections.qmd)
 <br>
 [View posts →](posts.qmd)
 <br>

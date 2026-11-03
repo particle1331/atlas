@@ -132,7 +132,8 @@ h2 {
 
 .collection-contents table {
   width: 100%;
-  min-width: 48rem;
+  min-width: 40rem;
+  table-layout: fixed;
   margin-bottom: 0;
   font-size: 0.9rem;
 }
@@ -143,15 +144,26 @@ h2 {
   hyphens: none;
 }
 
+.collection-contents th:first-child {
+  width: 2%;
+}
+
 .collection-contents th:nth-child(2) {
-  width: 24%;
+  width: 26%;
 }
 
 .collection-contents th:nth-child(3) {
-  width: 32%;
+  width: 60%;
 }
 
-.collection-contents td:nth-child(n + 4) {
+.collection-contents th:last-child {
+  width: 12%;
+}
+
+.collection-contents th:first-child,
+.collection-contents td:first-child,
+.collection-contents th:last-child,
+.collection-contents td:last-child {
   white-space: nowrap;
 }
 
