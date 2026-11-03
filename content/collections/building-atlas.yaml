@@ -1,7 +1,0 @@
-title: Understanding Atlas
-short_description: A series on Atlas’s content CMS, notebook ops, and local Vault.
-long_description: 'Follow Atlas from its content CMS to the notebook CLI and the Vault: how the system
-  organizes and publishes content, edits and executes notebook cells, and manages local secrets with an
-  audit history.'
-cover_caption: '*Crouching Figure of Atlas* by the Italian Renaissance artist Baldassare Tommaso Peruzzi
-  (1481–1536)'
