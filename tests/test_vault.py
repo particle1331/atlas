@@ -12,7 +12,7 @@ from keyring.errors import PasswordDeleteError
 from typer.testing import CliRunner
 
 from atlas.cli import app
-from atlas.vault import SERVICE_NAME
+from atlas.vault import SERVICE_NAME, VaultError, get_secret
 
 
 class LocalKeyring(KeyringBackend):
@@ -323,6 +323,42 @@ def test_backend_exceptions_cannot_print_secret_values(
     assert record["operation"] == "set"
     assert record["outcome"] == "failure"
     assert record["exit_code"] == 2
+
+
+def test_get_secret_serves_python_callers(
+    backend: LocalKeyring, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The reader returns values, and reports a missing entry as None."""
+    backend.values[(SERVICE_NAME, "TOKEN")] = "private value"
+
+    assert get_secret("TOKEN") == "private value"
+    assert get_secret("MISSING") is None
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+def test_get_secret_raises_vault_error_for_unavailable_backend(
+    get_backend: Mock,
+) -> None:
+    """Keyring initialization failures surface as VaultError to callers."""
+    get_backend.side_effect = RuntimeError("unavailable")
+
+    with pytest.raises(VaultError, match="Could not initialize keyring"):
+        get_secret("TOKEN")
+
+
+def test_get_secret_raises_vault_error_for_backend_failure(
+    backend: LocalKeyring, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keyring read failures surface as VaultError without leaking details."""
+    monkeypatch.setattr(
+        backend, "get_password", Mock(side_effect=RuntimeError("private credential"))
+    )
+
+    with pytest.raises(VaultError, match="Keyring operation failed") as error:
+        get_secret("TOKEN")
+    assert "private credential" not in str(error.value)
 
 
 def test_logging_failure_does_not_change_secret_output(

@@ -5,7 +5,8 @@ import shutil
 import subprocess
 import sys
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from getpass import GetPassWarning
 from typing import Annotated
 
@@ -23,6 +24,10 @@ app = typer.Typer(no_args_is_help=True, help="Store secrets in system keyring.")
 Name = Annotated[str, typer.Argument(help="Name of the secret, such as API_TOKEN.")]
 
 
+class VaultError(RuntimeError):
+    """The system keyring could not complete a vault operation."""
+
+
 def _exit(message: str, *, code: int = 2):
     typer.secho(f"Error: {message}", err=True, fg=typer.colors.BRIGHT_RED)
     raise typer.Exit(code)
@@ -32,9 +37,11 @@ def _get_backend() -> KeyringBackend:
     try:
         backend = keyring.get_keyring()
     except Exception as error:
-        _exit(f"Could not initialize keyring ({type(error).__name__}).")
+        raise VaultError(
+            f"Could not initialize keyring ({type(error).__name__})."
+        ) from None
     if isinstance(backend, (FailKeyring, NullKeyring)):
-        _exit(f"No usable keyring is configured.")
+        raise VaultError("No usable keyring is configured.")
     return backend
 
 
@@ -42,7 +49,22 @@ def _call_keyring[T](function: Callable[..., T], *args: str) -> T:
     try:
         return function(SERVICE_NAME, *args)
     except Exception as error:
-        _exit(f"Keyring operation failed ({type(error).__name__}).")
+        raise VaultError(
+            f"Keyring operation failed ({type(error).__name__})."
+        ) from None
+
+
+def get_secret(name: str) -> str | None:
+    """Return the stored value, or None if absent. Raise VaultError on failure."""
+    return _call_keyring(_get_backend().get_password, name)
+
+
+@contextmanager
+def _cli_keyring_errors() -> Iterator[None]:
+    try:
+        yield
+    except VaultError as error:
+        _exit(str(error))
 
 
 def _copy_to_clipboard(value: str) -> None:
@@ -75,10 +97,10 @@ def _read_env_example() -> list[Name]:
 
 
 @app.command("get")
-def get_secret(name: Name) -> None:
+def get_command(name: Name) -> None:
     """Copy a secret to the clipboard or write it to stdout when piped."""
-    with audit("get", name):
-        value = _call_keyring(_get_backend().get_password, name)
+    with audit("get", name), _cli_keyring_errors():
+        value = get_secret(name)
         if value is None:
             _exit(f"Secret {name!r} was not found.", code=1)
         if sys.stdout.isatty():
@@ -97,7 +119,7 @@ def set_secret(
     ] = False,
 ) -> None:
     """Create or replace a secret using a hidden prompt or stdin."""
-    with audit("set", name):
+    with audit("set", name), _cli_keyring_errors():
         backend = _get_backend()
         if from_stdin:
             value = sys.stdin.read()
@@ -133,7 +155,7 @@ def remove_secret(
     ] = False,
 ) -> None:
     """Delete a local secret value from the keyring."""
-    with audit("rm", name) as event:
+    with audit("rm", name) as event, _cli_keyring_errors():
         backend = _get_backend()
         if _call_keyring(backend.get_password, name) is None:
             _exit(f"Secret {name!r} was not found.", code=1)
@@ -155,7 +177,7 @@ def remove_secret(
 @app.command("check")
 def check_secrets() -> None:
     """Check that every name in .env.example has a keyring entry."""
-    with audit("check") as event:
+    with audit("check") as event, _cli_keyring_errors():
         names = _read_env_example()
         event.secret_names = names
         if not names:
