@@ -16,7 +16,6 @@ listing:
   page-size: 10
   date-format: iso
   fields:
-  - image
   - date
   - title
   - description
