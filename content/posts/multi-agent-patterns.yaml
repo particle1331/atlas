@@ -1,0 +1,7 @@
+title: Multi-Agent Patterns
+short_description: Chapter 2 notes on sequential, conditional, and parallel workflows and how agents coordinate
+  through plans, handoffs, and group chats.
+tags:
+- ai
+- multi-agent
+- autogen
