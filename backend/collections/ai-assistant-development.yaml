@@ -1,6 +1,6 @@
 id: collection/ai-assistant-development
 created_at: '2026-11-03T12:48:03.134727+00:00'
-updated_at: '2026-11-03T14:19:03.095874+00:00'
+updated_at: '2026-11-03T19:59:06.873447+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -8,5 +8,5 @@ cover_path: content/images/d68cd4fedf16439a80e3f0024bf6cf537a8efa40f41e1de261c14
 post_ids:
 - post/module-1-ai-native-developer-workflow
 source_path: content/collections/ai-assistant-development.md
-source_digest: 35be2e1b710ed72ef62a6a8ac047a550c9defd36e44aac0af91c920a8075ddf2
+source_digest: 4c866781a312f928d16c42feaf4d6609d347730d21d8f38981eb5b6e1ef35d78
 metadata_digest: f1c7842e417dbf6f88a25389b0dcc581890b6fd190f9bcf002ac0c3c7fca50cc
