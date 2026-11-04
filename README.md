@@ -80,7 +80,7 @@ Use `uv run at cms --json post ls` for JSON lists.
 
 ```sh
 uv run at cms post new "Understanding Attention" --tags "python,transformers"
-# Edit content/posts/understanding-attention.ipynb in VS Code or Jupyter.
+uv run at cms open post/understanding-attention
 # Edit title, short_description and tags in content/posts/understanding-attention.yaml.
 uv run at cms post ls
 uv run at cms id understanding-attention  # -> post/understanding-attention
@@ -99,6 +99,9 @@ uv run at cms post rm post/understanding-attention --yes
 ```
 
 A new post starts as a draft with an empty notebook and a matching YAML file.
+`cms open` takes an exact post ID and opens its source notebook and editable
+`content/posts/<id>.yaml` in VS Code. It requires `code` on `PATH`.
+
 Edit the YAML directly in VS Code or another editor; no CLI command is needed
 to save these fields:
 
@@ -276,8 +279,7 @@ Replace thumbnails with `post edit --thumbnail PATH` and collection covers with
 
 ```sh
 uv run at cms collection new "Transformers from Scratch"
-# Edit metadata in content/collections/transformers-from-scratch.yaml.
-# Edit the introduction in content/collections/transformers-from-scratch.md.
+uv run at cms open collection/transformers-from-scratch
 uv run at cms collection ls
 uv run at cms collection edit collection/transformers-from-scratch --description "A reading sequence"
 uv run at cms collection edit collection/transformers-from-scratch --cover /path/to/cover.png
@@ -291,6 +293,7 @@ uv run at cms collection rm collection/transformers-from-scratch --yes
 ```
 
 New collections start as drafts with metadata YAML and an empty Markdown file.
+`cms open` takes an exact collection ID and opens both files in VS Code.
 The YAML contains `title`, `short_description` and optional `cover_caption`;
 the matching `.md` file contains the long description/introduction as ordinary
 Markdown, without required front matter or a `long_description:` wrapper. Edit
@@ -301,7 +304,7 @@ revision checks and public modification dates; missing files or invalid YAML
 stop the operation without replacing authored files or existing generated pages.
 Keep both filenames when changing the collection title.
 
-`open` edits only the Markdown introduction; the ordered contents table is
+`collection open` edits the Markdown introduction; the ordered contents table is
 generated from post IDs and shows each member's position, title, short description
 and creation date. Positions start at zero; adding
 without `--position` appends. Removing membership preserves the post. `publish`
@@ -337,8 +340,9 @@ See [Résumé PDF](#résumé-pdf) for layout, fonts and caching.
 
 ### Writing, notes and storage
 
-`open` edits only the selected body through `$VISUAL`/`$EDITOR`; use `--file PATH`
-or `--file -` for file/stdin input. `notes` also accepts `--file`. Metadata `edit`
+`collection open` and `resume open` edit the selected body through
+`$VISUAL`/`$EDITOR`. Use `--file PATH` or `--file -` for file/stdin input.
+`notes` also accepts `--file`. Metadata `edit`
 commands can prompt if no field flags are supplied. Supply explicit inputs for
 noninteractive work.
 
@@ -483,6 +487,18 @@ or `-y` is used.
 
 `get` copies a secret to the clipboard when stdout is a terminal. When stdout is
 redirected or piped, it writes the stored value to stdout without adding a newline.
+
+In Python, import the vault reader and pass its return value directly to the
+client that needs it.
+
+```python
+from atlas.vault import get_secret
+
+api_key = get_secret("API_TOKEN")
+```
+
+`get_secret` returns the value silently, returns `None` when the entry is absent,
+and raises `atlas.vault.VaultError` on keyring failure.
 
 Vault commands leave `.env.example` unchanged. Deleting a value makes its name
 appear as missing on the next check. Remove a name from `.env.example` when the

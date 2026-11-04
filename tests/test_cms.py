@@ -101,6 +101,39 @@ def new_post(store, title="Attention"):
     )
 
 
+@pytest.mark.parametrize("kind, missing_code", [("post", 4), ("collection", 2)])
+def test_cms_open_launches_the_recorded_source_and_metadata(
+    store, monkeypatch, kind, missing_code
+):
+    from atlas import cms
+
+    record = run(store, kind, "new", "Attention")["record"]
+    identity = record["id"]
+    source = store.path(record["source_path"])
+    renamed = source.rename(source.with_name(f"Custom source{source.suffix}"))
+    record_path = store.record_path(identity)
+    raw = decode(record_path.read_bytes())
+    raw["source_path"] = renamed.relative_to(store.root).as_posix()
+    record_path.write_bytes(encode(raw))
+    calls = []
+
+    def launch(command):
+        calls.append(command)
+        return 0
+
+    monkeypatch.setattr(cms.shutil, "which", lambda name: f"/bin/{name}")
+    monkeypatch.setattr(cms.subprocess, "call", launch)
+
+    invoke(store, "open", identity)
+    metadata = store.path(f"content/{kind}s/attention.yaml")
+    assert calls == [["/bin/code", str(renamed), str(metadata)]]
+
+    renamed.unlink()
+    result = invoke(store, "open", identity, code=missing_code)
+    assert renamed.name in result.stderr
+    assert len(calls) == 1
+
+
 def publish(store, identity):
     image = store.root / "thumbnail.png"
     Image.new("RGB", (8, 8), "blue").save(image)

@@ -70,9 +70,11 @@ keep its existing options and surrounding content. Inspect all matches before
 using `remove-cell --tag`, which removes every matching cell.
 
 Provide explicit input in noninteractive work: use `--content`, `--file PATH`
-or `--file -` for notebook edits, `--file` for CMS `open`/`notes`, and explicit
-field flags for metadata edits. These commands can otherwise open an editor or
-prompt. Use a quoted heredoc for multiline input to avoid shell expansion.
+or `--file -` for notebook edits, `--file` for CMS `collection open`, `resume open`
+and `notes`, and explicit field flags for metadata edits. These commands can
+otherwise open an editor or prompt. Use a quoted heredoc for multiline input to
+avoid shell expansion. See [posts](README.md#posts) and
+[collections](README.md#collections) for opening source files in VS Code.
 
 Keep source notebooks as ordinary cells. Do not add required front matter,
 planning cells or generated navigation/contents lists. The CMS supplies document
@@ -119,6 +121,21 @@ the same voice principles to post introductions.
   planned exploration from completed work; do not invent experience or results.
 - Make subtle improvements that preserve the author's intent and scope. Apply
   these principles without forcing every collection into the same template.
+
+### Teaching technical concepts
+
+- Organize learning posts around the ideas readers need to understand or apply.
+  Use the source as a starting point. Spend space on mechanisms, assumptions,
+  and failure cases that change how a reader would reason, implement, or
+  evaluate something. Cut repetition, dated background, and examples that
+  teach the same point.
+- Develop important ideas with a worked example, a counterexample, or an
+  experiment the reader can inspect. Explain what the example demonstrates
+  and what would count as evidence for a stronger claim.
+- Bring in current research and engineering conventions when they clarify,
+  qualify, or correct the source. Verify and cite the relevant evidence.
+  Distinguish the source's example, later findings, and the author's own
+  results.
 
 ## Revisions and saved execution
 

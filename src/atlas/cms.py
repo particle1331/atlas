@@ -140,6 +140,28 @@ def id(ctx: typer.Context, query: str):
     typer.echo(identity)
 
 
+@app.command("open")
+@guard
+def open_sources(ctx: typer.Context, identity: Identity):
+    """Open a post's notebook or a collection's Markdown, plus its YAML, in VS Code.
+
+    Requires `code` on PATH.
+    """
+    if not identity.startswith(("post/", "collection/")):
+        raise ValueError("Expected a post/ or collection/ ID.")
+    store = store_for(ctx)
+    with store.lock():
+        record = store.get(identity)["record"]
+        source = store.path(record["source_path"])
+        if not source.is_file():
+            raise NotFound(f"Source file not found: {record['source_path']}")
+        metadata, _ = store.content_source(record)
+    executable = shutil.which("code")
+    if executable is None:
+        raise ValueError("Install the VS Code 'code' command on PATH, then try again.")
+    raise typer.Exit(subprocess.call([executable, str(source), str(metadata)]))
+
+
 def read_text(
     filename: Path | None, initial: str = "", extension: str = ".md"
 ) -> str | None:
