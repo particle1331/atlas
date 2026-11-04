@@ -1,6 +1,0 @@
-- understand atlas, consolidate posts (at most 3)
-- flet posts
-- deep learning posts / maybe consolidate with llms
-- cnn post
-- full stack app
-- 
