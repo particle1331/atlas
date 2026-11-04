@@ -1,5 +1,6 @@
 title: Understanding Multi-Agent Systems
-short_description: Chapter 1 notes on what makes an agent, why some tasks need several, and a first round-robin system built with two agents.
+short_description: Chapter 1 notes on when to use an agent, how agents coordinate, and a two-agent example
+  that revises a haiku.
 tags:
 - ai
 - multi-agent
