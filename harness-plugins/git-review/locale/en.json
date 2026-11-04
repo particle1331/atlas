@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git Review",
+    "description": "Organize working changes into related commits using diffs and recent repository sessions, then review and explicitly commit or push."
+  }
+}

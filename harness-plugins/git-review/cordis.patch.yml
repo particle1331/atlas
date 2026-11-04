@@ -1,0 +1,3 @@
+- insert:
+    - id: local-git-review
+      name: '@local/dsh-git-review'
