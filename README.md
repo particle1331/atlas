@@ -402,6 +402,11 @@ Quarto can incrementally render affected pages and reload the browser rather tha
 rebuilding the whole site. New and deleted content is picked up too. The initial
 preview still renders all pages.
 
+The posts listing uses a wider desktop grid for the table and its right-hand
+filters; adjust its page-specific grid in `frontend/_cms/posts.qmd` without
+changing article widths. The posts-only table styles in `frontend/assets/styles.css`
+keep the title and description columns at a 3:5 width ratio.
+
 Résumé edits also refresh the downloadable PDF; unchanged PDF inputs reuse the
 cached download. CMS templates under `frontend/_cms/` and bundled fonts are watched
 as well. Invalid intermediate saves report an error without stopping preview;

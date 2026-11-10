@@ -1,6 +1,12 @@
 ---
 title: Posts
+body-classes: posts-index
 page-layout: full
+grid:
+  sidebar-width: 0px
+  body-width: 1080px
+  margin-width: 220px
+  gutter-width: 32px
 sidebar: false
 toc: false
 aliases:

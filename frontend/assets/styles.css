@@ -249,6 +249,22 @@ h2 {
   min-width: 0;
 }
 
+/* Posts: reserve stable columns with a 3:5 title-to-description ratio. */
+.posts-index .quarto-listing table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.posts-index .quarto-listing th:nth-child(1) { width: 10%; }
+.posts-index .quarto-listing th:nth-child(2) { width: 24%; }
+.posts-index .quarto-listing th:nth-child(3) { width: 40%; }
+.posts-index .quarto-listing th:nth-child(4) { width: 16%; }
+.posts-index .quarto-listing th:nth-child(5) { width: 10%; }
+
+.posts-index .quarto-listing td {
+  overflow-wrap: anywhere;
+}
+
 /* --- Listing table header consistency --- */
 .quarto-listing thead th a.sort {
   color: inherit;
