@@ -1,0 +1,3 @@
+Six-week applied course on designing, building, and deploying AI agents. The course starts with LLM design patterns, then introduces OpenAI Agents SDK, CrewAI, LangGraph, and AutoGen, before exploring the Model Context Protocol (MCP) for connecting agents to tools and services.
+
+The course uses eight projects to explore these ideas, from research and email agents to software engineering teams, browser assistants, and a multi-agent trading floor. This collection follows that hands-on work, with attention to how tasks are divided, how agents use tools and coordinate, and where their outputs need testing and human oversight.
