@@ -1,8 +1,0 @@
-Notes from reading [Designing Multi-Agent Systems](https://multiagentbook.com/) by Victor Dibia. The preface traces the book's central question from LIDA, Dibia's data visualization pipeline, to his work on conversation-based agents with [AutoGen](https://github.com/microsoft/autogen)[^1] at Microsoft Research. A pipeline works well when the steps are known. When the next step depends on what the system finds, an agent can decide how to proceed. Dibia starts with the simplest design that can do the job and asks what another agent would add.
-
-[^1]: Precursor to the [Microsoft Agent Framework](https://github.com/microsoft/agent-framework).
-
-The preface lays out four parts. The first (**foundations**) compares single agents, workflows, and autonomous teams, and considers how users delegate work and interrupt a run. The second (**framework**) builds [PicoAgents](https://github.com/victordibia/designing-multiagent-systems/tree/main/picoagents) from scratch in Python. It starts with a model, tools, and memory in one agent loop, then builds workflows that follow a graph and orchestrators that choose who acts next. Implementing those pieces makes it easier to see what a framework handles and which choices still belong to the developer.
-
-The third part (**evals**) evaluates both the final answer and the steps that produced it. It covers diagnosing failures, connecting agents to tools with MCP, coordinating across systems with A2A, and managing the security risks of letting agents act. The final part (**applications**) applies the design and evaluation methods to two cases, answering business questions from unstructured data and building a software engineering agent. 
-
