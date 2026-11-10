@@ -159,8 +159,9 @@ output extraction and clearing behavior.
 
 Run `uv run at cms check` for content changes. It reports draft blockers too;
 report relevant diagnostics without filling unrelated drafts just to make it
-pass. Refresh generated copies with `uv run at cms sync --preview` after source
-edits during a running preview.
+pass. A running `make preview` automatically syncs source edits; use
+`uv run at cms sync --preview` to refresh generated copies without a preview.
+See [preview and build](README.md#preview-and-build) for watching behavior.
 
 Check the relevant preview or build when rendering is affected. Use CMS
 preview/build entrypoints so sync runs first and Quarto receives `--no-execute`;

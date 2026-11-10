@@ -395,9 +395,18 @@ their publication requirements are met. `uv run at cms check` reports references
 and publication blockers for drafts as well as published records; exit status 1
 can be expected for unfinished drafts.
 
-During a running preview, run `uv run at cms sync --preview` after source edits
-to refresh the generated copies, or restart `make preview`. Sync alone does not
-render the PDF; restart `make preview` to refresh the download as well.
+Keep `make preview` running while editing. It watches `content/` and `backend/`
+(including notebook sidecars, metadata and CMS record changes), debounces saves,
+and automatically syncs the frontend. Only changed projections are written, so
+Quarto can incrementally render affected pages and reload the browser rather than
+rebuilding the whole site. New and deleted content is picked up too. The initial
+preview still renders all pages.
+
+Résumé edits also refresh the downloadable PDF; unchanged PDF inputs reuse the
+cached download. CMS templates under `frontend/_cms/` and bundled fonts are watched
+as well. Invalid intermediate saves report an error without stopping preview;
+fix the source and save again to retry. Hidden files and notebook checkpoints are
+ignored. Builds and preview never execute notebook code. Press Ctrl-C to stop.
 
 #### Résumé PDF
 

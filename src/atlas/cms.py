@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
@@ -959,6 +960,59 @@ def render_resume_pdf(store: Store, executable: str):
             )
 
 
+def preview_snapshot(store: Store) -> dict:
+    """Track authored inputs, not generated output or editor checkpoint files."""
+    snapshot = {}
+    for directory in (
+        "content",
+        "backend",
+        "frontend/_cms",
+        "frontend/assets/fonts",
+    ):
+        root = store.path(directory)
+        for path in root.rglob("*"):
+            if any(part.startswith(".") for part in path.relative_to(root).parts):
+                continue
+            if path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
+                continue
+            try:
+                if path.is_file():
+                    stat = path.stat()
+                    snapshot[path.relative_to(store.root).as_posix()] = (
+                        stat.st_mtime_ns,
+                        stat.st_ctime_ns,
+                        stat.st_size,
+                    )
+            except FileNotFoundError:
+                # Atomic editor saves can replace a file while scanning.
+                continue
+    return snapshot
+
+
+def watch_preview(store: Store, executable: str, process):
+    """Debounce source saves and let Quarto watch changed frontend projections."""
+    previous = preview_snapshot(store)
+    changed_at = None
+    typer.echo("Watching content/ and backend/ for CMS changes.")
+    while process.poll() is None:
+        time.sleep(0.25)
+        current = preview_snapshot(store)
+        if current != previous:
+            previous = current
+            changed_at = time.monotonic()
+        if changed_at is None or time.monotonic() - changed_at < 0.5:
+            continue
+        changed_at = None
+        try:
+            generate(store, True)
+            render_resume_pdf(store, executable)
+        except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
+            # A half-written or invalid save must not kill the preview server.
+            typer.echo(f"Preview sync failed: {error}. Fix the source and save again.", err=True)
+        else:
+            typer.echo("Preview content synced.")
+
+
 def run_quarto(ctx, preview, port=4200):
     executable = shutil.which(os.environ.get("QUARTO", "quarto"))
     if executable is None:
@@ -970,7 +1024,20 @@ def run_quarto(ctx, preview, port=4200):
     if preview:
         command += ["--profile", "preview", "--port", str(port), "--render", "all"]
     command += ["--no-execute"]
-    raise typer.Exit(subprocess.call(command, cwd=store.root))
+    if not preview:
+        raise typer.Exit(subprocess.call(command, cwd=store.root))
+    process = subprocess.Popen(command, cwd=store.root)
+    try:
+        watch_preview(store, executable, process)
+    finally:
+        if process.poll() is None:
+            process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+    raise typer.Exit(process.returncode)
 
 
 @app.command("build")
@@ -985,5 +1052,5 @@ def build(ctx: typer.Context):
 def preview(
     ctx: typer.Context, port: Annotated[int, typer.Option(min=1, max=65535)] = 4200
 ):
-    """Generate drafts and start Quarto preview; run again after CMS edits."""
+    """Preview drafts and watch content/backend edits; sync changed files without executing code."""
     run_quarto(ctx, True, port)

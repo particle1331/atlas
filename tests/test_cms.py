@@ -1243,7 +1243,22 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
                 assert args[args.index("--port") + 1] == "4300"
         return 0
 
+    class FinishedPreview:
+        returncode = 0
+
+        def poll(self):
+            return 0
+
+        def wait(self, timeout=None):
+            return 0
+
+    def popen(args, cwd):
+        assert command == "preview"
+        quarto(args, cwd)
+        return FinishedPreview()
+
     monkeypatch.setattr(cms.subprocess, "call", quarto)
+    monkeypatch.setattr(cms.subprocess, "Popen", popen)
     args = [command] + (["--port", "4300"] if command == "preview" else [])
     invoke(store, *args)
     assert len(calls) == 2 and "typst" in calls[0]
@@ -1275,6 +1290,301 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
     assert b"A freshly edited summary." in download.read_bytes()
     assert b"A freshly edited accomplishment." in download.read_bytes()
     assert not list(store.path(".atlas/cms").glob("resume-pdf-*"))
+
+
+def test_preview_snapshot_tracks_only_recursive_visible_source_files(tmp_path):
+    from atlas import cms
+
+    store = Store(tmp_path)
+    watched = [
+        "content/posts/nested/post.ipynb",
+        "content/collections/guide.yaml",
+        "backend/posts/post.yaml",
+        "frontend/_cms/resume-pdf/layout.lua",
+        "frontend/assets/fonts/nested/body.otf",
+    ]
+    ignored = [
+        "content/.draft.yaml",
+        "content/posts/.hidden/post.ipynb",
+        "backend/.lock",
+        "frontend/_cms/.hidden/template.qmd",
+        "frontend/assets/fonts/.cache/font.otf",
+        "frontend/posts/post.qmd",
+        "frontend/assets/resume.pdf",
+        "frontend/_site-preview/index.html",
+        ".atlas/cms/resume.qmd",
+    ]
+    for relative in watched + ignored:
+        path = store.path(relative)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(relative)
+    store.path("content/linked.yaml").symlink_to(store.path(watched[1]))
+    store.path("content/linked-directory").symlink_to(
+        store.path("backend"), target_is_directory=True
+    )
+    store.path("backend/broken.yaml").symlink_to(store.path("missing"))
+
+    snapshot = cms.preview_snapshot(store)
+
+    assert set(snapshot) == set(watched)
+    for relative in watched:
+        stat = store.path(relative).stat()
+        assert snapshot[relative] == (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size)
+    store.path(watched[0]).write_text("Edited notebook")
+    assert cms.preview_snapshot(store)[watched[0]] != snapshot[watched[0]]
+    store.path(watched[1]).unlink()
+    created = store.path("content/collections/new.md")
+    created.write_text("New introduction")
+    changed = cms.preview_snapshot(store)
+    assert watched[1] not in changed
+    assert "content/collections/new.md" in changed
+
+
+def test_preview_snapshot_tolerates_missing_source_directories(tmp_path):
+    from atlas import cms
+
+    assert cms.preview_snapshot(Store(tmp_path)) == {}
+
+
+@pytest.fixture
+def preview_clock(monkeypatch):
+    from atlas import cms
+
+    class Clock:
+        tick = 0
+        stop = 12
+        edits = {}
+
+        def monotonic(self):
+            return self.tick * 0.25
+
+        def sleep(self, duration):
+            assert duration == 0.25
+            self.tick += 1
+            assert self.tick <= self.stop, "watcher did not stop with Quarto"
+            if self.tick in self.edits:
+                self.edits[self.tick]()
+
+        def poll(self):
+            return 0 if self.tick >= self.stop else None
+
+    clock = Clock()
+    monkeypatch.setattr(cms.time, "sleep", clock.sleep)
+    monkeypatch.setattr(cms.time, "monotonic", clock.monotonic)
+    return clock
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "content/posts/example.ipynb",
+        "backend/posts/example.yaml",
+        "frontend/_cms/resume-pdf/layout.lua",
+        "frontend/assets/fonts/body.otf",
+    ],
+)
+def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
+    store, monkeypatch, preview_clock, relative
+):
+    from atlas import cms
+
+    path = store.path(relative)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("Initial source")
+    preview_clock.edits = {
+        1: lambda: path.write_text("First save"),
+        2: lambda: path.write_text("Second save"),
+    }
+    calls = []
+
+    def regenerate(actual_store, preview):
+        assert actual_store is store and preview is True
+        calls.append(("generate", preview_clock.monotonic()))
+        # Sync itself may update managed records; this must not retrigger sync.
+        store.path("backend/posts/example.yaml").write_text("Updated by sync")
+
+    def render(actual_store, executable):
+        assert actual_store is store and executable == "/bin/quarto"
+        calls.append(("pdf", preview_clock.monotonic()))
+
+    monkeypatch.setattr(cms, "generate", regenerate)
+    monkeypatch.setattr(cms, "render_resume_pdf", render)
+    cms.watch_preview(store, "/bin/quarto", preview_clock)
+
+    assert [kind for kind, _ in calls] == ["generate", "pdf"]
+    assert calls[0][1] >= 1.0  # Half a second after the final save.
+    assert calls[1][1] == calls[0][1]
+
+
+def test_preview_watcher_ignores_generated_output_and_hidden_edits(
+    store, monkeypatch, preview_clock
+):
+    from atlas import cms
+
+    generated = store.path("frontend/assets/resume.pdf")
+    generated.parent.mkdir(parents=True, exist_ok=True)
+    hidden = store.path("content/.editor-save")
+    preview_clock.edits = {
+        1: lambda: generated.write_bytes(b"Updated download"),
+        2: lambda: hidden.write_text("Editor state"),
+    }
+    calls = []
+    monkeypatch.setattr(cms, "generate", lambda *_: calls.append("generate"))
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: calls.append("pdf"))
+
+    cms.watch_preview(store, "/bin/quarto", preview_clock)
+
+    assert calls == []
+    assert preview_clock.tick == preview_clock.stop
+
+
+@pytest.mark.parametrize("operation", ["create", "delete"])
+def test_preview_watcher_detects_source_creation_and_deletion(
+    store, monkeypatch, preview_clock, operation
+):
+    from atlas import cms
+
+    path = store.path("content/collections/new.md")
+    if operation == "delete":
+        path.write_text("Existing source")
+    preview_clock.edits = {
+        1: (
+            path.unlink
+            if operation == "delete"
+            else lambda: path.write_text("New source")
+        )
+    }
+    calls = []
+    monkeypatch.setattr(cms, "generate", lambda *_: calls.append("generate"))
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: calls.append("pdf"))
+
+    cms.watch_preview(store, "/bin/quarto", preview_clock)
+
+    assert calls == ["generate", "pdf"]
+
+
+@pytest.mark.parametrize("phase", ["generate", "pdf"])
+@pytest.mark.parametrize("failure", ["validation", "os", "yaml", "exit"])
+def test_preview_watcher_reports_invalid_save_and_recovers_on_next_edit(
+    store, monkeypatch, preview_clock, capsys, phase, failure
+):
+    from atlas import cms
+
+    errors = {
+        "validation": ValueError("Invalid saved source"),
+        "os": OSError("Source temporarily unavailable"),
+        "yaml": cms.yaml.YAMLError("Malformed saved YAML"),
+        "exit": cms.typer.Exit(7),
+    }
+    path = store.path("content/resume.yaml")
+    preview_clock.stop = 16
+    preview_clock.edits = {
+        1: lambda: path.write_text("Invalid save"),
+        9: lambda: path.write_text("Corrected save"),
+    }
+    attempts = []
+    rendered = []
+
+    def regenerate(*_):
+        attempts.append(preview_clock.tick)
+        if phase == "generate" and len(attempts) == 1:
+            raise errors[failure]
+
+    def render(*_):
+        rendered.append(preview_clock.tick)
+        if phase == "pdf" and len(rendered) == 1:
+            raise errors[failure]
+
+    monkeypatch.setattr(cms, "generate", regenerate)
+    monkeypatch.setattr(cms, "render_resume_pdf", render)
+
+    cms.watch_preview(store, "/bin/quarto", preview_clock)
+
+    assert len(attempts) == 2
+    assert attempts[0] < 9 <= attempts[1]
+    assert len(rendered) == (1 if phase == "generate" else 2)
+    assert capsys.readouterr().err.strip()
+
+
+def test_preview_watcher_recovers_from_malformed_authored_yaml(
+    store, monkeypatch, preview_clock, capsys
+):
+    from atlas import cms
+
+    generate(store, True)
+    target = store.path("frontend/resume.qmd")
+    previous = target.read_bytes()
+    source = store.path("content/resume.yaml")
+    valid = decode(source.read_bytes())
+    valid["summary"] = "A corrected summary from the editor."
+    rendered = []
+
+    def verify_failed_save_preserves_output():
+        assert target.read_bytes() == previous
+        assert rendered == []
+
+    preview_clock.stop = 16
+    preview_clock.edits = {
+        1: lambda: source.write_text("summary: [unfinished YAML"),
+        8: verify_failed_save_preserves_output,
+        9: lambda: source.write_bytes(encode(valid)),
+    }
+    monkeypatch.setattr(
+        cms, "render_resume_pdf", lambda *_: rendered.append(target.read_text())
+    )
+
+    cms.watch_preview(store, "/bin/quarto", preview_clock)
+
+    assert len(rendered) == 1
+    assert valid["summary"] in rendered[0]
+    assert valid["summary"] in target.read_text()
+    assert capsys.readouterr().err.strip()
+
+
+@pytest.mark.parametrize("timeout", [False, True])
+def test_preview_interrupt_terminates_child_and_kills_after_timeout(
+    store, monkeypatch, timeout
+):
+    from atlas import cms
+
+    calls = []
+
+    class Preview:
+        def poll(self):
+            return None
+
+        def terminate(self):
+            calls.append("terminate")
+
+        def wait(self, timeout=None):
+            calls.append("wait")
+            if timeout is not None and timeout_requested:
+                raise cms.subprocess.TimeoutExpired("quarto", timeout)
+            return 0
+
+        def kill(self):
+            calls.append("kill")
+
+    timeout_requested = timeout
+    process = Preview()
+    monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
+    monkeypatch.setattr(
+        cms, "generate", lambda *_: {"site": str(store.path("frontend"))}
+    )
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: None)
+    monkeypatch.setattr(cms.subprocess, "Popen", lambda *_, **__: process)
+
+    def interrupt(actual_store, executable, actual_process):
+        assert actual_store.root == store.root and actual_process is process
+        assert executable == "/bin/quarto"
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cms, "watch_preview", interrupt)
+    invoke(store, "preview", code=130)
+
+    assert calls == (
+        ["terminate", "wait", "kill", "wait"] if timeout else ["terminate", "wait"]
+    )
 
 
 @pytest.mark.parametrize(
