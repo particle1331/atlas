@@ -1,11 +1,17 @@
 id: collection/agentic-systems-patterns-and-frameworks
 created_at: '2026-11-10T14:49:27.207950+00:00'
-updated_at: '2026-11-10T14:54:18.351503+00:00'
+updated_at: '2026-11-10T15:08:30.109780+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
 cover_path: content/images/a8bbc7853856bfbeacd69f472bc317761e972888b08ae2e8d58ddff480eaa0ff.png
-post_ids: []
+post_ids:
+- post/week-1-introduction-to-ai-agents
+- post/week-2-agent-orchestration-and-deep-research
+- post/week-3-multi-agents-with-crewai
+- post/week-4-memory-and-deep-agents-with-langgraph
+- post/week-5-ai-agent-frameworks
+- post/week-6-model-context-protocol-mcp
 source_path: content/collections/agentic-systems-patterns-and-frameworks.md
 metadata_digest: 8cfff71713df25d77572f346f895a53495f731c1e5406621ba4cfe742c193fee
 source_digest: ac1293dcc428737680a0fe4809674c359563bbf7b63e077a8f18889bae9368ba
