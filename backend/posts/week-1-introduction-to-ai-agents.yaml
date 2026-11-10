@@ -1,6 +1,6 @@
 id: post/week-1-introduction-to-ai-agents
 created_at: '2026-11-10T15:08:17.744606+00:00'
-updated_at: '2026-11-10T15:08:17.744606+00:00'
+updated_at: '2026-11-10T18:19:25.908905+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -8,5 +8,5 @@ thumbnail_path: null
 source_path: content/posts/week-1-introduction-to-ai-agents.ipynb
 code_path: null
 related_post_ids: []
-source_digest: 51139f9d8f67d3dee784f3d9d1841f87f5f1e058f127639052c6933ec989c96e
+source_digest: 1941676e66e84c2e6fbb11f6f9e68bf6ae304037e1539c83593582d0adf6e007
 metadata_digest: 64d7c0d90ded49e2ecf2dba138eb219561134eb13ad963f3428ddfd045cc1c57
