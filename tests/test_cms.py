@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -22,6 +23,11 @@ from atlas.cms_store import (
 from atlas.notebook_ops import figure
 
 
+@pytest.fixture(autouse=True)
+def without_quarto(tmp_path, monkeypatch):
+    monkeypatch.setenv("QUARTO", str(tmp_path / "unavailable-quarto"))
+
+
 @pytest.fixture
 def workspace(tmp_path):
     frontend = tmp_path / "frontend"
@@ -29,6 +35,9 @@ def workspace(tmp_path):
     (frontend / "collections").mkdir()
     (frontend / "_quarto.yml").write_text(
         "project:\n  type: website\nexecute:\n  enabled: false\n"
+    )
+    (frontend / "_quarto-preview.yml").write_text(
+        "project:\n  output-dir: _site-preview\nwebsite:\n  draft-mode: visible\n"
     )
     for page in ("posts", "collections"):
         (frontend / f"{page}.qmd").write_bytes(
@@ -99,6 +108,80 @@ def new_post(store, title="Attention"):
         "--tags",
         " python ,Python,python ",
     )
+
+
+@pytest.mark.parametrize(
+    ("kind", "projected"),
+    [("post", "posts/attention.ipynb"), ("collection", "collections/attention.qmd")],
+)
+def test_new_renders_draft_preview_and_keeps_stdout_as_json(
+    store, monkeypatch, kind, projected
+):
+    from atlas import cms
+
+    calls = []
+
+    def quarto(args, cwd, *, stdout):
+        assert stdout is sys.stderr
+        calls.append(args)
+        if "--to" in args:
+            Path(args[2]).with_suffix(".pdf").write_bytes(b"%PDF-1.7\n")
+        else:
+            assert cwd == store.root
+            assert store.path(f"frontend/{projected}").is_file()
+            assert store.path("frontend/assets/resume.pdf").is_file()
+            print("Preview rendered", file=stdout)
+        return 0
+
+    monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
+    monkeypatch.setattr(cms.subprocess, "call", quarto)
+    result = invoke(store, kind, "new", "Attention")
+
+    created = json.loads(result.stdout)
+    assert created == store.get(f"{kind}/attention")
+    assert created["record"]["status"] == "draft"
+    assert calls[0][-3:] == ["--to", "typst", "--no-execute"]
+    assert calls[1] == [
+        "/bin/quarto",
+        "render",
+        str(store.path("frontend")),
+        "--no-execute",
+        "--profile",
+        "preview",
+        "--output-dir",
+        "_site-preview",
+    ]
+    assert "Preview rendered" in result.stderr
+
+
+@pytest.mark.parametrize("failure", ["missing-quarto", "render"])
+def test_new_preserves_saved_draft_when_preview_refresh_fails(
+    store, monkeypatch, failure
+):
+    from atlas import cms
+
+    if failure == "render":
+        monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
+        monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: None)
+        monkeypatch.setattr(cms.subprocess, "call", lambda *_, **__: 7)
+    result = invoke(store, "post", "new", "Attention")
+
+    assert json.loads(result.stdout) == store.get("post/attention")
+    assert "Created post/attention. Preview refresh failed" in result.stderr
+    assert (
+        "Install Quarto" if failure == "missing-quarto" else "exited with status 7"
+    ) in result.stderr
+
+
+def test_new_leaves_rendering_to_an_active_live_preview(store):
+    from atlas import cms
+
+    with cms.site_lock(store, "live-preview"):
+        result = invoke(store, "collection", "new", "Attention")
+
+    assert json.loads(result.stdout) == store.get("collection/attention")
+    assert result.stderr == ""
+    assert not store.path("frontend/collections/attention.qmd").exists()
 
 
 @pytest.mark.parametrize("kind, missing_code", [("post", 4), ("collection", 2)])
@@ -1194,7 +1277,7 @@ def test_resume_pdf_projection_shares_authored_content_and_order(store):
     assert "{{cms:" not in pdf
 
 
-@pytest.mark.parametrize("command", ["build", "preview"])
+@pytest.mark.parametrize("command", ["build", "build-preview", "preview"])
 def test_build_and_preview_regenerate_pdf_before_rendering_site(
     store, monkeypatch, command
 ):
@@ -1221,7 +1304,7 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
     monkeypatch.setattr(cms.shutil, "which", which)
     calls = []
 
-    def quarto(args, cwd):
+    def quarto(args, cwd, *, stdout=None):
         calls.append(args)
         assert args[0] == "/bin/custom-quarto"
         assert "--no-execute" in args
@@ -1238,7 +1321,7 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
             assert args[1] == ("preview" if command == "preview" else "render")
             assert args[2] == str(store.path("frontend"))
             assert download.read_bytes().startswith(b"%PDF-")
-            assert ("--profile" in args) == (command == "preview")
+            assert ("--profile" in args) == (command != "build")
             if command == "preview":
                 assert args[args.index("--port") + 1] == "4300"
         return 0
@@ -1252,14 +1335,19 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
         def wait(self, timeout=None):
             return 0
 
-    def popen(args, cwd):
+    def popen(args, cwd, *, start_new_session):
         assert command == "preview"
+        assert start_new_session
         quarto(args, cwd)
         return FinishedPreview()
 
     monkeypatch.setattr(cms.subprocess, "call", quarto)
     monkeypatch.setattr(cms.subprocess, "Popen", popen)
-    args = [command] + (["--port", "4300"] if command == "preview" else [])
+    args = {
+        "build": ["build"],
+        "build-preview": ["build", "--preview"],
+        "preview": ["preview", "--port", "4300"],
+    }[command]
     invoke(store, *args)
     assert len(calls) == 2 and "typst" in calls[0]
     first = download.read_bytes()
@@ -1390,18 +1478,28 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
 
     path = store.path(relative)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("Initial source")
+
+    def save(text):
+        if path.suffix == ".ipynb":
+            path.write_bytes(nb.dump(nb.notebook(text)))
+        elif path.suffix == ".yaml":
+            record = decode(path.read_bytes())
+            record["internal_notes"] = text
+            path.write_bytes(encode(record))
+        else:
+            path.write_text(text)
+
+    save("Initial source")
     preview_clock.edits = {
-        1: lambda: path.write_text("First save"),
-        2: lambda: path.write_text("Second save"),
+        1: lambda: save("First save"),
+        2: lambda: save("Second save"),
     }
     calls = []
 
-    def regenerate(actual_store, preview):
+    def regenerate(actual_store, preview, *, watch_snapshot):
         assert actual_store is store and preview is True
         calls.append(("generate", preview_clock.monotonic()))
-        # Sync itself may update managed records; this must not retrigger sync.
-        store.path("backend/posts/example.yaml").write_text("Updated by sync")
+        return generate(actual_store, preview, watch_snapshot=watch_snapshot)
 
     def render(actual_store, executable):
         assert actual_store is store and executable == "/bin/quarto"
@@ -1429,7 +1527,7 @@ def test_preview_watcher_ignores_generated_output_and_hidden_edits(
         2: lambda: hidden.write_text("Editor state"),
     }
     calls = []
-    monkeypatch.setattr(cms, "generate", lambda *_: calls.append("generate"))
+    monkeypatch.setattr(cms, "generate", lambda *_, **__: calls.append("generate"))
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: calls.append("pdf"))
 
     cms.watch_preview(store, "/bin/quarto", preview_clock)
@@ -1455,12 +1553,33 @@ def test_preview_watcher_detects_source_creation_and_deletion(
         )
     }
     calls = []
-    monkeypatch.setattr(cms, "generate", lambda *_: calls.append("generate"))
+    monkeypatch.setattr(cms, "generate", lambda *_, **__: calls.append("generate"))
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: calls.append("pdf"))
 
     cms.watch_preview(store, "/bin/quarto", preview_clock)
 
     assert calls == ["generate", "pdf"]
+
+
+def test_preview_watcher_picks_up_draft_created_during_a_refresh(
+    store, monkeypatch, preview_clock
+):
+    from atlas import cms
+
+    path = store.path("content/posts/example.ipynb")
+    preview_clock.edits = {1: lambda: path.write_bytes(nb.dump(nb.notebook("Edited")))}
+    rendered = []
+
+    def render(actual_store, _):
+        rendered.append(actual_store.path("frontend/collections/second.qmd").exists())
+        if len(rendered) == 1:
+            actual_store.new("collection", "Second")
+
+    monkeypatch.setattr(cms, "render_resume_pdf", render)
+    snapshot = cms.watch_preview(store, "/bin/quarto", preview_clock)
+
+    assert rendered == [False, True]
+    assert snapshot == cms.preview_snapshot(store)
 
 
 @pytest.mark.parametrize("phase", ["generate", "pdf"])
@@ -1485,7 +1604,7 @@ def test_preview_watcher_reports_invalid_save_and_recovers_on_next_edit(
     attempts = []
     rendered = []
 
-    def regenerate(*_):
+    def regenerate(*_, **__):
         attempts.append(preview_clock.tick)
         if phase == "generate" and len(attempts) == 1:
             raise errors[failure]
@@ -1550,11 +1669,10 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
     calls = []
 
     class Preview:
+        pid = 123
+
         def poll(self):
             return None
-
-        def terminate(self):
-            calls.append("terminate")
 
         def wait(self, timeout=None):
             calls.append("wait")
@@ -1562,19 +1680,22 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
                 raise cms.subprocess.TimeoutExpired("quarto", timeout)
             return 0
 
-        def kill(self):
-            calls.append("kill")
-
     timeout_requested = timeout
     process = Preview()
     monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
     monkeypatch.setattr(
-        cms, "generate", lambda *_: {"site": str(store.path("frontend"))}
+        cms, "generate", lambda *_, **__: {"site": str(store.path("frontend"))}
     )
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: None)
     monkeypatch.setattr(cms.subprocess, "Popen", lambda *_, **__: process)
 
-    def interrupt(actual_store, executable, actual_process):
+    def kill_group(pid, sig):
+        assert pid == process.pid
+        calls.append(sig)
+
+    monkeypatch.setattr(cms.os, "killpg", kill_group)
+
+    def interrupt(actual_store, executable, actual_process, previous):
         assert actual_store.root == store.root and actual_process is process
         assert executable == "/bin/quarto"
         raise KeyboardInterrupt
@@ -1583,7 +1704,9 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
     invoke(store, "preview", code=130)
 
     assert calls == (
-        ["terminate", "wait", "kill", "wait"] if timeout else ["terminate", "wait"]
+        [cms.signal.SIGTERM, "wait", cms.signal.SIGKILL, "wait"]
+        if timeout
+        else [cms.signal.SIGTERM, "wait"]
     )
 
 
@@ -1607,7 +1730,7 @@ def test_resume_pdf_cache_rebuilds_after_input_or_output_changes(
         path.write_bytes(raw)
     calls = []
 
-    def quarto(args, cwd):
+    def quarto(args, cwd, *, stdout):
         calls.append(args)
         Path(args[2]).with_suffix(".pdf").write_bytes(b"%PDF-1.7\nRendered resume")
         return 0
@@ -1648,7 +1771,7 @@ def test_failed_resume_pdf_render_preserves_download_and_stops_site(
     monkeypatch.setattr(cms.shutil, "which", lambda _: "/bin/quarto")
     calls = []
 
-    def quarto(args, cwd):
+    def quarto(args, cwd, *, stdout):
         calls.append(args)
         if failure == "invalid":
             Path(args[2]).with_suffix(".pdf").write_bytes(b"An HTML error page")

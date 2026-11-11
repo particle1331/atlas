@@ -376,7 +376,14 @@ def project_images(store: Store, source: str, text: str, assets: Path) -> str:
     return nb.IMAGE_LINK.sub(replace, text)
 
 
-def generate(store: Store, preview: bool = False) -> dict:
+def file_stamp(path: Path) -> tuple[int, int, int]:
+    stat = path.stat()
+    return stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size
+
+
+def generate(
+    store: Store, preview: bool = False, *, watch_snapshot: dict | None = None
+) -> dict:
     """Project saved source and public metadata into ignored frontend files."""
     with store.lock():
         store.require_initialized()
@@ -415,6 +422,12 @@ def generate(store: Store, preview: bool = False) -> dict:
                     )
         # Source dates describe observation at explicit sync, never filesystem mtime.
         store.commit(changes)
+        if watch_snapshot is not None:
+            # Acknowledge our writes while other CMS writers are still locked out.
+            for path in changes:
+                watch_snapshot[path.relative_to(store.root).as_posix()] = file_stamp(
+                    path
+                )
         selected_posts = [r for r in posts if preview or r["status"] == "published"]
         selected_collections = [
             r for r in collections if preview or r["status"] == "published"

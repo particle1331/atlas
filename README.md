@@ -99,6 +99,7 @@ uv run at cms post rm post/understanding-attention --yes
 ```
 
 A new post starts as a draft with an empty notebook and a matching YAML file.
+Creating it automatically refreshes the [draft preview](#preview-and-build).
 `cms open` takes an exact post ID and opens its source notebook and editable
 `content/posts/<id>.yaml` in VS Code. It requires `code` on `PATH`.
 
@@ -293,6 +294,7 @@ uv run at cms collection rm collection/transformers-from-scratch --yes
 ```
 
 New collections start as drafts with metadata YAML and an empty Markdown file.
+Creating one automatically refreshes the [draft preview](#preview-and-build).
 `cms open` takes an exact collection ID and opens both files in VS Code.
 The YAML contains `title`, `short_description` and optional `cover_caption`;
 the matching `.md` file contains the long description/introduction as ordinary
@@ -374,17 +376,19 @@ Avoid simultaneous CLI and IDE saves to the same source.
 ### Preview and build
 
 ```sh
-make preview             # Live preview at http://localhost:4200
-make preview PORT=4300    # Use a different port
-make build               # Render frontend/_site/
-uv run at cms sync --preview  # Regenerate draft copies without rendering
-uv run at cms sync            # Regenerate published copies without rendering
+make preview                  # Live preview at http://localhost:4200
+make preview PORT=4300        # Use a different port
+make build                    # Render frontend/_site/
+uv run at cms build --preview  # Render frontend/_site-preview/ once
+uv run at cms sync --preview   # Regenerate draft copies without rendering
+uv run at cms sync             # Regenerate published copies without rendering
 ```
 
-Both targets first sync source notebooks with title, description, dates, categories
-and publication metadata into `frontend/posts/*.ipynb`. Quarto applies the global
-TOC settings when rendering. Collection contents and post links are generated
-from ordered IDs; the résumé is generated from its YAML entries.
+Builds and live preview first sync source notebooks with title, description,
+dates, categories and publication metadata into `frontend/posts/*.ipynb`.
+Quarto applies the global TOC settings when rendering. Atlas generates
+collection contents and post links from ordered IDs and builds the résumé
+from its YAML entries.
 These projections are gitignored. Private notes, to-dos and revision data stay out
 of the frontend. Builds never write back to or execute source notebooks.
 
@@ -395,17 +399,25 @@ their publication requirements are met. `uv run at cms check` reports references
 and publication blockers for drafts as well as published records; exit status 1
 can be expected for unfinished drafts.
 
+`post new` and `collection new` save the draft and automatically refresh its
+page and listing in `frontend/_site-preview/`. When live preview is running,
+its watcher handles the refresh. Otherwise the creation command renders the
+draft site once. If Quarto is unavailable or the render fails, the command
+still returns the saved draft and reports the preview problem. Use
+`uv run at cms build --preview` to retry the render after fixing it.
+
 Keep `make preview` running while editing. It watches `content/` and `backend/`
 (including notebook sidecars, metadata and CMS record changes), debounces saves,
 and automatically syncs the frontend. Only changed projections are written, so
 Quarto can incrementally render affected pages and reload the browser rather than
-rebuilding the whole site. New and deleted content is picked up too. The initial
-preview still renders all pages.
+rebuilding the whole site. When pages are added or removed, Atlas restarts
+Quarto at the same preview URL so it can render the updated page list.
 
-The posts listing uses a wider desktop grid for the table and its right-hand
-filters; adjust its page-specific grid in `frontend/_cms/posts.qmd` without
-changing article widths. The posts-only table styles in `frontend/assets/styles.css`
-keep the title and description columns at a 3:5 width ratio.
+Individual posts use an 880 px desktop body grid set in
+`frontend/posts/_metadata.yml`. The posts listing sets its own grid in
+`frontend/_cms/posts.qmd` to fit the table and right-hand filters. The
+posts-only table styles in `frontend/assets/styles.css` give the title and
+description columns a 3:5 width ratio.
 
 Résumé edits also refresh the downloadable PDF; unchanged PDF inputs reuse the
 cached download. CMS templates under `frontend/_cms/` and bundled fonts are watched

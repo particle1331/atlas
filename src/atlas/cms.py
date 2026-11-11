@@ -1,14 +1,17 @@
 """A terminal CMS over the documented Atlas authoring model."""
 
+import fcntl
 import functools
 import json
 import os
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
@@ -19,7 +22,7 @@ from PIL import Image
 from rich.console import Console
 from rich.table import Table
 
-from atlas.cms_site import generate, initialize
+from atlas.cms_site import file_stamp, generate, initialize
 from atlas.cms_store import (
     Ambiguous,
     Conflict,
@@ -291,22 +294,42 @@ def resume_show(ctx: typer.Context, identity: Identity):
 @post.command("new")
 @guard
 def post_new(ctx: typer.Context, title: str, description: str = "", tags: str = ""):
-    """Create a draft, empty notebook and editable title/description/tags YAML."""
-    emit(
-        store_for(ctx).new(
-            "post",
-            title,
-            short_description=description,
-            tags=normalized_tags(tags.split(",")) if tags else [],
-        )
+    """Create a draft with an empty notebook and metadata YAML, then refresh preview."""
+    store = store_for(ctx)
+    created = store.new(
+        "post",
+        title,
+        short_description=description,
+        tags=normalized_tags(tags.split(",")) if tags else [],
     )
+    emit_created(store, created)
 
 
 @collection.command("new")
 @guard
 def collection_new(ctx: typer.Context, title: str, description: str = ""):
-    """Create a draft collection with metadata YAML and an empty Markdown introduction."""
-    emit(store_for(ctx).new("collection", title, short_description=description))
+    """Create a draft with an empty introduction and metadata YAML, then refresh preview."""
+    store = store_for(ctx)
+    created = store.new("collection", title, short_description=description)
+    emit_created(store, created)
+
+
+def emit_created(store: Store, created: dict):
+    emit(created)
+    try:
+        render_site(store, preview=True)
+    except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
+        reason = (
+            f"Quarto exited with status {error.exit_code}"
+            if isinstance(error, typer.Exit)
+            else str(error)
+        )
+        identity = created["record"]["id"]
+        typer.echo(
+            f"Created {identity}. Preview refresh failed: {reason}\n"
+            "Retry the preview with 'uv run at cms build --preview'.",
+            err=True,
+        )
 
 
 @resume.command("add")
@@ -907,7 +930,38 @@ def check(ctx: typer.Context):
 @guard
 def sync(ctx: typer.Context, preview: bool = False):
     """Sync ignored frontend copies with public metadata. --preview includes drafts."""
-    emit(generate(store_for(ctx), preview))
+    store = store_for(ctx)
+    with site_lock(store, "render"):
+        emit(generate(store, preview))
+
+
+@contextmanager
+def site_lock(store: Store, name: str, *, wait: bool = True):
+    """Coordinate site operations independently of the content writer."""
+    path = store.path(f".atlas/cms/{name}.lock")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(
+                handle, fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB
+            )
+        except BlockingIOError:
+            yield False
+        else:
+            yield True
+
+
+def quarto_executable() -> str:
+    executable = shutil.which(os.environ.get("QUARTO", "quarto"))
+    if executable is None:
+        raise ValueError("Install Quarto to render the site.")
+    return executable
+
+
+def preview_options(store: Store) -> list[str]:
+    if not store.path("frontend/_quarto-preview.yml").is_file():
+        raise ValueError("Missing frontend/_quarto-preview.yml.")
+    return ["--profile", "preview", "--output-dir", "_site-preview"]
 
 
 def render_resume_pdf(store: Store, executable: str):
@@ -945,6 +999,7 @@ def render_resume_pdf(store: Store, executable: str):
         status = subprocess.call(
             [executable, "render", str(source), "--to", "typst", "--no-execute"],
             cwd=directory,
+            stdout=sys.stderr,
         )
         if status:
             raise typer.Exit(status)
@@ -958,6 +1013,34 @@ def render_resume_pdf(store: Store, executable: str):
                     cache: encode({"inputs": input_digest, "pdf": digest(pdf)}),
                 }
             )
+
+
+def prepare_site(
+    store: Store,
+    executable: str,
+    preview: bool,
+    *,
+    watch_snapshot: dict | None = None,
+) -> dict:
+    result = generate(store, preview, watch_snapshot=watch_snapshot)
+    render_resume_pdf(store, executable)
+    return result
+
+
+def render_site(store: Store, preview: bool):
+    with site_lock(store, "render"):
+        if preview:
+            with site_lock(store, "live-preview", wait=False) as idle:
+                if not idle:
+                    # The live preview watches the source files created by the CMS.
+                    return
+        options = preview_options(store) if preview else []
+        executable = quarto_executable()
+        result = prepare_site(store, executable, preview)
+        command = [executable, "render", result["site"], "--no-execute", *options]
+        status = subprocess.call(command, cwd=store.root, stdout=sys.stderr)
+        if status:
+            raise typer.Exit(status)
 
 
 def preview_snapshot(store: Store) -> dict:
@@ -977,21 +1060,30 @@ def preview_snapshot(store: Store) -> dict:
                 continue
             try:
                 if path.is_file():
-                    stat = path.stat()
-                    snapshot[path.relative_to(store.root).as_posix()] = (
-                        stat.st_mtime_ns,
-                        stat.st_ctime_ns,
-                        stat.st_size,
-                    )
+                    snapshot[path.relative_to(store.root).as_posix()] = file_stamp(path)
             except FileNotFoundError:
                 # Atomic editor saves can replace a file while scanning.
                 continue
     return snapshot
 
 
-def watch_preview(store: Store, executable: str, process):
-    """Debounce source saves and let Quarto watch changed frontend projections."""
-    previous = preview_snapshot(store)
+def preview_pages(snapshot: dict) -> set[str]:
+    return {
+        path
+        for path in snapshot
+        if path.startswith(("backend/posts/", "backend/collections/"))
+        and path.endswith(".yaml")
+        and path.count("/") == 2
+    }
+
+
+def watch_preview(
+    store: Store, executable: str, process, previous: dict | None = None
+) -> dict | None:
+    """Sync source changes and return the latest snapshot if Quarto must restart."""
+    if previous is None:
+        previous = preview_snapshot(store)
+    pages = preview_pages(previous)
     changed_at = None
     typer.echo("Watching content/ and backend/ for CMS changes.")
     while process.poll() is None:
@@ -1004,47 +1096,35 @@ def watch_preview(store: Store, executable: str, process):
             continue
         changed_at = None
         try:
-            generate(store, True)
-            render_resume_pdf(store, executable)
+            with site_lock(store, "render"):
+                prepare_site(store, executable, preview=True, watch_snapshot=previous)
         except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
             # A half-written or invalid save must not kill the preview server.
-            typer.echo(f"Preview sync failed: {error}. Fix the source and save again.", err=True)
+            typer.echo(
+                f"Preview sync failed: {error}. Fix the source and save again.",
+                err=True,
+            )
         else:
+            # Quarto watches the project input files it knew when it started.
+            if preview_pages(previous) != pages:
+                return previous
             typer.echo("Preview content synced.")
-
-
-def run_quarto(ctx, preview, port=4200):
-    executable = shutil.which(os.environ.get("QUARTO", "quarto"))
-    if executable is None:
-        raise ValueError("Install Quarto, then run this command again.")
-    store = store_for(ctx)
-    result = generate(store, preview)
-    render_resume_pdf(store, executable)
-    command = [executable, "preview" if preview else "render", result["site"]]
-    if preview:
-        command += ["--profile", "preview", "--port", str(port), "--render", "all"]
-    command += ["--no-execute"]
-    if not preview:
-        raise typer.Exit(subprocess.call(command, cwd=store.root))
-    process = subprocess.Popen(command, cwd=store.root)
-    try:
-        watch_preview(store, executable, process)
-    finally:
-        if process.poll() is None:
-            process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-    raise typer.Exit(process.returncode)
+    return None
 
 
 @app.command("build")
 @guard
-def build(ctx: typer.Context):
-    """Generate and render published content locally without executing notebooks."""
-    run_quarto(ctx, False)
+def build(
+    ctx: typer.Context,
+    preview: Annotated[
+        bool,
+        typer.Option(
+            "--preview", help="Include drafts and render to frontend/_site-preview/."
+        ),
+    ] = False,
+):
+    """Sync and render the site once without executing notebooks."""
+    render_site(store_for(ctx), preview)
 
 
 @app.command("preview")
@@ -1053,4 +1133,50 @@ def preview(
     ctx: typer.Context, port: Annotated[int, typer.Option(min=1, max=65535)] = 4200
 ):
     """Preview drafts and watch content/backend edits; sync changed files without executing code."""
-    run_quarto(ctx, True, port)
+    store = store_for(ctx)
+    executable = quarto_executable()
+    options = [
+        *preview_options(store),
+        "--port",
+        str(port),
+        "--render",
+        "all",
+        "--no-execute",
+    ]
+    with site_lock(store, "live-preview", wait=False) as available:
+        if not available:
+            raise ValueError("A live preview is already running in this workspace.")
+        with site_lock(store, "render"):
+            # Watch for creations made while Quarto is starting.
+            previous = preview_snapshot(store)
+            result = prepare_site(
+                store, executable, preview=True, watch_snapshot=previous
+            )
+        while True:
+            process = subprocess.Popen(
+                [executable, "preview", result["site"], *options],
+                cwd=store.root,
+                start_new_session=True,
+            )
+            try:
+                previous = watch_preview(store, executable, process, previous)
+            finally:
+                stop_preview(process)
+            if previous is None:
+                raise typer.Exit(process.returncode)
+            typer.echo("Refreshing live preview for the changed page list.")
+            if "--no-browser" not in options:
+                options.append("--no-browser")
+
+
+def stop_preview(process):
+    # The Quarto launcher starts a child server that also needs to release the port.
+    if process.poll() is None:
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGTERM)
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait()

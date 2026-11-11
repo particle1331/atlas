@@ -161,6 +161,8 @@ Run `uv run at cms check` for content changes. It reports draft blockers too;
 report relevant diagnostics without filling unrelated drafts just to make it
 pass. A running `make preview` automatically syncs source edits; use
 `uv run at cms sync --preview` to refresh generated copies without a preview.
+Post and collection creation refresh the draft preview automatically. For a
+one-time render after later edits, use `uv run at cms build --preview`.
 See [preview and build](README.md#preview-and-build) for watching behavior.
 
 Check the relevant preview or build when rendering is affected. Use CMS
