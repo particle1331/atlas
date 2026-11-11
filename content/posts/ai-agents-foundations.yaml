@@ -1,0 +1,7 @@
+title: AI Agents Foundations
+short_description: Foundational research behind AI agents, with experiments on chain-of-thought
+  prompting, tool use, and grounding.
+tags:
+- ai-agents
+- llms
+- python
