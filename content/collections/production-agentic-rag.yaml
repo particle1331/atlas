@@ -1,0 +1,4 @@
+title: Production Agentic RAG
+short_description: Lessons and experiments on building, evaluating, and operating an agentic RAG system.
+cover_caption: Full architecture of an agentic RAG system consisting of multiple modules. **Source:**
+  [jamwithai/production-agentic-rag-course](https://github.com/jamwithai/production-agentic-rag-course/tree/main).

@@ -1,0 +1,8 @@
+title: 'Agentic RAG. Week 2: Reliable Data Ingestion'
+short_description: Build and evaluate a retry-safe arXiv ingestion pipeline with PDF parsing, durable
+  storage, and Airflow.
+tags:
+- rag
+- data-ingestion
+- airflow
+- data-pipelines

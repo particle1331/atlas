@@ -1,0 +1,8 @@
+title: 'Agentic RAG. Week 1: Infrastructure Setup'
+short_description: Build a production-grade RAG system using Docker, PostgreSQL, OpenSearch, FastAPI,
+  Airflow, and Ollama.
+tags:
+- rag
+- docker
+- system-design
+- fastapi

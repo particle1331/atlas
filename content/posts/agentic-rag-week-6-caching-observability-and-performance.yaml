@@ -1,0 +1,8 @@
+title: 'Agentic RAG. Week 6: Caching, Observability, and Performance'
+short_description: Design cache equivalence and freshness policies, trace requests, and measure latency
+  distributions.
+tags:
+- rag
+- caching
+- observability
+- performance
