@@ -36,6 +36,7 @@ wheels/
 /scratch.ipynb
 .DS_Store
 /plans/module-M1/results
+/.tmp/
 
 # Quarto cache and rendered site
 frontend/.quarto/
