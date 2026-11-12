@@ -548,14 +548,14 @@ def generate(
                     if identity in by_id
                 ]
                 rows = [
-                    "| # | Title | Short description | Created at |",
+                    "| # | Title | Short description | Last modified |",
                     "| --- | --- | --- | --- |",
                 ]
                 for index, member in enumerate(members, 1):
-                    created = datetime.fromisoformat(member["created_at"]).date()
+                    modified = datetime.fromisoformat(member["updated_at"]).date()
                     rows.append(
                         f"| {index} | {link(member)} | "
-                        f"{table_text(member['short_description'])} | {created} |"
+                        f"{table_text(member['short_description'])} | {modified} |"
                     )
                 lines.append(
                     "::: {.collection-contents}\n\n" + "\n".join(rows) + "\n\n:::"

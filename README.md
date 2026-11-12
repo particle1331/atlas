@@ -308,7 +308,7 @@ Keep both filenames when changing the collection title.
 
 `collection open` edits the Markdown introduction; the ordered contents table is
 generated from post IDs and shows each member's position, title, short description
-and creation date. Positions start at zero; adding
+and last modified date. Positions start at zero; adding
 without `--position` appends. Removing membership preserves the post. `publish`
 requires descriptions, a cover and at least one published member; `draft` returns
 the collection to draft. `rm` deletes the collection record, metadata YAML and
@@ -414,10 +414,13 @@ rebuilding the whole site. When pages are added or removed, Atlas restarts
 Quarto at the same preview URL so it can render the updated page list.
 
 Individual posts use an 880 px desktop body grid set in
-`frontend/posts/_metadata.yml`. The posts listing sets its own grid in
+`frontend/posts/_metadata.yml`. Page titles and section headings are left-aligned;
+body paragraphs retain their existing alignment. The posts listing sets its own grid in
 `frontend/_cms/posts.qmd` to fit the table and right-hand filters. The
 posts-only table styles in `frontend/assets/styles.css` give the title and
 description columns a 3:5 width ratio.
+Collection contents tables reserve 18% of their width for the last modified
+date, with 34% for titles and 46% for short descriptions.
 
 Résumé edits also refresh the downloadable PDF; unchanged PDF inputs reuse the
 cached download. CMS templates under `frontend/_cms/` and bundled fonts are watched

@@ -3,6 +3,11 @@ body, p {
   hyphens: auto;
 }
 
+/* Keep titles and section headings left-aligned independently of body text. */
+main.content :is(h1, h2, h3, h4, h5, h6) {
+  text-align: left;
+}
+
 /* For Jupyter and nbconvert, sometimes table cells need extra specificity: */
 table, thead, tbody, tr, td, th {
   text-align: left !important;
@@ -149,15 +154,15 @@ h2 {
 }
 
 .collection-contents th:nth-child(2) {
-  width: 34.4%;
+  width: 34%;
 }
 
 .collection-contents th:nth-child(3) {
-  width: 51.6%;
+  width: 46%;
 }
 
 .collection-contents th:last-child {
-  width: 12%;
+  width: 18%;
 }
 
 .collection-contents th:first-child,
