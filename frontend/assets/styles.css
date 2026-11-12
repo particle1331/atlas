@@ -490,7 +490,7 @@ h2 {
   }
 }
 
-/* --- Resume hero banner --- */
+/* --- Open homepage hero --- */
 .resume-hero {
   position: relative;
   isolation: isolate;
@@ -498,10 +498,10 @@ h2 {
   display: flex;
   flex-direction: column;
   min-height: calc(100svh - 12rem);
-  padding: clamp(4.5rem, 6vw, 6.5rem) 2.25vw 2rem;
-  margin: 3.5rem 0 0;
-  border: 4px solid #171717;
-  background: #fff;
+  padding: clamp(3rem, 6vw, 5rem) 0 2rem;
+  margin: 2rem 0 0;
+  border: 0;
+  background: transparent;
   text-align: left;
 }
 
@@ -624,9 +624,8 @@ h2 {
 @media (max-width: 860px) {
   .resume-hero {
     min-height: 0;
-    padding: 2.5rem 1.25rem 1.25rem;
+    padding: 2.5rem 0 1.25rem;
     margin: 1.5rem 0 0;
-    border-width: 3px;
   }
 
   .resume-hero-layout {
