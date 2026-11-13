@@ -40,3 +40,11 @@ dev = [
 
 [tool.isort]
 profile = "black"
+extend_skip_glob = ["projects/*"]
+
+[tool.black]
+extend-exclude = "/projects/"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["projects", ".*", "build", "dist", "venv", "{arch}"]

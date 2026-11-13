@@ -30,6 +30,10 @@ rules here. Keep shared explanations in one place and link to them.
 - Import images with the CLI. Keep existing managed copies that may still have
   references, and keep only public supporting assets beside notebooks because
   sync copies notebook-relative sidecars into the frontend.
+- Supporting project code lives under `projects/`; see
+  [supporting projects](projects/README.md). Treat imported weekly reference
+  snapshots as read-only, use each post's CMS `code_path` and the project's
+  release manifest to select the matching source, and keep adaptations separate.
 - Site templates, configuration, theme/assets and `_metadata.yml` files under
   `frontend/` are editable. Regenerate projected posts, collections, listings
   and résumé pages through CMS sync; direct edits are overwritten.

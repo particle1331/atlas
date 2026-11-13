@@ -17,6 +17,7 @@ wheels/
 .env
 .env.*
 !.env.example
+!/projects/production-agentic-rag/week[3-7]/.env.test
 
 # Local Vault audit records and temporary/lock files
 /.atlas/logs/

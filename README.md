@@ -37,6 +37,7 @@ dependencies. Editable sources live in `content/`; CLI-managed records live in
 | `backend/posts/<id>.yaml`, `backend/collections/<id>.yaml`, `backend/resume/<entry-id>.yaml` | CLI-managed IDs, metadata, source paths/digests, dates, publication, membership, ordering, notes and to-dos. |
 | `backend/cms.yaml` | CLI-managed storage schema. |
 | `content/images/` | Canonical imported images; use CLI image commands to copy and link them. |
+| `projects/` | Supporting project code, separate from post notebooks. See [supporting projects](projects/README.md) for versioned source and execution guidance. |
 | `frontend/_cms/`, `frontend/index.qmd`, frontend configuration, theme/assets and `_metadata.yml` files | Editable site templates and presentation. |
 | `frontend/posts/*.ipynb`, `frontend/collections/*.qmd`, `frontend/{posts,collections,resume}.qmd`, `frontend/assets/cms/` | Ignored generated copies; recreate with CMS sync/build. |
 | `frontend/_site/`, `frontend/_site-preview/`, `.atlas/cms/` | Ignored render output and CMS runtime/recovery files. |

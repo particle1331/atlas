@@ -1,0 +1,48 @@
+{
+  "repository": "https://github.com/jamwithai/production-agentic-rag-course",
+  "license": "MIT",
+  "snapshots": [
+    {
+      "directory": "week1",
+      "tag": "week1.0",
+      "commit": "1e56640a7b45581f8e100dcb090bbe7a48ed84f8",
+      "post_id": "post/agentic-rag-week-1-infrastructure-setup"
+    },
+    {
+      "directory": "week2",
+      "tag": "week2.0",
+      "commit": "066559e6431fcafdef678664cf1b07102f47d2de",
+      "post_id": "post/agentic-rag-week-2-reliable-data-ingestion"
+    },
+    {
+      "directory": "week3",
+      "tag": "week3.0",
+      "commit": "488bc17869941d47b0cd244276fbc72dd4ab347b",
+      "post_id": "post/agentic-rag-week-3-keyword-search-and-retrieval-evaluation"
+    },
+    {
+      "directory": "week4",
+      "tag": "week4.0",
+      "commit": "19cd5888c7e6037fdd8d5889344fd5e0112b13c3",
+      "post_id": "post/agentic-rag-week-4-chunking-embeddings-and-hybrid-search"
+    },
+    {
+      "directory": "week5",
+      "tag": "week5.0",
+      "commit": "55bfb10d6c9c8c87d98557f8e0345644c6cad635",
+      "post_id": "post/agentic-rag-week-5-grounded-generation-and-streaming-apis"
+    },
+    {
+      "directory": "week6",
+      "tag": "week6.0",
+      "commit": "bc4effe072c18db9ff0b11fd65ae6b26fc99dbc6",
+      "post_id": "post/agentic-rag-week-6-caching-observability-and-performance"
+    },
+    {
+      "directory": "week7",
+      "tag": "week7.0",
+      "commit": "d185d9b45d5ee02b7c11ac8f868597448c31cd34",
+      "post_id": "post/agentic-rag-week-7-bounded-agents-and-adaptive-retrieval"
+    }
+  ]
+}

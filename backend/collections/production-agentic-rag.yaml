@@ -1,6 +1,6 @@
 id: collection/production-agentic-rag
 created_at: '2026-11-11T22:36:53.180707+00:00'
-updated_at: '2026-11-12T08:34:53.249005+00:00'
+updated_at: '2026-11-13T12:45:18.094213+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -15,4 +15,4 @@ post_ids:
 - post/agentic-rag-week-7-bounded-agents-and-adaptive-retrieval
 source_path: content/collections/production-agentic-rag.md
 metadata_digest: c181a446ee10c4ebfca37aa3a16e9ab9f4d0e8e32b3391c86f964011a32ea4d3
-source_digest: ebd1811316ff002a5b95f44a5a2faa87ca5f5c26798bb9bbb5761028eaf1f9b0
+source_digest: 92d49563593141f29c15c2d2a6b653f493e59e13e277170457451400b813a464
