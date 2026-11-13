@@ -22,6 +22,7 @@ wheels/
 # Local Vault audit records and temporary/lock files
 /.atlas/logs/
 /.atlas/cms/
+!/.atlas/plans/
 
 # Generated CMS projections; editable source is in content/ and records in backend/.
 /frontend/posts/*
