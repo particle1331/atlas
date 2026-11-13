@@ -1,6 +1,6 @@
 id: post/agentic-rag-week-1-infrastructure-setup
 created_at: '2026-11-11T23:19:50.714727+00:00'
-updated_at: '2026-11-13T12:45:01.152522+00:00'
+updated_at: '2026-11-13T14:24:27.313596+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -8,5 +8,5 @@ thumbnail_path: null
 source_path: content/posts/agentic-rag-week-1-infrastructure-setup.ipynb
 code_path: projects/production-agentic-rag/week1
 related_post_ids: []
-source_digest: fafb04db3009a3de708335f8e3fc6f0b2ae2d576c0e2c6126def47e8478f5a36
-metadata_digest: 7348d5bbb8baa362e5ea754d485f54d5835021746d88337098626aff612ab3d4
+source_digest: 44fc4db4099059b69fa28ae726e674eb4f72cb2585ec61ec03bb4f54d3ca035e
+metadata_digest: bec9feb328305a72a03abb93164b432930f42284e1fcd2351f467e0735913347
