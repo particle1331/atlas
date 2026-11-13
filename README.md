@@ -7,8 +7,6 @@ projects for the current operating system user.
 
 This README covers setup, user workflows and site behavior.
 [AGENTS.md](AGENTS.md) contains working rules for agents editing this repository.
-Project-local OpenCode agents, commands and configuration checks are documented
-in [.opencode/README.md](.opencode/README.md).
 
 ```sh
 uv sync
@@ -458,19 +456,6 @@ changes in Git. The ignored
 cache, missing/changed PDF or changed renderer triggers a fresh render.
 A failed PDF render stops the command and preserves the previous download.
 
-## Git hooks
-
-Install the pre-commit tool and enable the repository hook once per clone:
-
-```sh
-uv tool install pre-commit
-pre-commit install
-```
-
-Before each commit, the hook scans staged files for likely secrets with
-`detect-secrets`. To scan all tracked files manually, use
-`pre-commit run --all-files`. Run `uv run at vault check` to check vault entries.
-
 ## Vault
 
 ```sh
@@ -557,3 +542,52 @@ New log files are created with owner-only permissions, and concurrent commands
 serialize updates. A logging failure emits a sanitized warning to stderr without
 changing the command result. These logs cover calls through Vault, not direct
 keyring access, and are not protected against changes by the same OS user.
+
+## Other stuff, utilities 
+
+### OpenCode
+
+Project-local agents, commands and configuration checks are documented in
+[.opencode/README.md](.opencode/README.md). Agent definitions live in
+`.opencode/agents/`.
+
+From the repository root, inspect the resolved agent models and reasoning
+variants (requires `jq`):
+
+```sh
+opencode debug agents | jq '.[] | select(.model) | {agent: .id, model: .model}'
+```
+
+OpenCode reports the model ID and reasoning `variant` as separate JSON fields;
+filtering with `grep gpt` hides the variant.
+
+### Commands
+
+Project slash commands live in `.opencode/commands/` and run inside OpenCode.
+
+| Command | Purpose |
+| --- | --- |
+| `/commit` | Review changes, group related work and create local Conventional Commits. Does not push or rewrite history. |
+| `/reload` | Force a configuration refresh after editing agents or commands. |
+
+Pass optional guidance after the command:
+
+```text
+/commit keep the content updates separate from tooling changes
+```
+
+For commit safeguards, model selection and review-only usage, see the
+[command documentation](.opencode/README.md#local-commits).
+
+## Git hooks
+
+Install the pre-commit tool and enable the repository hook once per clone:
+
+```sh
+uv tool install pre-commit
+pre-commit install
+```
+
+Before each commit, the hook scans staged files for likely secrets with
+`detect-secrets`. To scan all tracked files manually, use
+`pre-commit run --all-files`. Run `uv run at vault check` to check vault entries.
