@@ -159,6 +159,16 @@ builds never run code. Clear outputs deliberately, and preserve unrelated saved
 results. See [saved execution](README.md#saved-execution) for prefix execution,
 output extraction and clearing behavior.
 
+## Commit command handoff
+
+The `/commit` command authorizes its child session to stage clear, in-scope
+changes and create new local commits, but never to push or rewrite history.
+When it returns, briefly display the actual commit count, hashes, messages,
+checks, exclusions and remaining changes in the main conversation. Do not
+require the user to open the child session or request a summary. Relay the
+result without repeating the review or creating additional commits; report
+failures and partial completion explicitly.
+
 ## Validate and finish
 
 Run `uv run at cms check` for content changes. It reports draft blockers too;

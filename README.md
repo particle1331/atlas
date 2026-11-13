@@ -7,6 +7,8 @@ projects for the current operating system user.
 
 This README covers setup, user workflows and site behavior.
 [AGENTS.md](AGENTS.md) contains working rules for agents editing this repository.
+Project-local OpenCode agents, commands and configuration checks are documented
+in [.opencode/README.md](.opencode/README.md).
 
 ```sh
 uv sync
