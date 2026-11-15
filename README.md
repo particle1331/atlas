@@ -422,6 +422,7 @@ applying Markdown-derived width hints. The posts listing sets its own grid in
 `frontend/_cms/posts.qmd` to fit the table and right-hand filters. The
 posts-only table styles in `frontend/assets/styles.css` give the title and
 description columns a 3:5 width ratio.
+The right-hand listing sidebar shows date filters before categories.
 Collection contents tables reserve 18% of their width for the last modified
 date, with 34% for titles and 46% for short descriptions.
 
