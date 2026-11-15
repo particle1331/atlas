@@ -1,6 +1,6 @@
 id: collection/agentic-systems-patterns-and-frameworks
 created_at: '2026-11-10T14:49:27.207950+00:00'
-updated_at: '2026-11-15T18:14:36.597047+00:00'
+updated_at: '2026-11-15T18:53:43.638479+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -14,4 +14,4 @@ post_ids:
 - post/week-6-model-context-protocol-mcp
 source_path: content/collections/agentic-systems-patterns-and-frameworks.md
 metadata_digest: 8cfff71713df25d77572f346f895a53495f731c1e5406621ba4cfe742c193fee
-source_digest: a1c9c2d7a640bad0da9a8840c1d21be069691f06ca85cf32878fbfcae2e7bae1
+source_digest: 015ed947ccdbf868b234792b8bd586943411b346a511b17972e5d3a92ee177b5
