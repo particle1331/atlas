@@ -126,8 +126,49 @@ the same voice principles to post introductions.
 - Make subtle improvements that preserve the author's intent and scope. Apply
   these principles without forcing every collection into the same template.
 
+### Writing voice
+
+For technical explanations, aim for the voice of a clear 1960s mathematics
+textbook: precise, restrained, and pedagogical. The reference is to the care
+of the exposition, not dated vocabulary or ornamental formality.
+
+- Develop the explanation from a principle through a concrete example to its
+  consequences. Introduce assumptions before relying on them, and explain why
+  each step follows. Let this progression guide the prose without making every
+  passage follow a fixed template.
+- Explain limitations through their causes rather than issuing declarations or
+  accumulating warnings. Keep caveats relevant to the concept being taught;
+  a short example need not become a checklist of every production concern.
+- Condense repetition, not reasoning or evidence. Preserve useful source links
+  and the scope of the claims they support when shortening a passage.
+- Explain the reasoning in explanatory prose rather than directing the reader.
+  Prefer "We keep the message intact because..." to "Keep the message intact."
+- Use "we" for shared walkthroughs and "I" for the author's actual choices or
+  observations, grounded in the source material. Do not imply shared experience
+  or agreement where there is none.
+- Reserve imperatives for procedures, checklists, and warnings, where direct
+  instructions serve a clear purpose.
+- Prefer concrete explanations to generic advice or authoritative-sounding
+  claims. State the mechanism, reason, or tradeoff instead of merely telling
+  readers what they should do.
+- Rewrite naturally rather than mechanically adding "we want to" to every
+  instruction. A description of what the code does may be clearer.
+
+Examples for explanatory prose:
+
+| Instead of | Prefer |
+|:--|:--|
+| "Keep the returned assistant message intact." | "We keep the returned assistant message intact so the next request includes its `reasoning_content`." |
+| "Use `asyncio.gather` for independent lookups." | "These lookups are independent, so we use `asyncio.gather` to overlap their I/O waits." |
+| "You must validate tool arguments." | "The dispatcher validates tool arguments before execution because a model-generated request can contain unexpected fields or values." |
+| "The application controls concurrency—not the model." | "The `tool_calls` array supplies names and arguments, but no dependency information. The harness chooses how to execute the calls using application-defined rules about the tools and the resources they affect." |
+
 ### Teaching technical concepts
 
+- Prefer tables to unordered lists for enumerations, such as categories,
+  alternatives, or comparisons. Use meaningful column headings to show what
+  each entry describes. Retain numbered lists when order matters, as in
+  procedures, sequential steps, or a derivation.
 - Organize learning posts around the ideas readers need to understand or apply.
   Use the source as a starting point. Spend space on mechanisms, assumptions,
   and failure cases that change how a reader would reason, implement, or
