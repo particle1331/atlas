@@ -414,9 +414,11 @@ Quarto can incrementally render affected pages and reload the browser rather tha
 rebuilding the whole site. When pages are added or removed, Atlas restarts
 Quarto at the same preview URL so it can render the updated page list.
 
-Individual posts use an 880 px desktop body grid set in
+Individual posts use a 792 px desktop body grid set in
 `frontend/posts/_metadata.yml`. Page titles and section headings are left-aligned;
-body paragraphs retain their existing alignment. The posts listing sets its own grid in
+body paragraphs retain their existing alignment. HTML post tables use
+`tbl-colwidths: false` so the browser sizes columns from their content rather than
+applying Markdown-derived width hints. The posts listing sets its own grid in
 `frontend/_cms/posts.qmd` to fit the table and right-hand filters. The
 posts-only table styles in `frontend/assets/styles.css` give the title and
 description columns a 3:5 width ratio.

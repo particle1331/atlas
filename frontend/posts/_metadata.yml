@@ -1,2 +1,5 @@
 grid:
-  body-width: 880px
+  body-width: 792px
+format:
+  html:
+    tbl-colwidths: false
