@@ -1,3 +1,4 @@
-title: 'Week 1: Introduction to AI Agents'
-short_description: ''
+title: 'AG-1: Introduction to AI Agents'
+short_description: Notes and Python examples on LLM requests, tool calling, and the orchestration, evaluation,
+  and guardrails of AI agents.
 tags: []
