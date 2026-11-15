@@ -1,6 +1,6 @@
 id: post/week-3-multi-agents-with-crewai
 created_at: '2026-11-10T15:08:20.294440+00:00'
-updated_at: '2026-11-14T10:37:38.290254+00:00'
+updated_at: '2026-11-15T18:50:56.580189+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/week-3-multi-agents-with-crewai.ipynb
 code_path: null
 related_post_ids: []
 source_digest: 867c9ed3fa4f965fb085f46e4c0e9de286ed0ff488831c7ee37eef75c39fcecf
-metadata_digest: ece34e254f96f0c42e8b1aa843e288f510f6f5ed00bf6778683c2faf886425e0
+metadata_digest: 31c143b61128d65c72b8ea8e8651b74079afa7a4dbd47c5b8b398c9122082330

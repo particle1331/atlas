@@ -1,6 +1,6 @@
 id: post/week-5-ai-agent-frameworks
 created_at: '2026-11-10T15:08:25.547216+00:00'
-updated_at: '2026-11-14T10:37:38.341087+00:00'
+updated_at: '2026-11-15T18:50:56.761311+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/week-5-ai-agent-frameworks.ipynb
 code_path: null
 related_post_ids: []
 source_digest: 2bd645ab9c6487fc29bf49c51998083d9783abcf781899d0fa6a81ef926df0f8
-metadata_digest: 049bfa422003e8aa4b7c24c5305619f9c40e57496447a0c75f66009c18efed59
+metadata_digest: a1dc5357c5164efec289c6393c7121a134fdbb7c6717cd97187d6bbc94a24f6d

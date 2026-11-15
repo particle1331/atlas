@@ -1,6 +1,6 @@
 id: post/week-6-model-context-protocol-mcp
 created_at: '2026-11-10T15:08:28.156978+00:00'
-updated_at: '2026-11-14T10:37:38.250870+00:00'
+updated_at: '2026-11-15T18:50:56.849571+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/week-6-model-context-protocol-mcp.ipynb
 code_path: null
 related_post_ids: []
 source_digest: e1aaa63525395ea8fab7766bc4bd6ea70b2467b854534792d9b704bf50c0c100
-metadata_digest: c150c9a6ea5bcd169bc09e54ca0f47e7bb30bded63577c21e1bc921799e4b8a3
+metadata_digest: f918bb3e74903771fbca19cc9b6f7e79a4abead2775f9f91631ac448f5788a8f

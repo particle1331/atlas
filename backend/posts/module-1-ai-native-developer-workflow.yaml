@@ -1,6 +1,6 @@
 id: post/module-1-ai-native-developer-workflow
 created_at: '2026-11-03T13:15:31.656464+00:00'
-updated_at: '2026-11-03T19:44:21.646792+00:00'
+updated_at: '2026-11-15T18:51:52.763565+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/module-1-ai-native-developer-workflow.ipynb
 code_path: null
 related_post_ids: []
 source_digest: 4ecd6a4ffce0821c81c74a55341771473a1d85cb41179f66ba8e450170255888
-metadata_digest: 3c62aece4344b088a2354526b97545ba1e471f25b5dda2585731c35c8fa4f653
+metadata_digest: 604aed2fc43cdd105eb1fac1cf5fe9df6d5d54646248b4f3bd0fedaf08c587f6
