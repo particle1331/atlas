@@ -1,4 +1,4 @@
-title: 'Agentic RAG. Week 7: Bounded Agents and Adaptive Retrieval'
+title: 'aRAG-7: Bounded Agents and Adaptive Retrieval'
 short_description: Analyze LangGraph control flow, test adaptive retrieval, and evaluate agents against
   a fixed RAG baseline.
 tags:

@@ -1,6 +1,6 @@
 id: post/agentic-rag-week-5-grounded-generation-and-streaming-apis
 created_at: '2026-11-12T08:23:26.652514+00:00'
-updated_at: '2026-11-13T12:45:01.876852+00:00'
+updated_at: '2026-11-14T10:37:38.191861+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/agentic-rag-week-5-grounded-generation-and-streaming-
 code_path: projects/production-agentic-rag/week5
 related_post_ids: []
 source_digest: cd3819c19f5e22719d46b5634cdf97d9c9d351d6a54e395680a7c545f68370da
-metadata_digest: 937ca6160ed6e48822f7a5ee33209c6a7f75e743a20916a405ca28831399e317
+metadata_digest: 7a0cc779dff7f533d55a7aa71b9959d709b26f1c3f1497dce30656c9971939eb

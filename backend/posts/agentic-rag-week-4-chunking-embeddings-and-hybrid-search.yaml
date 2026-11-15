@@ -1,6 +1,6 @@
 id: post/agentic-rag-week-4-chunking-embeddings-and-hybrid-search
 created_at: '2026-11-12T08:23:19.328803+00:00'
-updated_at: '2026-11-13T12:45:01.680428+00:00'
+updated_at: '2026-11-14T10:37:38.164702+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/agentic-rag-week-4-chunking-embeddings-and-hybrid-sea
 code_path: projects/production-agentic-rag/week4
 related_post_ids: []
 source_digest: 4e4411eb0934200fcfa2ffefffc0be73c8859372f32d3b3f7e49ddde9ddd5e35
-metadata_digest: 6482a3ffa728096e4e3227c367088f671c7b9914b5da79c85cac6a81e191570b
+metadata_digest: 474fb3467f33259ae6bfc7d62928a55b25153b2316365c1697cb890ecc167eca

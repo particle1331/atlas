@@ -1,6 +1,6 @@
 id: post/agentic-rag-week-2-reliable-data-ingestion
 created_at: '2026-11-12T08:23:04.882828+00:00'
-updated_at: '2026-11-13T12:45:01.327336+00:00'
+updated_at: '2026-11-14T10:37:38.155745+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/agentic-rag-week-2-reliable-data-ingestion.ipynb
 code_path: projects/production-agentic-rag/week2
 related_post_ids: []
 source_digest: 0a2a89a4be6bd4f47124f5b8e93c330b91a819bd6b87a2201c5ebc0e7749f7ce
-metadata_digest: 0aacb5aa16fab7b44cc51867ff54d55c7f0bf20254b82771d47ee91bc3b10e59
+metadata_digest: 25f2b556d7e551433ff767b2bb3c225d02ff0f6da6be0b61d4cafaf7c33c5927

@@ -1,6 +1,6 @@
-title: 'Agentic RAG. Week 1: Infrastructure Setup'
-short_description: A walkthrough of the Week 1 RAG codebase, its infrastructure, and the
-  engineering tradeoffs behind requests, persistence, scheduling, and model serving.
+title: 'aRAG-1: Infrastructure Setup'
+short_description: A walkthrough of the Week 1 RAG codebase, its infrastructure, and the engineering tradeoffs
+  behind requests, persistence, scheduling, and model serving.
 tags:
 - rag
 - docker

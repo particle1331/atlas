@@ -1,4 +1,4 @@
-title: 'Agentic RAG. Week 4: Chunking, Embeddings, and Hybrid Search'
+title: 'aRAG-4: Chunking, Embeddings, and Hybrid Search'
 short_description: Investigate chunk boundaries, embedding contracts, reciprocal rank fusion, and retrieval
   quality.
 tags:

@@ -1,4 +1,4 @@
-title: 'Agentic RAG. Week 3: Keyword Search and Retrieval Evaluation'
+title: 'aRAG-3: Keyword Search and Retrieval Evaluation'
 short_description: Derive BM25, inspect OpenSearch queries, and evaluate a lexical retrieval baseline.
 tags:
 - rag

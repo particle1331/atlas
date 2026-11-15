@@ -1,4 +1,4 @@
-title: 'Agentic RAG. Week 5: Grounded Generation and Streaming APIs'
+title: 'aRAG-5: Grounded Generation and Streaming APIs'
 short_description: Connect retrieved evidence to generation, verify citations, and test streaming response
   contracts.
 tags:

@@ -1,6 +1,6 @@
 id: post/agentic-rag-week-7-bounded-agents-and-adaptive-retrieval
 created_at: '2026-11-12T08:23:50.657320+00:00'
-updated_at: '2026-11-13T12:45:02.286129+00:00'
+updated_at: '2026-11-14T10:37:38.245778+00:00'
 status: draft
 internal_notes: ''
 internal_todos: []
@@ -9,4 +9,4 @@ source_path: content/posts/agentic-rag-week-7-bounded-agents-and-adaptive-retrie
 code_path: projects/production-agentic-rag/week7
 related_post_ids: []
 source_digest: ac92b8e2e1a3595f58f679b4390cffd797c4bf8a9c66a1412b371f28a9166f16
-metadata_digest: 3d37a83dedbee11200167c5b7fda053d462f8b5da70713ea8a7a2a361fb15f79
+metadata_digest: f89e2b80250daf069b322acc517638704c5e939ba2be6170a3da97518f609171
