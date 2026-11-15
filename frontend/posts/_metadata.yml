@@ -2,4 +2,4 @@ grid:
   body-width: 792px
 format:
   html:
-    tbl-colwidths: false
+    tbl-colwidths: true

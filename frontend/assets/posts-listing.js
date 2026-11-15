@@ -134,6 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
     container.append(section);
   }
 
-  sidebar.append(container);
+  sidebar.prepend(container);
   update(false);
 });

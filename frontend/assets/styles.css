@@ -312,9 +312,9 @@ h2 {
 
 /* --- Posts date filters in the listing sidebar --- */
 .df-container {
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .df-title {
