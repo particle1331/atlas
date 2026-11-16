@@ -1,17 +1,19 @@
 id: post/aap-8-designing-a-fact-checking-system
 created_at: '2026-11-16T07:15:11.659259+00:00'
-updated_at: '2026-11-16T07:15:12.206099+00:00'
+updated_at: '2026-11-16T07:48:45.511277+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-8.
   Open gaps: G34.
-  Reserved companion directory: projects/applied-ai-prototypes/aap8 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap8 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: no_matching_implementation; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-8-designing-a-fact-checking-system.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap8
 related_post_ids: []
-source_digest: 6b5ae52609b74ef7d93516e9044f43a4a2d3f26e901b8992ae89507d9bf67a63
+source_digest: 7cc617d3be152ffc0a208f34ea166fa4b2d65ae80b16cdabffb8fbd061a28f67
 metadata_digest: 58f00f3b83c62efe867aa382ac3da7b4eb0599ead446c1b6a49b4c9228df37f2

@@ -1,17 +1,19 @@
 id: post/aap-25-react-streaming-and-agent-execution-state
 created_at: '2026-11-16T07:15:27.093471+00:00'
-updated_at: '2026-11-16T07:15:27.759703+00:00'
+updated_at: '2026-11-16T07:49:01.485007+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-25.
   Open gaps: G18.
-  Reserved companion directory: projects/applied-ai-prototypes/aap25 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap25 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-25-react-streaming-and-agent-execution-state.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap25
 related_post_ids: []
-source_digest: 8c1498d3c94e5f7729a26d2ef406451382a855ba5bc6e8d4ecaffb877f5faab5
+source_digest: dc3fa6f7abb7fce19e2b2da2c485ccf448215c55bcbb2e5bf0b65550c2a3648e
 metadata_digest: 39e802ee92508fa28e1b813cad7b113626caf1e884f948911f85463712fc4449

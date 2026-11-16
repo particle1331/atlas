@@ -1,17 +1,19 @@
 id: post/aap-22-semantic-caching-and-answer-reuse
 created_at: '2026-11-16T07:15:23.673290+00:00'
-updated_at: '2026-11-16T07:15:24.372909+00:00'
+updated_at: '2026-11-16T07:48:58.863372+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-22.
   Open gaps: G31.
-  Reserved companion directory: projects/applied-ai-prototypes/aap22 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap22 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: no_matching_implementation; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-22-semantic-caching-and-answer-reuse.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap22
 related_post_ids: []
-source_digest: 98e4f69b0d046b2ca5c1d01b48a6f71a8981182e14ad57e75b3f5378517bcf2a
+source_digest: 0e72ca66a62b6c809b4bed93b36d61c52300a6395994fad960189853e6dec5d3
 metadata_digest: e0a979cd225ab33e704b9f7648c9497414c6e351e775dd99bc641a4992637aea

@@ -1,17 +1,19 @@
 id: post/aap-28-coding-agent-architecture-claude-code-as-a-case-study
 created_at: '2026-11-16T07:15:29.919907+00:00'
-updated_at: '2026-11-16T07:15:30.671240+00:00'
+updated_at: '2026-11-16T07:49:04.092770+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-28.
   Open gaps: G27, G30, G33.
-  Reserved companion directory: projects/applied-ai-prototypes/aap28 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap28 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-28-coding-agent-architecture-claude-code-as-a-case-study.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap28
 related_post_ids: []
-source_digest: b8e40f3f14d3b5a2c3a910b74cde90956d1343a94be26fc4b6e282f8e072f789
+source_digest: 160a9b28cc2e1da5cf7296b7ebaf3d44d5d1855fc7a6a6d51f42274ae357977b
 metadata_digest: de88e4a22a5bcc2101a44615a44f771157bb3297a419383955a6db9c2691a4ee

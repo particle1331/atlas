@@ -1,17 +1,19 @@
 id: post/aap-35-parallel-research-and-subagent-execution
 created_at: '2026-11-16T07:15:38.029479+00:00'
-updated_at: '2026-11-16T07:15:38.692910+00:00'
+updated_at: '2026-11-16T07:49:09.855915+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-35.
   Open gaps: G24.
-  Reserved companion directory: projects/applied-ai-prototypes/aap35 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap35 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-35-parallel-research-and-subagent-execution.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap35
 related_post_ids: []
-source_digest: 02b380e64d273017cece22442cdefda1ef90603b3796d5db3d028c85e592ae05
+source_digest: 3a79dc6229c1c2b650c3010924b308fdab51039bc6b781bfc8d354262ac23c09
 metadata_digest: aceb89ebde1dfc4a59755db1e93a71c75560c98106416af09f0a6d7165b6fdff

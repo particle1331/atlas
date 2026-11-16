@@ -1,17 +1,19 @@
 id: post/aap-13-prompt-injection-and-untrusted-context
 created_at: '2026-11-16T07:15:15.611077+00:00'
-updated_at: '2026-11-16T07:15:16.251906+00:00'
+updated_at: '2026-11-16T07:48:50.328303+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-13.
   Open gaps: G11.
-  Reserved companion directory: projects/applied-ai-prototypes/aap13 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap13 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-13-prompt-injection-and-untrusted-context.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap13
 related_post_ids: []
-source_digest: 820726795834396d5860b01386f5857ad10890b7ec11683f838767e6453b92ba
+source_digest: 1b74a73e683a55571f195e8ad0dff472e7a1097ea299fea95c8ff42145e1c194
 metadata_digest: 3d14de0ac7ad9cada2298df8899e6bf14487cfff6cf55c0e37622ea31b523a39

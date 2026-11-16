@@ -1,17 +1,19 @@
 id: post/aap-23-designing-rag-over-ten-million-documents
 created_at: '2026-11-16T07:15:24.669841+00:00'
-updated_at: '2026-11-16T07:15:25.556361+00:00'
+updated_at: '2026-11-16T07:48:59.677375+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-23.
   Open gaps: G14, G17, G31, G34.
-  Reserved companion directory: projects/applied-ai-prototypes/aap23 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap23 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-23-designing-rag-over-ten-million-documents.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap23
 related_post_ids: []
-source_digest: d90660202e239008dd9a6d462396f383ce034cfc58b0b971f253e735bb66e248
+source_digest: bdfbfeee39839d5169d21d2db5999971d8915ea706a4361119cf899249761254
 metadata_digest: 768620f62aeb85e11359f211d002999b8637a009991267378979a484aab34801

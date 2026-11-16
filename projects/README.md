@@ -10,6 +10,10 @@ Project files are not copied into the Quarto site by CMS sync.
 - [Production Agentic RAG](production-agentic-rag/README.md) contains seven weekly
   upstream snapshots. Its [release manifest](production-agentic-rag/releases.json)
   maps each post to an exact upstream commit.
+- [Applied AI Prototypes](applied-ai-prototypes/README.md) groups pinned prototype
+  references by `AAP-n` post under `aap1` through `aap44`. Its
+  [provenance manifest](applied-ai-prototypes/provenance.json) records file
+  checksums, omissions and posts whose implementation is still unavailable.
 
 Keep imported reference trees unchanged, including their licenses. Document
 provenance and release mappings in each project's guide and manifest. Put

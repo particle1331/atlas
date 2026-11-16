@@ -1,17 +1,19 @@
 id: post/aap-38-evaluation-datasets-scoring-and-integration
 created_at: '2026-11-16T07:15:41.163149+00:00'
-updated_at: '2026-11-16T07:15:41.847734+00:00'
+updated_at: '2026-11-16T07:49:12.199006+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-38.
   Open gaps: G01, G17.
-  Reserved companion directory: projects/applied-ai-prototypes/aap38 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap38 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-38-evaluation-datasets-scoring-and-integration.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap38
 related_post_ids: []
-source_digest: 56474622de38f0c52ef803055740f437ceab2434039c4a9656ac2e58217c3453
+source_digest: 7a16b37842a90382927696fb568be8111097c335d77fda3d01030582e63506f7
 metadata_digest: 9c3313f105d37239a9b031577e7f6f6d415807b96327fda5db79ba5d1eb806e4

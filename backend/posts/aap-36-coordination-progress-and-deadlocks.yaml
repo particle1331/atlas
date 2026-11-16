@@ -1,17 +1,19 @@
 id: post/aap-36-coordination-progress-and-deadlocks
 created_at: '2026-11-16T07:15:39.012570+00:00'
-updated_at: '2026-11-16T07:15:39.876718+00:00'
+updated_at: '2026-11-16T07:49:10.644095+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-36.
   Open gaps: G23, G24.
-  Reserved companion directory: projects/applied-ai-prototypes/aap36 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap36 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-36-coordination-progress-and-deadlocks.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap36
 related_post_ids: []
-source_digest: 38b893829b383f0beab41b7006ce877e2e6fe19c80554aa6d3b247579eefbfc0
+source_digest: 61902389234016a6a1c2737b3b19931afbb93993cfaf6ef7be5a913dd1f87cbf
 metadata_digest: 48c68eff320dff0759c86ca2bdc4481121711486149cb2344ded9a320817b6d5

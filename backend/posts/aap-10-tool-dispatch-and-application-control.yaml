@@ -1,17 +1,19 @@
 id: post/aap-10-tool-dispatch-and-application-control
 created_at: '2026-11-16T07:15:13.241078+00:00'
-updated_at: '2026-11-16T07:15:13.760127+00:00'
+updated_at: '2026-11-16T07:48:47.075989+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-10.
   Open gaps: G07, G11.
-  Reserved companion directory: projects/applied-ai-prototypes/aap10 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap10 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-10-tool-dispatch-and-application-control.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap10
 related_post_ids: []
-source_digest: 5e88084dbda730aea75e8b92f105cb4ca014c1480c895556f047bbfb5f605e94
+source_digest: 4fb5819018cc0a8228e2065ea99ce9f6f96fc81c06d097615b30229a6509e5b5
 metadata_digest: 20236a1740d6ce4d4ae56991910dbf3b8e6b7e31d2da11359ead2bf7492a91cc

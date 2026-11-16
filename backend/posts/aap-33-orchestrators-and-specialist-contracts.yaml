@@ -1,17 +1,19 @@
 id: post/aap-33-orchestrators-and-specialist-contracts
 created_at: '2026-11-16T07:15:35.903502+00:00'
-updated_at: '2026-11-16T07:15:36.732450+00:00'
+updated_at: '2026-11-16T07:49:08.253471+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-33.
   Open gaps: G22.
-  Reserved companion directory: projects/applied-ai-prototypes/aap33 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap33 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-33-orchestrators-and-specialist-contracts.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap33
 related_post_ids: []
-source_digest: 39c89412e4ed37ba079373f0786cd680a1c9becfd67da21b6fbeeb0cb29fcde0
+source_digest: 68eeb169a9479e9775a8f5dd32dc1cf3e5cb8200d12120c89716f24590e3396b
 metadata_digest: 373f15e847a0fea9364cd604b19a94944f619d92f6d40e0d249981e91ecd6909

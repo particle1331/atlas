@@ -1,17 +1,19 @@
 id: post/aap-32-working-memory-and-context-budgets
 created_at: '2026-11-16T07:15:34.641414+00:00'
-updated_at: '2026-11-16T07:15:35.560944+00:00'
+updated_at: '2026-11-16T07:49:07.476015+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-32.
   Open gaps: G18, G21.
-  Reserved companion directory: projects/applied-ai-prototypes/aap32 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap32 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-32-working-memory-and-context-budgets.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap32
 related_post_ids: []
-source_digest: 9ebe3b07ad735cbb7359bf90cf695721546b6fb367f8ab6b647a9502284e9df9
+source_digest: cf6355130d74a6585216d63fef2ff91dd5245c2c95c0ea8eabaa1c9a28cee8b4
 metadata_digest: a11ab1e97298d0b6bfb814d963f75244e8310874e007be16fb9464b14f3c8c62

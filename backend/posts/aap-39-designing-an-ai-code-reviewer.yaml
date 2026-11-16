@@ -1,17 +1,19 @@
 id: post/aap-39-designing-an-ai-code-reviewer
 created_at: '2026-11-16T07:15:42.164155+00:00'
-updated_at: '2026-11-16T07:15:42.848468+00:00'
+updated_at: '2026-11-16T07:49:12.968968+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-39.
   Open gaps: G22, G27, G34.
-  Reserved companion directory: projects/applied-ai-prototypes/aap39 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap39 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-39-designing-an-ai-code-reviewer.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap39
 related_post_ids: []
-source_digest: bae5e1619f862514bb04e125e33a81f6f43cf7cd6bdc3d6740f9d0252202aff0
+source_digest: fb3b38f2fbf42b5633cd3c5b7d6a4524e68779264bc0b55f84317f850f58046e
 metadata_digest: 24e25f32f29a63066a66d1df9cf7edc0e24644580c08b90dce3f8e6a13adb696

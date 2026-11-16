@@ -12,7 +12,7 @@ This is the authoring plan, not completed course content. It supersedes the temp
 | Scope | Maximize useful, forward-looking coverage; no fixed duration, post-count target or live-course schedule |
 | Organization | Conceptual dependencies, not six weekends or six equally sized units |
 | Outline location | Detailed authoring outlines and gap bookkeeping stay here; each draft gets one ordinary scope/code/limitations cell |
-| Companion code | Root-relative paths such as `projects/applied-ai-prototypes/aap1`, identifying our maintained code |
+| Companion projects | Root-relative paths such as `projects/applied-ai-prototypes/aap1`, containing pinned references or an explicit missing-implementation guide; authored adaptations remain separate |
 | Gap handling | Repair, qualify or replace an example as its post is authored; do not repair the entire upstream repository first |
 | Publication | Planning does not authorize publication, deployment or paid API runs |
 
@@ -20,7 +20,7 @@ This is the authoring plan, not completed course content. It supersedes the temp
 
 Every audited folder has an explicit disposition below. Substantial examples previously grouped together—prompt regression, sycophancy, critique/refinement, chunking, fusion, filtering, query rewriting, reranking, repair approaches, memory variants and orchestration patterns—now have dedicated investigations. Generated tools are included, not relegated to an optional appendix. A pointer-only folder is a research task rather than a falsely advertised runnable prototype.
 
-`AAP-n` labels are course signatures, not CMS IDs. The code paths are planned destinations, not claims that the directories or implementations already exist. The approved creation step is complete: exactly 44 draft records, each with a title, short description and one ordinary Markdown cell describing lesson scope, planned companion code and known limitations. Detailed authoring outlines and private gap bookkeeping remain here and in CMS notes, not additional planning cells. Before creating any later draft, check for work created by another session and reconcile it; obtain immutable IDs from the CMS rather than manufacturing them. Preserve the created IDs and source filenames when changing titles.
+`AAP-n` labels are course signatures, not CMS IDs. All 44 companion directories now exist with imported reference examples where available, or guidance recording an unavailable implementation. Their existence is not a claim that the lessons' proposed implementations or experiments are complete. The approved scaffold step created exactly 44 draft records, each with a title, short description and one ordinary Markdown cell describing lesson scope, companion-code responsibilities and known limitations. Detailed authoring outlines and private gap bookkeeping remain here and in CMS notes, not additional planning cells. Before creating any later draft, check for work created by another session and reconcile it; obtain immutable IDs from the CMS rather than manufacturing them. Preserve the created IDs and source filenames when changing titles.
 
 ## Sources and evidence
 
@@ -866,7 +866,7 @@ The second independent curriculum review retained the 44-post allocation and dep
 | AAP-20 | Used joint query–document scoring rather than the potentially misleading term “pairwise reranking.” |
 | AAP-21 | Made the retrieve → budgeted evidence assembly → grounded answer baseline explicit, including actual-retrieval and oracle-evidence controls. |
 | AAP-25 | Added fragmented/interleaved argument assembly, completion/validation before dispatch and interrupted-stream tests. |
-| Companion-code boundary | Drafts show planned root-relative destinations; managed `code_path` remains unset until companion code exists. |
+| Companion-code boundary | At initial scaffold creation, destinations were marked planned and managed `code_path` remained unset. The later reference import creates actual companion directories, whose guides distinguish references from pending implementation. |
 
 The author approved creation of the collection and exactly 44 draft posts. Each post has a title, short description and one ordinary Markdown cell containing topics, a specific companion-code discussion, and known limitations/evidence gaps. These cells do not claim to contain completed implementations or results. The full authoring plan and private bookkeeping remain outside notebook planning cells.
 
@@ -879,18 +879,38 @@ The author approved creation of the collection and exactly 44 draft posts. Each 
 | Authored metadata | `content/collections/applied-ai-prototypes.yaml` |
 | Membership | 44 draft posts ordered `AAP-1` through `AAP-44`; actual immutable IDs are stored in the CMS collection record |
 | Each post | Title, short description and exactly one Markdown cell with `Topics`, `Project code`, and `Known gaps and limitations` sections |
-| Companion code | Root-relative destination appears as **Planned companion code** in the cell; managed `code_path` remains unset because the code is not implemented |
+| Companion projects | Root-relative directory appears as **Companion project** in the cell; managed `code_path` identifies its actual reference/guide directory, not a claim of completed implementation |
 | Verification | All 44 records/cells re-read through CMS/notebook tools; rendered titles, descriptions, sections, paths, gaps and collection order checked after a successful preview build |
 | Publication blockers | Only missing thumbnails/cover added by these drafts; unrelated pre-existing draft blockers were not changed |
 | Execution/publication | No companion-code/model execution, publication or deployment |
 
 Creation and verification were performed in the isolated `plan/applied-ai-prototypes` worktree. Pre-existing tracked authored/managed content was verified unchanged. All 35 authoring gaps remain open; creating a draft scope does not close a gap.
 
+### Pinned reference import
+
+The course plan and draft records were merged into `master` before the reference import. The user then requested local code under the per-post companion directories.
+
+| Item | Import scope |
+|---|---|
+| Reference revision | `678d9d0b579a72113c94a2d2f57671fd9f7f2a56` |
+| Directory layout | `projects/applied-ai-prototypes/aapN/reference/<upstream-folder>/`, with an authored guide outside `reference/` |
+| Provenance | `projects/applied-ai-prototypes/provenance.json`: actual post IDs, source folders, Git blob IDs, SHA-256 checksums, modes and explicit omissions |
+| Available source | 284 file copies across 39 reference-bearing companion projects; repeated source examples are independent pinned copies |
+| Missing implementations | AAP-8, AAP-22, AAP-37, AAP-40 and AAP-44 contain guides only, with no invented placeholder code |
+| Partial coverage | Jev does not establish Clairic; patch/search references do not implement Claude Code; diagnostics/workflow examples do not implement the full large-scale RAG or code-review designs |
+| Security omission | Tracked `observability/.env` is excluded before reading/copying its contents; other selected tracked files retain their source bytes and modes |
+| Adaptations | Not implemented by copying; use a separately named `implementation/` directory during authoring |
+| Execution | No prototype imports/tests, model requests, dependency installation or generated-code execution as part of import |
+| Verification | All imported blobs/checksums/modes verified, 79 Python file copies syntax-parsed, 44 project links and single-cell notebooks checked, and CMS diagnostics unchanged |
+| Preview and discovery | An isolated CMS preview build rendered and verified all 44 updated posts; root pytest collected 231 root tests and no imported project tests |
+
+The project guide documents the distinction between imported reference code, captured output artifacts and missing/adapted implementations. Copying source closes none of the 35 authoring gaps.
+
 ## Authoring handoff
 
 1. Re-read the relevant outline, source mapping and gaps. Inspect pinned source and current primary documentation before fixing the post's claim.
 2. Create or reconcile exactly 44 draft posts through the CMS, with the planned title and short description, and add them to the draft collection in numeric order. Obtain actual immutable IDs and preserve their filenames thereafter. Each notebook gets exactly one ordinary, learner-facing Markdown cell for topics, planned companion-code responsibilities, and known limitations. Do not present this scope as a completed lesson or add code/output cells at this stage.
-3. Keep detailed authoring outlines and private gap bookkeeping here and in CMS notes. The single draft cell states substantive scope and unresolved limitations; it is not a private task list, generated navigation or front matter. Mark the root-relative destination as planned companion code and leave managed `code_path` unset until that code exists.
+3. Keep detailed authoring outlines and private gap bookkeeping here and in CMS notes. The single draft cell states substantive scope and unresolved limitations; it is not a private task list, generated navigation or front matter. Keep managed `code_path` pointed at the actual companion directory and accurately distinguish imported references, missing implementations and later authored code in its guide and the post.
 4. Read `projects/README.md` before imports/adaptations. Keep pinned reference material unchanged and separate from maintained implementations; document provenance and deliberate deviations.
 5. Develop a small implementation/experiment that answers the actual question. Use deterministic offline tests for dispatch/state/control mechanics and deliberate model calls only for model-dependent evidence. Do not execute upstream/generated shell or Python on the host merely to collect output.
 6. Record fixtures/datasets, models/configuration, repetitions, errors and relevant usage. Distinguish source illustrations, our adaptations, measured results and unresolved questions.

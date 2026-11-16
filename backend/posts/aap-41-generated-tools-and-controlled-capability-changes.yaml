@@ -1,17 +1,19 @@
 id: post/aap-41-generated-tools-and-controlled-capability-changes
 created_at: '2026-11-16T07:15:44.155439+00:00'
-updated_at: '2026-11-16T07:15:44.860031+00:00'
+updated_at: '2026-11-16T07:49:14.546287+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-41.
   Open gaps: G29.
-  Reserved companion directory: projects/applied-ai-prototypes/aap41 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap41 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-41-generated-tools-and-controlled-capability-changes.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap41
 related_post_ids: []
-source_digest: 0b899fd061af1792de1933b95c7ed6e3bc8c59b202c4549c3304ccdc52afa3ec
+source_digest: 15e8bcab3ff48269ff0b6cb3a2ac325dd97851f078c060a6e8b38012d7f0ba56
 metadata_digest: 3a8b20172c36f0f8384f302f7197016481ef56f8ae9c951fb84ee995e115c91b

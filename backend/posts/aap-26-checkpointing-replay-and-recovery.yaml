@@ -1,17 +1,19 @@
 id: post/aap-26-checkpointing-replay-and-recovery
 created_at: '2026-11-16T07:15:28.031266+00:00'
-updated_at: '2026-11-16T07:15:28.653502+00:00'
+updated_at: '2026-11-16T07:49:02.390338+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-26.
   Open gaps: G19.
-  Reserved companion directory: projects/applied-ai-prototypes/aap26 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap26 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-26-checkpointing-replay-and-recovery.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap26
 related_post_ids: []
-source_digest: dd417255466d673826c512e38541a6c2ea18b66d2e6fbc7c95eefe19ce0b1809
+source_digest: 627513561e985d94dcf84caa163d06ace5c5e675d91acdbab03512ae1f9f0bb8
 metadata_digest: 22158d6c52046cc67b83858f82a57e7c9c09ec589a7523461e2d8b108d7c60bd

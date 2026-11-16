@@ -1,17 +1,19 @@
 id: post/aap-30-persistent-memory-and-retrieval
 created_at: '2026-11-16T07:15:31.962179+00:00'
-updated_at: '2026-11-16T07:15:32.973608+00:00'
+updated_at: '2026-11-16T07:49:05.661996+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-30.
   Open gaps: G20.
-  Reserved companion directory: projects/applied-ai-prototypes/aap30 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap30 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-30-persistent-memory-and-retrieval.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap30
 related_post_ids: []
-source_digest: f30282944066353d45ab82ea2e7246eb59ee0430731fe4d90a981795ea2d7d0a
+source_digest: 912278807531578e1af119d5043aa36767ccba0a0400d7580d18f58c8ba08251
 metadata_digest: 23b318adc15e2475d30c3ceef0b5e6f5e605dbad478f7fc07575b88da9db1857

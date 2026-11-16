@@ -1,0 +1,2746 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/arpitbbhayani/prototypes-ai",
+  "commit": "678d9d0b579a72113c94a2d2f57671fd9f7f2a56",
+  "selection": "Tracked regular Git blobs from the exact commit; no working-tree or runtime files.",
+  "omissions": [
+    {
+      "upstream_path": "observability/.env",
+      "reason": "Environment file excluded before reading contents."
+    }
+  ],
+  "upstream_readme": {
+    "upstream_path": "README.md",
+    "path": "UPSTREAM_README.md",
+    "git_blob": "267abb0f14e645e633005ae7d3b59d59170cec6f",
+    "sha256": "e461e516d91630c2b5a9923325f49036799b7892aaa6edad3b96048e9c3183be"
+  },
+  "posts": [
+    {
+      "number": 1,
+      "post_id": "post/aap-1-llm-calls-as-software-components",
+      "title": "AAP-1: LLM Calls as Software Components",
+      "directory": "projects/applied-ai-prototypes/aap1",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "non-deterministic",
+        "evals"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "non-deterministic/.gitignore",
+          "path": "reference/non-deterministic/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "non-deterministic/README.md",
+          "path": "reference/non-deterministic/README.md",
+          "git_blob": "7dc93b3437a92158422928759a9bd8f4753b2f41",
+          "mode": "100644",
+          "sha256": "8611a8b1da5dfa7c6be2b23df4b49607e14b727d8903f175ff5066c634cd85f1"
+        },
+        {
+          "upstream_path": "non-deterministic/main.py",
+          "path": "reference/non-deterministic/main.py",
+          "git_blob": "a409e35c33c6e3c0e709409b26f78234cb3ad6d7",
+          "mode": "100644",
+          "sha256": "c45cfd768c9b436e5059a879ecddfb889c81d8b1a6c1b16987a045628302b7c9"
+        },
+        {
+          "upstream_path": "non-deterministic/output-1.md",
+          "path": "reference/non-deterministic/output-1.md",
+          "git_blob": "3f7f7866e104d8d6380ce29ac9cdcf4d987086f3",
+          "mode": "100644",
+          "sha256": "825c6f0cdad20915fcae99bd8e09f0d2e0cf5672df9073ce95be58befe637276"
+        },
+        {
+          "upstream_path": "non-deterministic/output-constrained.md",
+          "path": "reference/non-deterministic/output-constrained.md",
+          "git_blob": "3c2492eaf042169b2e70daff3a31388bfa1f7b99",
+          "mode": "100644",
+          "sha256": "543c36087f2e8ecb9af6129b84777e7cac917bcf6546aa21d1e94bb14cbefabc"
+        },
+        {
+          "upstream_path": "non-deterministic/requirements.txt",
+          "path": "reference/non-deterministic/requirements.txt",
+          "git_blob": "5c94b73cd361ef4406bcc2f75c1599f15c0653d3",
+          "mode": "100644",
+          "sha256": "159c013a03e217e02c23cba78da79c5d583ff5d077d79cdbdceba11aa2eb36e2"
+        },
+        {
+          "upstream_path": "evals/.gitignore",
+          "path": "reference/evals/.gitignore",
+          "git_blob": "93526df6cedb8d06cc60e5c1c432292865774ad1",
+          "mode": "100644",
+          "sha256": "df5b27b3f059b3ec85b52b4901257138918fbdc9ea7a147c3c5ccfefc78f5de1"
+        },
+        {
+          "upstream_path": "evals/main.py",
+          "path": "reference/evals/main.py",
+          "git_blob": "c71da8c2dd7701888b8f0a281661eb4a443eb0ec",
+          "mode": "100644",
+          "sha256": "2a5f0ea53d4a85130e1c26da80fd02f209227344e2a5de67993efe4602d62fb3"
+        },
+        {
+          "upstream_path": "evals/requirements.txt",
+          "path": "reference/evals/requirements.txt",
+          "git_blob": "bcc883ae7ef288cbbe4fe7d0a91ea320003b3646",
+          "mode": "100644",
+          "sha256": "f758c0fa3374d31ddd7ddf399635aa5e0b7e8da7d0dff4b8bab8af25843e885a"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "post_id": "post/aap-2-comparing-prompting-strategies",
+      "title": "AAP-2: Comparing Prompting Strategies",
+      "directory": "projects/applied-ai-prototypes/aap2",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "cot-vs-direct",
+        "cot-vs-few-vs-direct"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "cot-vs-direct/.gitignore",
+          "path": "reference/cot-vs-direct/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "cot-vs-direct/README.md",
+          "path": "reference/cot-vs-direct/README.md",
+          "git_blob": "f9f9961e36df966857d11245e415c9759db3072b",
+          "mode": "100644",
+          "sha256": "854e4e6303dc39c2cfdb5b2f6a2f4859c210c23c81d1806a317854a0058e8ae7"
+        },
+        {
+          "upstream_path": "cot-vs-direct/main.py",
+          "path": "reference/cot-vs-direct/main.py",
+          "git_blob": "98f944e679a114fbdb4751eb386d737550d9e1ab",
+          "mode": "100644",
+          "sha256": "968039368c04ecdcb5d43243a81d68d211922fffc4b79b31f781f205b531209f"
+        },
+        {
+          "upstream_path": "cot-vs-direct/output-1.md",
+          "path": "reference/cot-vs-direct/output-1.md",
+          "git_blob": "3deabfefa61f71e510c8188d7111d5049a18b697",
+          "mode": "100644",
+          "sha256": "37fdeb26034efdd2db1c29eebc038eead4cbc510c65a0d88312041e2717735fc"
+        },
+        {
+          "upstream_path": "cot-vs-direct/requirements.txt",
+          "path": "reference/cot-vs-direct/requirements.txt",
+          "git_blob": "0053527ed0656448a4b1886daf46060f4248a78c",
+          "mode": "100644",
+          "sha256": "d076d27b6bca612ff196d9e61df739533765f451ee0e822794ad9040b2416ad0"
+        },
+        {
+          "upstream_path": "cot-vs-few-vs-direct/.gitignore",
+          "path": "reference/cot-vs-few-vs-direct/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "cot-vs-few-vs-direct/README.md",
+          "path": "reference/cot-vs-few-vs-direct/README.md",
+          "git_blob": "8daee4a739b2b1c16a4f27a0f13729103e55347c",
+          "mode": "100644",
+          "sha256": "177626bc67895ddc7c6fc0b7bd110b2b0bc4094b59107255b3f0d493867c132d"
+        },
+        {
+          "upstream_path": "cot-vs-few-vs-direct/main.py",
+          "path": "reference/cot-vs-few-vs-direct/main.py",
+          "git_blob": "902adccaef2e80c0604e1770662e699654f9cab6",
+          "mode": "100644",
+          "sha256": "67e1221934e14e179da848504e32472a8e1a1a891e87f807d3aa51eb9aed903c"
+        },
+        {
+          "upstream_path": "cot-vs-few-vs-direct/output-1.md",
+          "path": "reference/cot-vs-few-vs-direct/output-1.md",
+          "git_blob": "f6fcbfdb37eeb4c483fe1866bf08b5a30a9e725a",
+          "mode": "100644",
+          "sha256": "aed3b58e77ec0630be8c3602c8081c44a0e9f0e88b994cf07f88b49053ed2dd8"
+        },
+        {
+          "upstream_path": "cot-vs-few-vs-direct/requirements.txt",
+          "path": "reference/cot-vs-few-vs-direct/requirements.txt",
+          "git_blob": "3a499a5b63ff152779e2238ed4a3af020c2ab5e6",
+          "mode": "100644",
+          "sha256": "7a569e012f8fb4076cd28808e6c160276fe63b6485e27ff345b37ea79b302e32"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "post_id": "post/aap-3-structured-outputs-and-domain-validation",
+      "title": "AAP-3: Structured Outputs and Domain Validation",
+      "directory": "projects/applied-ai-prototypes/aap3",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "non-deterministic",
+        "evals"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "non-deterministic/.gitignore",
+          "path": "reference/non-deterministic/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "non-deterministic/README.md",
+          "path": "reference/non-deterministic/README.md",
+          "git_blob": "7dc93b3437a92158422928759a9bd8f4753b2f41",
+          "mode": "100644",
+          "sha256": "8611a8b1da5dfa7c6be2b23df4b49607e14b727d8903f175ff5066c634cd85f1"
+        },
+        {
+          "upstream_path": "non-deterministic/main.py",
+          "path": "reference/non-deterministic/main.py",
+          "git_blob": "a409e35c33c6e3c0e709409b26f78234cb3ad6d7",
+          "mode": "100644",
+          "sha256": "c45cfd768c9b436e5059a879ecddfb889c81d8b1a6c1b16987a045628302b7c9"
+        },
+        {
+          "upstream_path": "non-deterministic/output-1.md",
+          "path": "reference/non-deterministic/output-1.md",
+          "git_blob": "3f7f7866e104d8d6380ce29ac9cdcf4d987086f3",
+          "mode": "100644",
+          "sha256": "825c6f0cdad20915fcae99bd8e09f0d2e0cf5672df9073ce95be58befe637276"
+        },
+        {
+          "upstream_path": "non-deterministic/output-constrained.md",
+          "path": "reference/non-deterministic/output-constrained.md",
+          "git_blob": "3c2492eaf042169b2e70daff3a31388bfa1f7b99",
+          "mode": "100644",
+          "sha256": "543c36087f2e8ecb9af6129b84777e7cac917bcf6546aa21d1e94bb14cbefabc"
+        },
+        {
+          "upstream_path": "non-deterministic/requirements.txt",
+          "path": "reference/non-deterministic/requirements.txt",
+          "git_blob": "5c94b73cd361ef4406bcc2f75c1599f15c0653d3",
+          "mode": "100644",
+          "sha256": "159c013a03e217e02c23cba78da79c5d583ff5d077d79cdbdceba11aa2eb36e2"
+        },
+        {
+          "upstream_path": "evals/.gitignore",
+          "path": "reference/evals/.gitignore",
+          "git_blob": "93526df6cedb8d06cc60e5c1c432292865774ad1",
+          "mode": "100644",
+          "sha256": "df5b27b3f059b3ec85b52b4901257138918fbdc9ea7a147c3c5ccfefc78f5de1"
+        },
+        {
+          "upstream_path": "evals/main.py",
+          "path": "reference/evals/main.py",
+          "git_blob": "c71da8c2dd7701888b8f0a281661eb4a443eb0ec",
+          "mode": "100644",
+          "sha256": "2a5f0ea53d4a85130e1c26da80fd02f209227344e2a5de67993efe4602d62fb3"
+        },
+        {
+          "upstream_path": "evals/requirements.txt",
+          "path": "reference/evals/requirements.txt",
+          "git_blob": "bcc883ae7ef288cbbe4fe7d0a91ea320003b3646",
+          "mode": "100644",
+          "sha256": "f758c0fa3374d31ddd7ddf399635aa5e0b7e8da7d0dff4b8bab8af25843e885a"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "post_id": "post/aap-4-typed-model-judgements-jev-and-clairic",
+      "title": "AAP-4: Typed Model Judgements: Jev and Clairic",
+      "directory": "projects/applied-ai-prototypes/aap4",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "jev"
+      ],
+      "related_posts": [],
+      "notes": "Jev reference applications are present. Clairic and the source framing still need verification; these examples do not implement or validate Clairic.",
+      "files": [
+        {
+          "upstream_path": "jev/.gitignore",
+          "path": "reference/jev/.gitignore",
+          "git_blob": "a09c9ef0e4f86ad336219260a8db67152a6af88f",
+          "mode": "100644",
+          "sha256": "a8904a1d9e41706b6ceab12d24274af4af94aa33da8272c4c09020018cda3861"
+        },
+        {
+          "upstream_path": "jev/main1.py",
+          "path": "reference/jev/main1.py",
+          "git_blob": "41f95f7c3cbffc76aa20187ad425b0b22bd78cd2",
+          "mode": "100644",
+          "sha256": "916ed4aac126e49728de03acdca163ccca038139ca1b8949b5b981a5b6658ccc"
+        },
+        {
+          "upstream_path": "jev/main2.py",
+          "path": "reference/jev/main2.py",
+          "git_blob": "1d5422d17669e5c09ab97031293c8e9e906201a0",
+          "mode": "100644",
+          "sha256": "6618032a755b7007c061e5ba42effa67c625c37cac45d25dc6b8581a059dba78"
+        },
+        {
+          "upstream_path": "jev/main3.py",
+          "path": "reference/jev/main3.py",
+          "git_blob": "78b63fa55f4913e89a9cf39c79825d59cb107f88",
+          "mode": "100644",
+          "sha256": "f8b6085f364609a5a053118e4f87343423705a71720f1fa118d4f9d9ed830c58"
+        },
+        {
+          "upstream_path": "jev/test_ui.py",
+          "path": "reference/jev/test_ui.py",
+          "git_blob": "826fae377b2921bcfc25a1013d5ee246f70d941b",
+          "mode": "100644",
+          "sha256": "6a1c1553e8c48ccaa0c0dfe11ad71ce9a627f2447aa57fdd59d93d3083416ace"
+        },
+        {
+          "upstream_path": "jev/ui.py",
+          "path": "reference/jev/ui.py",
+          "git_blob": "66fc8409f79f308b1433e9085f297181bf3fa023",
+          "mode": "100644",
+          "sha256": "36a6234102588c43152d390e1ab5520b947a50dadce2c55b3865c65758602b0c"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "post_id": "post/aap-5-prompt-design-versioning-and-regression-tests",
+      "title": "AAP-5: Prompt Design, Versioning and Regression Tests",
+      "directory": "projects/applied-ai-prototypes/aap5",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "prompt-regression"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "prompt-regression/.gitignore",
+          "path": "reference/prompt-regression/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "prompt-regression/README.md",
+          "path": "reference/prompt-regression/README.md",
+          "git_blob": "af0efe41005a60d4010c7e25e60b8a35d3134e2d",
+          "mode": "100644",
+          "sha256": "dae3a48b9d1684a29c7e141b05ef9a69c5f8bb7674534be38ef6855520d621c6"
+        },
+        {
+          "upstream_path": "prompt-regression/main.py",
+          "path": "reference/prompt-regression/main.py",
+          "git_blob": "480ee950a58d5ffff1b466a0b37ab584aca86a2f",
+          "mode": "100644",
+          "sha256": "041f5050fa4b763da5595c5ceed25fd66eb9f275629e87187bbb134650899cfa"
+        },
+        {
+          "upstream_path": "prompt-regression/output-1.md",
+          "path": "reference/prompt-regression/output-1.md",
+          "git_blob": "52508dbf26f4e1c161b2e3efef41e02d4ce216cf",
+          "mode": "100644",
+          "sha256": "69cb7ce932d6a4e5b71ac265887c9e2d6b8f48a7301ae07b68fbb638c23f7ecf"
+        },
+        {
+          "upstream_path": "prompt-regression/requirements.txt",
+          "path": "reference/prompt-regression/requirements.txt",
+          "git_blob": "0756044eca0be1a6e022903232d3cb971d6d950b",
+          "mode": "100644",
+          "sha256": "349a0007c8b3d647be20c1596abc3872260cc31583aca7397a8b597b6ae85362"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "post_id": "post/aap-6-sycophancy-and-justified-belief-updates",
+      "title": "AAP-6: Sycophancy and Justified Belief Updates",
+      "directory": "projects/applied-ai-prototypes/aap6",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "sycophancy"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "sycophancy/.gitignore",
+          "path": "reference/sycophancy/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "sycophancy/README.md",
+          "path": "reference/sycophancy/README.md",
+          "git_blob": "b332c33db252e70ad41f3447431819d8b2eb3ad7",
+          "mode": "100644",
+          "sha256": "a6951353ca87f7543c5b00d35ad1535baf434d70bcda29749280f4e6f811e217"
+        },
+        {
+          "upstream_path": "sycophancy/main.py",
+          "path": "reference/sycophancy/main.py",
+          "git_blob": "2795288f8339176f0f3d09c46aa664b9de08157a",
+          "mode": "100644",
+          "sha256": "fc2c529933954b43c9553005d209450917fb1ad4ac9ceb0efad27c9ae2aec6f3"
+        },
+        {
+          "upstream_path": "sycophancy/output-1.md",
+          "path": "reference/sycophancy/output-1.md",
+          "git_blob": "ab23f1cb268bca9ab49f896036d5ae24767f8589",
+          "mode": "100644",
+          "sha256": "b4947719ef4af7801a756b3bb94a0e160596cdb4930b303cd816dde0fe5c7853"
+        },
+        {
+          "upstream_path": "sycophancy/output-2.md",
+          "path": "reference/sycophancy/output-2.md",
+          "git_blob": "7e69666bbac7c4e985d6b148d38653e6bd8e47ea",
+          "mode": "100644",
+          "sha256": "e8e6f52a255257e61dd7f8d824ae39ef8a003c9fcd77d8f33c6f137ad567f7db"
+        },
+        {
+          "upstream_path": "sycophancy/output-3.md",
+          "path": "reference/sycophancy/output-3.md",
+          "git_blob": "497340c0846486692b86cab2aa9ddb2f42175ec9",
+          "mode": "100644",
+          "sha256": "f1a7905764c173b80f12b521047cb748ff384e189a245e198bda4376f4ed21f2"
+        },
+        {
+          "upstream_path": "sycophancy/output-4.md",
+          "path": "reference/sycophancy/output-4.md",
+          "git_blob": "f105112ce3ddd64b7162cd6491cf6690e6cd4207",
+          "mode": "100644",
+          "sha256": "0067a7e66d9539074e88da5e69ff5f1d7fb5f84e98f9f477eeaacbc57a369fb0"
+        },
+        {
+          "upstream_path": "sycophancy/requirements.txt",
+          "path": "reference/sycophancy/requirements.txt",
+          "git_blob": "0053527ed0656448a4b1886daf46060f4248a78c",
+          "mode": "100644",
+          "sha256": "d076d27b6bca612ff196d9e61df739533765f451ee0e822794ad9040b2416ad0"
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "post_id": "post/aap-7-critique-refinement-and-evaluator-validity",
+      "title": "AAP-7: Critique, Refinement and Evaluator Validity",
+      "directory": "projects/applied-ai-prototypes/aap7",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "critic-refiner"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "critic-refiner/.gitignore",
+          "path": "reference/critic-refiner/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "critic-refiner/README.md",
+          "path": "reference/critic-refiner/README.md",
+          "git_blob": "3b006a9017e70469ad7cddb2995add43a7c706f6",
+          "mode": "100644",
+          "sha256": "1099db9452adce7f9684050b5c801f08178224da3acb2da09473fdc45e54f12c"
+        },
+        {
+          "upstream_path": "critic-refiner/main.py",
+          "path": "reference/critic-refiner/main.py",
+          "git_blob": "16824d5da71d95b075179d1ef2afd2f26634ed33",
+          "mode": "100644",
+          "sha256": "12de620b72842d8b496e6ce10b27797a8760b4123de160457d42cf211bda0d06"
+        },
+        {
+          "upstream_path": "critic-refiner/output-1.md",
+          "path": "reference/critic-refiner/output-1.md",
+          "git_blob": "418336b282db90551485a6187f7ee63dd653d9aa",
+          "mode": "100644",
+          "sha256": "cef1778065b22f1d2f332650f9698aabdf9205446133ab3908354ac42a1f3cdb"
+        },
+        {
+          "upstream_path": "critic-refiner/requirements.txt",
+          "path": "reference/critic-refiner/requirements.txt",
+          "git_blob": "5c94b73cd361ef4406bcc2f75c1599f15c0653d3",
+          "mode": "100644",
+          "sha256": "159c013a03e217e02c23cba78da79c5d583ff5d077d79cdbdceba11aa2eb36e2"
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "post_id": "post/aap-8-designing-a-fact-checking-system",
+      "title": "AAP-8: Designing a Fact-Checking System",
+      "directory": "projects/applied-ai-prototypes/aap8",
+      "reference_status": "no_matching_implementation",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [],
+      "related_posts": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "notes": "The source syllabus names a fact-checking design exercise, but no matching full implementation was identified. No placeholder implementation is supplied.",
+      "files": []
+    },
+    {
+      "number": 9,
+      "post_id": "post/aap-9-tool-schema-design-and-selection",
+      "title": "AAP-9: Tool Schema Design and Selection",
+      "directory": "projects/applied-ai-prototypes/aap9",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "tool-schema-calibration"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "tool-schema-calibration/.gitignore",
+          "path": "reference/tool-schema-calibration/.gitignore",
+          "git_blob": "b2643f808972c7419e013b98b64aa7947151b5ed",
+          "mode": "100644",
+          "sha256": "6b8f1af120b2bd32a6fb98241e9f1bf327d86793237e3d6017ff622ea6c3c78d"
+        },
+        {
+          "upstream_path": "tool-schema-calibration/README.md",
+          "path": "reference/tool-schema-calibration/README.md",
+          "git_blob": "cbe3cf538da399e0834ffbf4008007d88ae8ac92",
+          "mode": "100644",
+          "sha256": "bf6610c4272c1433d8e8c407bd5e56682f5c4f2a87ea69ad5ab7482a8b19d39c"
+        },
+        {
+          "upstream_path": "tool-schema-calibration/main.py",
+          "path": "reference/tool-schema-calibration/main.py",
+          "git_blob": "310f7b21d2c3ab022d1c08fecf7b5c700646d08c",
+          "mode": "100644",
+          "sha256": "9e4fcc5678a6b2c351ff04b6bfb99a38c02a13e585279ba80c805a1b6940cad5"
+        },
+        {
+          "upstream_path": "tool-schema-calibration/output-1.md",
+          "path": "reference/tool-schema-calibration/output-1.md",
+          "git_blob": "b883688b91add375eb3792126a2e735deecb6f56",
+          "mode": "100644",
+          "sha256": "5e30cd8ddf51ead4cf79d08b9351ef15cfbe283e0024fc3bdc961a354bba7243"
+        },
+        {
+          "upstream_path": "tool-schema-calibration/requirements.txt",
+          "path": "reference/tool-schema-calibration/requirements.txt",
+          "git_blob": "5c94b73cd361ef4406bcc2f75c1599f15c0653d3",
+          "mode": "100644",
+          "sha256": "159c013a03e217e02c23cba78da79c5d583ff5d077d79cdbdceba11aa2eb36e2"
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "post_id": "post/aap-10-tool-dispatch-and-application-control",
+      "title": "AAP-10: Tool Dispatch and Application Control",
+      "directory": "projects/applied-ai-prototypes/aap10",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "loop"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "loop/.gitignore",
+          "path": "reference/loop/.gitignore",
+          "git_blob": "2fcb8a35b19ea10e1a1d0aed03b05f3d87c19016",
+          "mode": "100644",
+          "sha256": "ac1020874f741640a799a4aeb0558af1204c44b385e93d4936605a358f985365"
+        },
+        {
+          "upstream_path": "loop/main.py",
+          "path": "reference/loop/main.py",
+          "git_blob": "0a447e6d83f50cb314e79e97f9ff3bb020e20a83",
+          "mode": "100644",
+          "sha256": "5db0cc685eba140a0e337c7f74afac6199bcb02c884954fb36ce66e57f870294"
+        },
+        {
+          "upstream_path": "loop/requirements.txt",
+          "path": "reference/loop/requirements.txt",
+          "git_blob": "e15115559f913a5b8e97be580cc8c34583b64f6c",
+          "mode": "100644",
+          "sha256": "7279450aeb51de2a0990f235c27cea56bbb535b17f492d6037c2d624220b437e"
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "post_id": "post/aap-11-tool-failures-retries-and-partial-results",
+      "title": "AAP-11: Tool Failures, Retries and Partial Results",
+      "directory": "projects/applied-ai-prototypes/aap11",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "tool-call-error-injection"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "tool-call-error-injection/.gitignore",
+          "path": "reference/tool-call-error-injection/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "tool-call-error-injection/README.md",
+          "path": "reference/tool-call-error-injection/README.md",
+          "git_blob": "29d1ba3a8696276506bccea5aae8cd028836d2c6",
+          "mode": "100644",
+          "sha256": "7919874b29e34d6435c46fffb84233046ac550c97bcbc0b794202643b2cfeb14"
+        },
+        {
+          "upstream_path": "tool-call-error-injection/main.py",
+          "path": "reference/tool-call-error-injection/main.py",
+          "git_blob": "201741e536604fb1d01f89aa1f23c713ee1b5d04",
+          "mode": "100644",
+          "sha256": "588eee7594706a156c058c3454b0190ab0551b5edde3b7899bad8615dca01c40"
+        },
+        {
+          "upstream_path": "tool-call-error-injection/output-1.md",
+          "path": "reference/tool-call-error-injection/output-1.md",
+          "git_blob": "a2c8f4a7ec4bd71bc6c676a952d6c1dec8323326",
+          "mode": "100644",
+          "sha256": "9574a2d941879982ae8bf3f0bed0ee148a7d7b60edcdb8a98ba49c0bd768e401"
+        },
+        {
+          "upstream_path": "tool-call-error-injection/requirements.txt",
+          "path": "reference/tool-call-error-injection/requirements.txt",
+          "git_blob": "4c3be3107d3c208124e30454e1e42df4f9dc4554",
+          "mode": "100644",
+          "sha256": "c6b70ca6512023ad1bdaeecfb3387be64275b0dde53ce99916b385d3310aa41a"
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "post_id": "post/aap-12-human-review-and-execution-authority",
+      "title": "AAP-12: Human Review and Execution Authority",
+      "directory": "projects/applied-ai-prototypes/aap12",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "hitl"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "hitl/.gitignore",
+          "path": "reference/hitl/.gitignore",
+          "git_blob": "c65a729b4047b1ddb3ce099778d1d1d99298c976",
+          "mode": "100644",
+          "sha256": "59adf9ee2b9d46de0804ae9ea4643bce9d714e27f807e654f29fde6d53c4f001"
+        },
+        {
+          "upstream_path": "hitl/README.md",
+          "path": "reference/hitl/README.md",
+          "git_blob": "4a11e98d14cbf3e3fd9acc5aa7c72d99a5db9d75",
+          "mode": "100644",
+          "sha256": "cbefab6412838eeb371edd591cc17843d6f997cdfc59048629ac7b74f91fbb6c"
+        },
+        {
+          "upstream_path": "hitl/main.py",
+          "path": "reference/hitl/main.py",
+          "git_blob": "4aa60ab849018804e7ad37089fb35c9aaa6bf6e7",
+          "mode": "100644",
+          "sha256": "22d57b34fafd6cc409e7e2d5738a84cf7839ac1987d6592b69331f261b3c2b0c"
+        },
+        {
+          "upstream_path": "hitl/requirements.txt",
+          "path": "reference/hitl/requirements.txt",
+          "git_blob": "94504309ac3972f2f73c0f8b8bcd3d70e7075949",
+          "mode": "100644",
+          "sha256": "510d32c050c0aaf48b06f9c531285a461b11530fb58899a7c957dc60d5e0e77e"
+        },
+        {
+          "upstream_path": "hitl/test_main.py",
+          "path": "reference/hitl/test_main.py",
+          "git_blob": "e397d894c5ba550de720722762c5dccc878960d3",
+          "mode": "100644",
+          "sha256": "62895d4eed0a2bb48bf0eddae4ab722df9ff20564d4933a418f685b69bdbb38a"
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "post_id": "post/aap-13-prompt-injection-and-untrusted-context",
+      "title": "AAP-13: Prompt Injection and Untrusted Context",
+      "directory": "projects/applied-ai-prototypes/aap13",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "prompt-injection"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "prompt-injection/.gitignore",
+          "path": "reference/prompt-injection/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "prompt-injection/README.md",
+          "path": "reference/prompt-injection/README.md",
+          "git_blob": "0841f8bee540bcd504cd6acacf3258bc5af0a939",
+          "mode": "100644",
+          "sha256": "1d147e6a57a2c8c13c556f4b29f415d52d0b198482bbefab0b2c60294b86ca59"
+        },
+        {
+          "upstream_path": "prompt-injection/main.py",
+          "path": "reference/prompt-injection/main.py",
+          "git_blob": "1a1c08daf9f305063828157553ffe3ba53fb6e74",
+          "mode": "100644",
+          "sha256": "61a6aefad1b2c58eaa4f248fa8d0d370dfcfce37cef886acb9c67bea3a5bd583"
+        },
+        {
+          "upstream_path": "prompt-injection/output-1.md",
+          "path": "reference/prompt-injection/output-1.md",
+          "git_blob": "f8d892e0877e80e4754a0a0ba2589644dc1e184f",
+          "mode": "100644",
+          "sha256": "b48e691c73f16b3916718b6b914481fa60cd6a0c610a7f583b1c1cc539393cc4"
+        },
+        {
+          "upstream_path": "prompt-injection/requirements.txt",
+          "path": "reference/prompt-injection/requirements.txt",
+          "git_blob": "5745656da2e080fd4dc5fb9b4aad70772dd69346",
+          "mode": "100644",
+          "sha256": "b2aa0cda6be9ca518ac59f25f5f2e4d01ea66c36ac32314c8b7f4e86b0720b34"
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "post_id": "post/aap-14-encoded-instructions-and-filter-bypasses",
+      "title": "AAP-14: Encoded Instructions and Filter Bypasses",
+      "directory": "projects/applied-ai-prototypes/aap14",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "token-smuggling"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "token-smuggling/.gitignore",
+          "path": "reference/token-smuggling/.gitignore",
+          "git_blob": "9b1c68611449f60c9d5949e48af2be8c86ea194d",
+          "mode": "100644",
+          "sha256": "3c6c23f028bb19db38a40b856d83e035d86d31bf8ad213875a4564fc117aedc0"
+        },
+        {
+          "upstream_path": "token-smuggling/README.md",
+          "path": "reference/token-smuggling/README.md",
+          "git_blob": "75700ccaf4745a26e053467a581cbdab85850035",
+          "mode": "100644",
+          "sha256": "91022b10170580e259fd9fd243643debc403c2a67e6ae1ce36498f722a4f1fe1"
+        },
+        {
+          "upstream_path": "token-smuggling/main.py",
+          "path": "reference/token-smuggling/main.py",
+          "git_blob": "0e0b031d2ae13a5fe06a3ab8078a3b200f9a4d63",
+          "mode": "100644",
+          "sha256": "5abaf9a68176a5fa93f6a950691f066a0f0d04a64e685d7ab26bed6ad692872e"
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "post_id": "post/aap-15-system-instruction-disclosure-and-confidentiality",
+      "title": "AAP-15: System-Instruction Disclosure and Confidentiality",
+      "directory": "projects/applied-ai-prototypes/aap15",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "system-prompt-leak"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "system-prompt-leak/.gitignore",
+          "path": "reference/system-prompt-leak/.gitignore",
+          "git_blob": "f7275bbbd035b827023cbae18954c0703b200c34",
+          "mode": "100644",
+          "sha256": "6871b2cbfe1743dc1aea7eb3174323c0aacf20b4f4b8722b3c19fca0ff1b2c90"
+        },
+        {
+          "upstream_path": "system-prompt-leak/README.md",
+          "path": "reference/system-prompt-leak/README.md",
+          "git_blob": "b2a14e1ede492fe214b19fc8f550610930fe2448",
+          "mode": "100644",
+          "sha256": "8a28a5e7a7acbd8f5f0b7006c387279dd50ae6e66c150a33c94034e15a96127e"
+        },
+        {
+          "upstream_path": "system-prompt-leak/main.py",
+          "path": "reference/system-prompt-leak/main.py",
+          "git_blob": "2bd9f8f57913fd55d85bcb41aee126eb6f984685",
+          "mode": "100644",
+          "sha256": "8ceb383beb7ba8eccfc758dfb4a5a4a0d44eaa6adbcee93279d27237bbf6326a"
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "post_id": "post/aap-16-chunking-and-retrieval-evaluation",
+      "title": "AAP-16: Chunking and Retrieval Evaluation",
+      "directory": "projects/applied-ai-prototypes/aap16",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "rag-chunking-strategy"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "rag-chunking-strategy/.gitignore",
+          "path": "reference/rag-chunking-strategy/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "rag-chunking-strategy/README.md",
+          "path": "reference/rag-chunking-strategy/README.md",
+          "git_blob": "3b1ebaa68fca59bfd96b004f2186541ed72b5594",
+          "mode": "100644",
+          "sha256": "e80d5724d7264c37d3f8d15c1301c925405b341273dcd6e7895edabaa90d2866"
+        },
+        {
+          "upstream_path": "rag-chunking-strategy/eval_queries.json",
+          "path": "reference/rag-chunking-strategy/eval_queries.json",
+          "git_blob": "5fab363f899625ea47aca4f34b6523cb1953a30a",
+          "mode": "100644",
+          "sha256": "f1b28612875565622886d87a665f27a8633a0203d8bda1e2b258598a009cd969"
+        },
+        {
+          "upstream_path": "rag-chunking-strategy/main.py",
+          "path": "reference/rag-chunking-strategy/main.py",
+          "git_blob": "d385e78a670c0ec915a0178f54ffb42ec3bf7d0b",
+          "mode": "100644",
+          "sha256": "d9cdf50ce15dab5a2e9d0bf737e064cb48c53fef06c6b4c3b2af08da6585b081"
+        },
+        {
+          "upstream_path": "rag-chunking-strategy/prepare_data.py",
+          "path": "reference/rag-chunking-strategy/prepare_data.py",
+          "git_blob": "1c95a6bfd635790ffa8ff17ceac6467307cb9e36",
+          "mode": "100644",
+          "sha256": "acae9cd9b94a4ad78777168859c6f8052a8ee9028c40c513190af01201c14dce"
+        },
+        {
+          "upstream_path": "rag-chunking-strategy/requirements.txt",
+          "path": "reference/rag-chunking-strategy/requirements.txt",
+          "git_blob": "fe3135a42ec4cab214c6593f530799ca12dc8b10",
+          "mode": "100644",
+          "sha256": "9ad3aa771dd4eab04c0ff081003154751ebd224a170c0b215a2ad8b6417f07f7"
+        },
+        {
+          "upstream_path": "rag-chunking-strategy/technical_doc.pdf",
+          "path": "reference/rag-chunking-strategy/technical_doc.pdf",
+          "git_blob": "09f33856b20807a6dfda349a7dde69524775c111",
+          "mode": "100644",
+          "sha256": "50a26f97c951896fda850baea55cc47e281c74f9fecaa981deca1d3152148d14"
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "post_id": "post/aap-17-hybrid-search-and-reciprocal-rank-fusion",
+      "title": "AAP-17: Hybrid Search and Reciprocal-Rank Fusion",
+      "directory": "projects/applied-ai-prototypes/aap17",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "rrf",
+        "rrf-viz"
+      ],
+      "related_posts": [],
+      "notes": "The Python rank-fusion demo and the separate React visualization are reference examples; the visualization takes manual ranks rather than running retrievers.",
+      "files": [
+        {
+          "upstream_path": "rrf/.gitignore",
+          "path": "reference/rrf/.gitignore",
+          "git_blob": "eba74f4cd2e2acfb1470300d69b58d8cff458c68",
+          "mode": "100644",
+          "sha256": "c3f7fcf8270642fad4497ad35e02cd3620442f0d4e0ede47ee607ee1297e31f3"
+        },
+        {
+          "upstream_path": "rrf/README.md",
+          "path": "reference/rrf/README.md",
+          "git_blob": "6dacbbc3f17875e36b388a8d973e3edbdc3be847",
+          "mode": "100644",
+          "sha256": "183a19ae8cf655488c768dad76bd5529430bc562f2e7f010b891d968810d1a9d"
+        },
+        {
+          "upstream_path": "rrf/main.py",
+          "path": "reference/rrf/main.py",
+          "git_blob": "c0b4f969a097f69e36ecea00f0e351d5afc730ae",
+          "mode": "100644",
+          "sha256": "ff47b81c44bebb79ec46c3bcd30346b4215dd2aa44d9c6fca68490417cca64a0"
+        },
+        {
+          "upstream_path": "rrf-viz/.gitignore",
+          "path": "reference/rrf-viz/.gitignore",
+          "git_blob": "a547bf36d8d11a4f89c59c144f24795749086dd1",
+          "mode": "100644",
+          "sha256": "fe718e7babb14f3cbad2d97f08889b9ce5215ed3fe0e43b2b8cfbfb3b9b844e8"
+        },
+        {
+          "upstream_path": "rrf-viz/.oxlintrc.json",
+          "path": "reference/rrf-viz/.oxlintrc.json",
+          "git_blob": "6fa991dad24b57eb19c9cefba8ea12fd1870ed07",
+          "mode": "100644",
+          "sha256": "b4d344818a1e1bf43997e4744a9153c8eef770c98b58229cd86363dabb85ded4"
+        },
+        {
+          "upstream_path": "rrf-viz/README.md",
+          "path": "reference/rrf-viz/README.md",
+          "git_blob": "d6af7e39ffac6183b891838d6ab1d6eb7ac70dda",
+          "mode": "100644",
+          "sha256": "fa8aac78b8be1993010b57f41000a243ecba006f6731513fe4ec91e788bf2517"
+        },
+        {
+          "upstream_path": "rrf-viz/index.html",
+          "path": "reference/rrf-viz/index.html",
+          "git_blob": "7f315c075aeff2aee59fdc7467e38f3ffc9bd040",
+          "mode": "100644",
+          "sha256": "09934f6fe3af0604c824c45963a7146b5e74b4b51b1752966fe7f9d448b7acf8"
+        },
+        {
+          "upstream_path": "rrf-viz/package-lock.json",
+          "path": "reference/rrf-viz/package-lock.json",
+          "git_blob": "fc5e4b0f3f02efc78da7df88a1511e2fdd44faef",
+          "mode": "100644",
+          "sha256": "c19a6c3911a364bf548b3089fae43f415661728f4c944618a592b565f1326e42"
+        },
+        {
+          "upstream_path": "rrf-viz/package.json",
+          "path": "reference/rrf-viz/package.json",
+          "git_blob": "bcee3a51beb6976f8acfa6662f30ba97aa42e568",
+          "mode": "100644",
+          "sha256": "2e80fd7f7073c05cc7d367c81d0a99250fb0ba3b1140e8e707a482ad881b9524"
+        },
+        {
+          "upstream_path": "rrf-viz/public/favicon.svg",
+          "path": "reference/rrf-viz/public/favicon.svg",
+          "git_blob": "6893eb13237060adc0c968a690149a49faa2d7d3",
+          "mode": "100644",
+          "sha256": "61bc9a161de58248288e6905425d7180f0624c2865007b97d763fdac12043a66"
+        },
+        {
+          "upstream_path": "rrf-viz/public/icons.svg",
+          "path": "reference/rrf-viz/public/icons.svg",
+          "git_blob": "e9522193d9f796a9748e9ad8c952a5df73c87db9",
+          "mode": "100644",
+          "sha256": "b45fa506195cfcdef406ba9f0c77b36ddc1a7c224040926ec70abc2fdea7b93a"
+        },
+        {
+          "upstream_path": "rrf-viz/src/App.css",
+          "path": "reference/rrf-viz/src/App.css",
+          "git_blob": "f90339d8f765fa2c69d9a341959a8ddb9fff5720",
+          "mode": "100644",
+          "sha256": "6e25a776d3e8102da5bacb3cb99f4a5fc662a2e01e6143140671a556d28c3d5c"
+        },
+        {
+          "upstream_path": "rrf-viz/src/App.tsx",
+          "path": "reference/rrf-viz/src/App.tsx",
+          "git_blob": "38492e0dc1237fed6962dd3634c5105532ae1dd5",
+          "mode": "100644",
+          "sha256": "8e0f83dc5fbc605b5bab0caf45f287ad71e43ba9fc81b4c3b29098a0859879ef"
+        },
+        {
+          "upstream_path": "rrf-viz/src/assets/hero.png",
+          "path": "reference/rrf-viz/src/assets/hero.png",
+          "git_blob": "02251f4b956c55af2d76fd0788124d7eee2b45eb",
+          "mode": "100644",
+          "sha256": "881ffbcaafc212e49addad08846a5b82761355fa20624253af3477ba33262c5c"
+        },
+        {
+          "upstream_path": "rrf-viz/src/assets/react.svg",
+          "path": "reference/rrf-viz/src/assets/react.svg",
+          "git_blob": "6c87de9bb3358469122cc991d5cf578927246184",
+          "mode": "100644",
+          "sha256": "35ef61ed53b323ae94a16a8ec659b3d0af3880698791133f23b084085ab1c2e5"
+        },
+        {
+          "upstream_path": "rrf-viz/src/assets/vite.svg",
+          "path": "reference/rrf-viz/src/assets/vite.svg",
+          "git_blob": "5101b674df391399da71c767aa5c976426c9dc7a",
+          "mode": "100644",
+          "sha256": "5be21acd42eb7b896e517f4e0f0f11eb5c5d9e54fbbcebe9453f033008fcca6f"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/CurveSmoothingChart.tsx",
+          "path": "reference/rrf-viz/src/components/CurveSmoothingChart.tsx",
+          "git_blob": "32701c031b984e06d0f05296f9286d207dd20661",
+          "mode": "100644",
+          "sha256": "b81108dedc3833491ed3b6b97a99cfac5110979005d8660c52c3de1ed2ac9cc5"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/FormulaHeader.tsx",
+          "path": "reference/rrf-viz/src/components/FormulaHeader.tsx",
+          "git_blob": "5e286f1c57910195929beaff4f84c732e2f1a77a",
+          "mode": "100644",
+          "sha256": "15884dd0995d6eeb5898f2089df55aac4a881e780b5a2992783fa10213950231"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/FusionSandbox.tsx",
+          "path": "reference/rrf-viz/src/components/FusionSandbox.tsx",
+          "git_blob": "61a767779bfafa5e647dbf98fe26d66a0186bfe3",
+          "mode": "100644",
+          "sha256": "f055eeb2304a8f9a3b9d9a0964627650db6a70c3773c3e47797b4ba664a3e42d"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/KeyTakeaways.tsx",
+          "path": "reference/rrf-viz/src/components/KeyTakeaways.tsx",
+          "git_blob": "f518a748a8b9e22312fade94db8db34cf9370e5d",
+          "mode": "100644",
+          "sha256": "787a02d3512356c1273d43d013785656cb243a21fa4bed1f556399aecc6d11f0"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/NeedForSmoothing.tsx",
+          "path": "reference/rrf-viz/src/components/NeedForSmoothing.tsx",
+          "git_blob": "830b629ffbca10c35033c21c8924b86e2c657617",
+          "mode": "100644",
+          "sha256": "78a56fe0d034a3fb8bcc577295cb30e3dab59f71b722cca803134272df38fe1e"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/SweetSpotWhy60.tsx",
+          "path": "reference/rrf-viz/src/components/SweetSpotWhy60.tsx",
+          "git_blob": "f8a6f8ffaa988f440d7423d2147263ba994cc001",
+          "mode": "100644",
+          "sha256": "3bf58e09d4882e31a0c1b1bca6f98036584560618ed6e1bfd6f80e085b62f729"
+        },
+        {
+          "upstream_path": "rrf-viz/src/components/WhySharpDropIsAProblem.tsx",
+          "path": "reference/rrf-viz/src/components/WhySharpDropIsAProblem.tsx",
+          "git_blob": "4822a7b362b828f62e3e2b5fec04cd87fa063c5c",
+          "mode": "100644",
+          "sha256": "b3373319007de4e1d96d4253d299ce8c9eeca39125f28d161f36e734a453fdb2"
+        },
+        {
+          "upstream_path": "rrf-viz/src/index.css",
+          "path": "reference/rrf-viz/src/index.css",
+          "git_blob": "257165673d751b374609f06b46c0d0ff0f5500c2",
+          "mode": "100644",
+          "sha256": "95e05cccc667b34def5fc53a67534d3d295c2d06c66a6b2d0082141bffb30673"
+        },
+        {
+          "upstream_path": "rrf-viz/src/main.tsx",
+          "path": "reference/rrf-viz/src/main.tsx",
+          "git_blob": "bef5202a32cbd0632c43de40f6e908532903fd42",
+          "mode": "100644",
+          "sha256": "6e9e5807fcbd48b75a96db5cbef36c996262196be42e6d4760dc86babbe61ad2"
+        },
+        {
+          "upstream_path": "rrf-viz/tsconfig.app.json",
+          "path": "reference/rrf-viz/tsconfig.app.json",
+          "git_blob": "6830b6f759f55aec32f0a2fd367ee63cf68db8b7",
+          "mode": "100644",
+          "sha256": "8e5d12ba330e7d86409edec74b95451e0db22ee09b9426c94b5bf817571eddb0"
+        },
+        {
+          "upstream_path": "rrf-viz/tsconfig.json",
+          "path": "reference/rrf-viz/tsconfig.json",
+          "git_blob": "1ffef600d959ec9e396d5a260bd3f5b927b2cef8",
+          "mode": "100644",
+          "sha256": "770b4140bbb581e2dfd9ea9946ffc9c75a1d86ba7d2db5f77c83e37cbdf9d808"
+        },
+        {
+          "upstream_path": "rrf-viz/tsconfig.node.json",
+          "path": "reference/rrf-viz/tsconfig.node.json",
+          "git_blob": "8455dcbc2c947322adef8783a42741878edaea9c",
+          "mode": "100644",
+          "sha256": "d366cc0827139db39c61815f22491bbfda56c654354a42ad7795143d314e45e8"
+        },
+        {
+          "upstream_path": "rrf-viz/vite.config.ts",
+          "path": "reference/rrf-viz/vite.config.ts",
+          "git_blob": "3d15f68d73d115c85de56fe27cd84f788e055986",
+          "mode": "100644",
+          "sha256": "2d349dd531ebc438776f51e3bcf28064538b7e19339285aaaaf6d429724aca70"
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "post_id": "post/aap-18-metadata-filtering-and-access-constraints",
+      "title": "AAP-18: Metadata Filtering and Access Constraints",
+      "directory": "projects/applied-ai-prototypes/aap18",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "metadata-filtering"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "metadata-filtering/.gitignore",
+          "path": "reference/metadata-filtering/.gitignore",
+          "git_blob": "2b91c72e46ffb577deca479128fdea9d378da793",
+          "mode": "100644",
+          "sha256": "935820ce60aeead5f91125b8de2d6b4beb625e8327670e14e0365c635c705858"
+        },
+        {
+          "upstream_path": "metadata-filtering/README.md",
+          "path": "reference/metadata-filtering/README.md",
+          "git_blob": "fe881f7939753a79043e4406b48ef3106d5510c5",
+          "mode": "100644",
+          "sha256": "f78059928f829b3b7aa444769ad3811bcfc45ddf9e8b80b4f658ebf401564d23"
+        },
+        {
+          "upstream_path": "metadata-filtering/main.py",
+          "path": "reference/metadata-filtering/main.py",
+          "git_blob": "ec8ce5b45d71330e0beeabec0b32065176784445",
+          "mode": "100644",
+          "sha256": "55ff2bc7563e54b6891e076bda8456436e390f9b60c02d254639c40aac1debb6"
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "post_id": "post/aap-19-query-rewriting-and-hypothetical-documents",
+      "title": "AAP-19: Query Rewriting and Hypothetical Documents",
+      "directory": "projects/applied-ai-prototypes/aap19",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "query-rewrite-hyde"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "query-rewrite-hyde/.gitignore",
+          "path": "reference/query-rewrite-hyde/.gitignore",
+          "git_blob": "f56f49ad85e67740924829205bf38cb35abfaac1",
+          "mode": "100644",
+          "sha256": "5251163d4d84ddadd9d16bb36dca20ac19e2184f6576ed89936d0f43d7dd78bc"
+        },
+        {
+          "upstream_path": "query-rewrite-hyde/main.py",
+          "path": "reference/query-rewrite-hyde/main.py",
+          "git_blob": "19dc9a60ef0681ce88db3d57a7cd74cf0ab8f2e9",
+          "mode": "100644",
+          "sha256": "6119a908c09087086825c5960bd712ec839d9c74f6379d81ac425b40889fa116"
+        },
+        {
+          "upstream_path": "query-rewrite-hyde/output-1,md",
+          "path": "reference/query-rewrite-hyde/output-1,md",
+          "git_blob": "19fcfff1c3e1d8cce1710ed9be50f622628eb246",
+          "mode": "100644",
+          "sha256": "2ae550da33dbf1a2597cb91f01d99efb8dcfca72035eb7daaac8bdc7bb61878c"
+        },
+        {
+          "upstream_path": "query-rewrite-hyde/requirements.txt",
+          "path": "reference/query-rewrite-hyde/requirements.txt",
+          "git_blob": "a206dfb1b7cac89ec88f57473524c4741b536b3a",
+          "mode": "100644",
+          "sha256": "bf010741b0c21cbb76416c17314322240e4dd7a3ec6b1b12bdd8bf957eaa1293"
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "post_id": "post/aap-20-bi-encoders-cross-encoders-and-reranking",
+      "title": "AAP-20: Bi-Encoders, Cross-Encoders and Reranking",
+      "directory": "projects/applied-ai-prototypes/aap20",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "cross-encoders"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "cross-encoders/.gitignore",
+          "path": "reference/cross-encoders/.gitignore",
+          "git_blob": "f493d76f0ae41d319277d781079af2fdacbcadba",
+          "mode": "100644",
+          "sha256": "fcb54d0a909ee8573b446f621d879b51cd470fdab53b31f2ff553b960c9c81eb"
+        },
+        {
+          "upstream_path": "cross-encoders/README.md",
+          "path": "reference/cross-encoders/README.md",
+          "git_blob": "c3a8f1e0ca053ec8f4e3dc973b28f0f1c32812c7",
+          "mode": "100644",
+          "sha256": "1831fd2f2c7dc9b4a500a88668053680e037f2c3a43416a37df19fee565ba54e"
+        },
+        {
+          "upstream_path": "cross-encoders/main.py",
+          "path": "reference/cross-encoders/main.py",
+          "git_blob": "a0cbd7ed53d125533ba98f028e60985b8a79dcfd",
+          "mode": "100644",
+          "sha256": "a39801f49aa8d03fd47cc9136a83f3badeda61bd562fb05fd90714486fd9c791"
+        },
+        {
+          "upstream_path": "cross-encoders/output-1.md",
+          "path": "reference/cross-encoders/output-1.md",
+          "git_blob": "9cb5a34d13f000333ad02d5b3f0ae1a55bae59f6",
+          "mode": "100644",
+          "sha256": "8ee8676c583fca290c01b8dd92a249476cb902c737150dcdd88f1be0ca9592e9"
+        },
+        {
+          "upstream_path": "cross-encoders/requirements.txt",
+          "path": "reference/cross-encoders/requirements.txt",
+          "git_blob": "6b36f427112738d0ab8aa33ca06b3a10d6f7f7bc",
+          "mode": "100644",
+          "sha256": "5002cda663da02a98780cf61d59e512a18061d6cfc0a2a6db50c18f3fda322d8"
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "post_id": "post/aap-21-diagnosing-rag-failures",
+      "title": "AAP-21: Diagnosing RAG Failures",
+      "directory": "projects/applied-ai-prototypes/aap21",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "rag-failure-modes"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "rag-failure-modes/.gitignore",
+          "path": "reference/rag-failure-modes/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "rag-failure-modes/README.md",
+          "path": "reference/rag-failure-modes/README.md",
+          "git_blob": "1d70714de8d2f2747258f3c8462346f079b7200d",
+          "mode": "100644",
+          "sha256": "0f2c74b2e8e6985b490a23ce634ac433a000b9aaff32bee6f5616b4002275157"
+        },
+        {
+          "upstream_path": "rag-failure-modes/main.py",
+          "path": "reference/rag-failure-modes/main.py",
+          "git_blob": "bae82933f3ac6ebe3a91072aefee4ca7b4ab61f7",
+          "mode": "100644",
+          "sha256": "8f9253a53f4d0f341ac867c8adbb7c69e9b4a8b6895d53460c5a4ebf003028aa"
+        },
+        {
+          "upstream_path": "rag-failure-modes/output-1.md",
+          "path": "reference/rag-failure-modes/output-1.md",
+          "git_blob": "816883a347e28c400d74e5e8bd313e8253c51017",
+          "mode": "100644",
+          "sha256": "e2e1c356749e2f544e9a6efb719de1880630bf996444a2d0125cd6e04c3304ee"
+        },
+        {
+          "upstream_path": "rag-failure-modes/requirements.txt",
+          "path": "reference/rag-failure-modes/requirements.txt",
+          "git_blob": "e15115559f913a5b8e97be580cc8c34583b64f6c",
+          "mode": "100644",
+          "sha256": "7279450aeb51de2a0990f235c27cea56bbb535b17f492d6037c2d624220b437e"
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "post_id": "post/aap-22-semantic-caching-and-answer-reuse",
+      "title": "AAP-22: Semantic Caching and Answer Reuse",
+      "directory": "projects/applied-ai-prototypes/aap22",
+      "reference_status": "no_matching_implementation",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [],
+      "related_posts": [
+        17,
+        18,
+        19,
+        21,
+        42
+      ],
+      "notes": "Semantic answer caching has no matching audited implementation. Provider prompt caching in AAP-42 is a different mechanism, not a substitute.",
+      "files": []
+    },
+    {
+      "number": 23,
+      "post_id": "post/aap-23-designing-rag-over-ten-million-documents",
+      "title": "AAP-23: Designing RAG over Ten Million Documents",
+      "directory": "projects/applied-ai-prototypes/aap23",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "rag-failure-modes"
+      ],
+      "related_posts": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "notes": "The imported failure diagnostics are small reference examples, not an implemented or measured ten-million-document RAG system.",
+      "files": [
+        {
+          "upstream_path": "rag-failure-modes/.gitignore",
+          "path": "reference/rag-failure-modes/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "rag-failure-modes/README.md",
+          "path": "reference/rag-failure-modes/README.md",
+          "git_blob": "1d70714de8d2f2747258f3c8462346f079b7200d",
+          "mode": "100644",
+          "sha256": "0f2c74b2e8e6985b490a23ce634ac433a000b9aaff32bee6f5616b4002275157"
+        },
+        {
+          "upstream_path": "rag-failure-modes/main.py",
+          "path": "reference/rag-failure-modes/main.py",
+          "git_blob": "bae82933f3ac6ebe3a91072aefee4ca7b4ab61f7",
+          "mode": "100644",
+          "sha256": "8f9253a53f4d0f341ac867c8adbb7c69e9b4a8b6895d53460c5a4ebf003028aa"
+        },
+        {
+          "upstream_path": "rag-failure-modes/output-1.md",
+          "path": "reference/rag-failure-modes/output-1.md",
+          "git_blob": "816883a347e28c400d74e5e8bd313e8253c51017",
+          "mode": "100644",
+          "sha256": "e2e1c356749e2f544e9a6efb719de1880630bf996444a2d0125cd6e04c3304ee"
+        },
+        {
+          "upstream_path": "rag-failure-modes/requirements.txt",
+          "path": "reference/rag-failure-modes/requirements.txt",
+          "git_blob": "e15115559f913a5b8e97be580cc8c34583b64f6c",
+          "mode": "100644",
+          "sha256": "7279450aeb51de2a0990f235c27cea56bbb535b17f492d6037c2d624220b437e"
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "post_id": "post/aap-24-observe-think-act-and-whole-file-repair",
+      "title": "AAP-24: Observe–Think–Act and Whole-File Repair",
+      "directory": "projects/applied-ai-prototypes/aap24",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "observe-think-act-loop"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "observe-think-act-loop/.gitignore",
+          "path": "reference/observe-think-act-loop/.gitignore",
+          "git_blob": "660219d50114ba479621514cff4af010f79a3867",
+          "mode": "100644",
+          "sha256": "ac4f523b8aa7cbbee5a3f110b2b68f4d242fb82465e2474a001e51bb808f4470"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/README.md",
+          "path": "reference/observe-think-act-loop/README.md",
+          "git_blob": "d5f76b1aaf5635c8807d671478f5e0b12a9e61e0",
+          "mode": "100644",
+          "sha256": "b9ca3d01642b1faa0a53028d5e4f899f20b4bbbb1e438999173cbf6a39635857"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/broken_code.py",
+          "path": "reference/observe-think-act-loop/broken_code.py",
+          "git_blob": "14516b1348c2b2e3c38dc06bcc81d45901565311",
+          "mode": "100644",
+          "sha256": "5d2a9dad7ea97cf78e908d9f7fbaa17cf57ea749ed45ca429a15da3cc5af5464"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/main.py",
+          "path": "reference/observe-think-act-loop/main.py",
+          "git_blob": "055bbb4bbb189765f34fd9f57173bb3cf4dc1114",
+          "mode": "100644",
+          "sha256": "4c14e24e98745943f74788e75215a4aef650223404f498fae235b980e8cdb393"
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "post_id": "post/aap-25-react-streaming-and-agent-execution-state",
+      "title": "AAP-25: ReAct, Streaming and Agent Execution State",
+      "directory": "projects/applied-ai-prototypes/aap25",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "loop",
+        "react"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "loop/.gitignore",
+          "path": "reference/loop/.gitignore",
+          "git_blob": "2fcb8a35b19ea10e1a1d0aed03b05f3d87c19016",
+          "mode": "100644",
+          "sha256": "ac1020874f741640a799a4aeb0558af1204c44b385e93d4936605a358f985365"
+        },
+        {
+          "upstream_path": "loop/main.py",
+          "path": "reference/loop/main.py",
+          "git_blob": "0a447e6d83f50cb314e79e97f9ff3bb020e20a83",
+          "mode": "100644",
+          "sha256": "5db0cc685eba140a0e337c7f74afac6199bcb02c884954fb36ce66e57f870294"
+        },
+        {
+          "upstream_path": "loop/requirements.txt",
+          "path": "reference/loop/requirements.txt",
+          "git_blob": "e15115559f913a5b8e97be580cc8c34583b64f6c",
+          "mode": "100644",
+          "sha256": "7279450aeb51de2a0990f235c27cea56bbb535b17f492d6037c2d624220b437e"
+        },
+        {
+          "upstream_path": "react/.gitignore",
+          "path": "reference/react/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "react/README.md",
+          "path": "reference/react/README.md",
+          "git_blob": "dc3e0a5885eaacfea09342672b4933354b52d042",
+          "mode": "100644",
+          "sha256": "281672f7f5fae3d8ed2f5ae650761db0db3b2c5d4988de3549aedb63f55ce36c"
+        },
+        {
+          "upstream_path": "react/main.py",
+          "path": "reference/react/main.py",
+          "git_blob": "1771488d38493e83803f3a32d8ffb3c46f1838b8",
+          "mode": "100644",
+          "sha256": "d081652daec5c27a962723165cdee400686c9c0e6bd5c8f79925958f31d7d731"
+        },
+        {
+          "upstream_path": "react/output-1.md",
+          "path": "reference/react/output-1.md",
+          "git_blob": "8db129ae744e5c861481126044d215d897ebdcd3",
+          "mode": "100644",
+          "sha256": "bfe7464751363ec39316f3ef510200012d8325f17c28b8c63d8e376db1350ccf"
+        },
+        {
+          "upstream_path": "react/requirements.txt",
+          "path": "reference/react/requirements.txt",
+          "git_blob": "5745656da2e080fd4dc5fb9b4aad70772dd69346",
+          "mode": "100644",
+          "sha256": "b2aa0cda6be9ca518ac59f25f5f2e4d01ea66c36ac32314c8b7f4e86b0720b34"
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "post_id": "post/aap-26-checkpointing-replay-and-recovery",
+      "title": "AAP-26: Checkpointing, Replay and Recovery",
+      "directory": "projects/applied-ai-prototypes/aap26",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "checkpoint-replay"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "checkpoint-replay/.gitignore",
+          "path": "reference/checkpoint-replay/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "checkpoint-replay/README.md",
+          "path": "reference/checkpoint-replay/README.md",
+          "git_blob": "2a9bebed1b5a3ff5b0a12c32fe79620c762a7876",
+          "mode": "100644",
+          "sha256": "d4594803f47e070f96d257e8da0227440e6c57c32cc7db72a100734c663403fe"
+        },
+        {
+          "upstream_path": "checkpoint-replay/main.py",
+          "path": "reference/checkpoint-replay/main.py",
+          "git_blob": "c4deb9a9b16a62c44977c10395833d0736ccc66a",
+          "mode": "100644",
+          "sha256": "f3c70f97a42e456964e8a0d479d286afac84d00c10fe455fdb7f7843cd389dbc"
+        },
+        {
+          "upstream_path": "checkpoint-replay/requirements.txt",
+          "path": "reference/checkpoint-replay/requirements.txt",
+          "git_blob": "5745656da2e080fd4dc5fb9b4aad70772dd69346",
+          "mode": "100644",
+          "sha256": "b2aa0cda6be9ca518ac59f25f5f2e4d01ea66c36ac32314c8b7f4e86b0720b34"
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "post_id": "post/aap-27-patch-based-repair-and-change-acceptance",
+      "title": "AAP-27: Patch-Based Repair and Change Acceptance",
+      "directory": "projects/applied-ai-prototypes/aap27",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "code-patcher"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "code-patcher/.gitignore",
+          "path": "reference/code-patcher/.gitignore",
+          "git_blob": "5320e998301b7672c4396e4bb73bc768ab6ebd12",
+          "mode": "100644",
+          "sha256": "d5e3520117d72e49fcdd20a9c0f1abecea330be16ec36718157c4128ea07031b"
+        },
+        {
+          "upstream_path": "code-patcher/README.md",
+          "path": "reference/code-patcher/README.md",
+          "git_blob": "78d3cf960030955fd0a8da7d7b3e8b8439c5c5cb",
+          "mode": "100644",
+          "sha256": "5199a4902113585527a288b184369875c40240dd8e8b274c455a86ef604809a0"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py",
+          "path": "reference/code-patcher/buggy_app.py",
+          "git_blob": "bcc053f8f2e50aecc2c6139bf217a80ea2ce7700",
+          "mode": "100644",
+          "sha256": "224bc8e1697111af9c3b1f527494339bcbe612f7828c148c67ee0e7be750b659"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.orig",
+          "path": "reference/code-patcher/buggy_app.py.orig",
+          "git_blob": "461bd8d69d694b46555b5849814e8d3c264067bf",
+          "mode": "100644",
+          "sha256": "03aeb889251533b25fa703d7a21ea5be256229785d9df444134cf2fe713bb2e6"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.rej",
+          "path": "reference/code-patcher/buggy_app.py.rej",
+          "git_blob": "6108c92bac88a10f4f686fbcbc4c6a815cf26f1f",
+          "mode": "100644",
+          "sha256": "46555ab20c38464d6c310079968ccbb83fa3d937d5a547e510ef8d54b7d05a34"
+        },
+        {
+          "upstream_path": "code-patcher/data.json",
+          "path": "reference/code-patcher/data.json",
+          "git_blob": "b7bba82166f7c6fb0d67d8eff51e4f1dc25735a5",
+          "mode": "100644",
+          "sha256": "7368f61983f44ba4bd99ef8c23ac948bad4964fb4d6ef0f5736a17461329e8e4"
+        },
+        {
+          "upstream_path": "code-patcher/main.py",
+          "path": "reference/code-patcher/main.py",
+          "git_blob": "74a87bad03f2e947335b5dd87ed52de6f8cac7f9",
+          "mode": "100644",
+          "sha256": "7d5fb36805a8204df74921eac0d603a9bfe5c2c97b7f2e1af79785b1999feb60"
+        },
+        {
+          "upstream_path": "code-patcher/settings.json",
+          "path": "reference/code-patcher/settings.json",
+          "git_blob": "779f1b9bf407d9bb24c0aca468f8aca2d9f84696",
+          "mode": "100644",
+          "sha256": "9350b129a028e546d0b44ea74ef908559ce68e13eaa8a947e2baaa6a20382567"
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "post_id": "post/aap-28-coding-agent-architecture-claude-code-as-a-case-study",
+      "title": "AAP-28: Coding-Agent Architecture: Claude Code as a Case Study",
+      "directory": "projects/applied-ai-prototypes/aap28",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "code-patcher",
+        "grep_search"
+      ],
+      "related_posts": [
+        10,
+        12,
+        24,
+        25,
+        27
+      ],
+      "notes": "The patcher is a supporting example. `grep_search` contains only pointers to absent external source, not an implementation of search or Claude Code.",
+      "files": [
+        {
+          "upstream_path": "code-patcher/.gitignore",
+          "path": "reference/code-patcher/.gitignore",
+          "git_blob": "5320e998301b7672c4396e4bb73bc768ab6ebd12",
+          "mode": "100644",
+          "sha256": "d5e3520117d72e49fcdd20a9c0f1abecea330be16ec36718157c4128ea07031b"
+        },
+        {
+          "upstream_path": "code-patcher/README.md",
+          "path": "reference/code-patcher/README.md",
+          "git_blob": "78d3cf960030955fd0a8da7d7b3e8b8439c5c5cb",
+          "mode": "100644",
+          "sha256": "5199a4902113585527a288b184369875c40240dd8e8b274c455a86ef604809a0"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py",
+          "path": "reference/code-patcher/buggy_app.py",
+          "git_blob": "bcc053f8f2e50aecc2c6139bf217a80ea2ce7700",
+          "mode": "100644",
+          "sha256": "224bc8e1697111af9c3b1f527494339bcbe612f7828c148c67ee0e7be750b659"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.orig",
+          "path": "reference/code-patcher/buggy_app.py.orig",
+          "git_blob": "461bd8d69d694b46555b5849814e8d3c264067bf",
+          "mode": "100644",
+          "sha256": "03aeb889251533b25fa703d7a21ea5be256229785d9df444134cf2fe713bb2e6"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.rej",
+          "path": "reference/code-patcher/buggy_app.py.rej",
+          "git_blob": "6108c92bac88a10f4f686fbcbc4c6a815cf26f1f",
+          "mode": "100644",
+          "sha256": "46555ab20c38464d6c310079968ccbb83fa3d937d5a547e510ef8d54b7d05a34"
+        },
+        {
+          "upstream_path": "code-patcher/data.json",
+          "path": "reference/code-patcher/data.json",
+          "git_blob": "b7bba82166f7c6fb0d67d8eff51e4f1dc25735a5",
+          "mode": "100644",
+          "sha256": "7368f61983f44ba4bd99ef8c23ac948bad4964fb4d6ef0f5736a17461329e8e4"
+        },
+        {
+          "upstream_path": "code-patcher/main.py",
+          "path": "reference/code-patcher/main.py",
+          "git_blob": "74a87bad03f2e947335b5dd87ed52de6f8cac7f9",
+          "mode": "100644",
+          "sha256": "7d5fb36805a8204df74921eac0d603a9bfe5c2c97b7f2e1af79785b1999feb60"
+        },
+        {
+          "upstream_path": "code-patcher/settings.json",
+          "path": "reference/code-patcher/settings.json",
+          "git_blob": "779f1b9bf407d9bb24c0aca468f8aca2d9f84696",
+          "mode": "100644",
+          "sha256": "9350b129a028e546d0b44ea74ef908559ce68e13eaa8a947e2baaa6a20382567"
+        },
+        {
+          "upstream_path": "grep_search/README.md",
+          "path": "reference/grep_search/README.md",
+          "git_blob": "f0700d9b01bd0af3c10b28ac65d84b43379ff5ac",
+          "mode": "100644",
+          "sha256": "008dd980acbd9bef0b882300920482ec6674d670384bd154eaa3caf8a96b8c5f"
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "post_id": "post/aap-29-designing-a-paper-to-code-agent",
+      "title": "AAP-29: Designing a Paper-to-Code Agent",
+      "directory": "projects/applied-ai-prototypes/aap29",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "agent-paper-to-code-2",
+        "agent-paper-to-code-3",
+        "observe-think-act-loop",
+        "code-patcher"
+      ],
+      "related_posts": [
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "notes": "Both paper-agent versions and repair approaches are preserved for comparison. They do not establish algorithmic correctness or execution isolation.",
+      "files": [
+        {
+          "upstream_path": "agent-paper-to-code-2/.gitignore",
+          "path": "reference/agent-paper-to-code-2/.gitignore",
+          "git_blob": "37991e3335644b22da5b3c77e68cbe0e990625d2",
+          "mode": "100644",
+          "sha256": "654335ffe337ec7461bbe07ff1f82afbbbcc7c626ad989d06727551505c650fc"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/README.md",
+          "path": "reference/agent-paper-to-code-2/README.md",
+          "git_blob": "4ee165aca8b01633b7d7b355ccab42dcb6940791",
+          "mode": "100644",
+          "sha256": "950fbb3c1e260927ddd8bf837b41d11f062967215700f8ea49b8cccb3b726d54"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/implementation.py",
+          "path": "reference/agent-paper-to-code-2/implementation.py",
+          "git_blob": "171d3c72479a99a8c0fc63a2d3ad64e7fa5b8885",
+          "mode": "100644",
+          "sha256": "ea8835084fabbd5a4f0230a62e453f676676d2a5f82512ab07e7ddbd0ccdf5e5"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/ingest.py",
+          "path": "reference/agent-paper-to-code-2/ingest.py",
+          "git_blob": "b761429d609dd9025aad211ed2618e5aae0a1b97",
+          "mode": "100644",
+          "sha256": "51fa5252fa201b0a98975112e186ea47d6b70bbe7eef308614e9b3922dff3596"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/isolation_forest.py",
+          "path": "reference/agent-paper-to-code-2/isolation_forest.py",
+          "git_blob": "53c708cb9ecd4ca897ff2ac5ec77e870339ef7ea",
+          "mode": "100644",
+          "sha256": "fd3f37e52204bb852829211e14b81bc9044de37c707fc60403cceb0d48bf393c"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/main.py",
+          "path": "reference/agent-paper-to-code-2/main.py",
+          "git_blob": "0547b4dd579bd7dc5928966c3f1980a2700eb4f6",
+          "mode": "100644",
+          "sha256": "5aab5e2c9c28f91adaee2d9fcf84d797aa3dffac5759ff8dabc93b4977a3e42c"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/paper.pdf",
+          "path": "reference/agent-paper-to-code-2/paper.pdf",
+          "git_blob": "3ac071b08a74c4ba35db04b89d9eab39016e5f59",
+          "mode": "100755",
+          "sha256": "188a224c40786174ae6c9037d4a64e2ead1bf5bd1eb6da6334b42d3271021862"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/react_loop.py",
+          "path": "reference/agent-paper-to-code-2/react_loop.py",
+          "git_blob": "228e6ad608f29514906deed6b183cb6207d36664",
+          "mode": "100644",
+          "sha256": "e22744d34fbebde0fc7b94c9c4bf9958fb5de6c583c911f0020acabad0f2e872"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/requirements.txt",
+          "path": "reference/agent-paper-to-code-2/requirements.txt",
+          "git_blob": "8771eb17cac8e83f797383d3509510675eabc585",
+          "mode": "100644",
+          "sha256": "eb21f5c004751f0e4dd47d304d18cf4db8d68cbc614dd3efaacf808b9ce42515"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/test.py",
+          "path": "reference/agent-paper-to-code-2/test.py",
+          "git_blob": "04eff4e821f31263786221a83915df33685007a2",
+          "mode": "100644",
+          "sha256": "3e5fab314072a27b9e2e911be7e5ae9599bcd4736a1c6f2727f2ad452eaca0f3"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-2/tools.py",
+          "path": "reference/agent-paper-to-code-2/tools.py",
+          "git_blob": "1a09c6e6fbd98e34635cfc47e72af0835eedc830",
+          "mode": "100644",
+          "sha256": "24c191b7b873d596cbc3db7a13bf7aab994d7ee068139e8ca193e63a573435d8"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/.gitignore",
+          "path": "reference/agent-paper-to-code-3/.gitignore",
+          "git_blob": "37991e3335644b22da5b3c77e68cbe0e990625d2",
+          "mode": "100644",
+          "sha256": "654335ffe337ec7461bbe07ff1f82afbbbcc7c626ad989d06727551505c650fc"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/README.md",
+          "path": "reference/agent-paper-to-code-3/README.md",
+          "git_blob": "4ee165aca8b01633b7d7b355ccab42dcb6940791",
+          "mode": "100644",
+          "sha256": "950fbb3c1e260927ddd8bf837b41d11f062967215700f8ea49b8cccb3b726d54"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/implementation.py",
+          "path": "reference/agent-paper-to-code-3/implementation.py",
+          "git_blob": "ef45434fe093e99d25e1c45a0feeb30125980c94",
+          "mode": "100644",
+          "sha256": "c0d5b6f239203177d821c4626d3e01e6ab275448dcf86a9521c74d98800f4cc0"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/ingest.py",
+          "path": "reference/agent-paper-to-code-3/ingest.py",
+          "git_blob": "b761429d609dd9025aad211ed2618e5aae0a1b97",
+          "mode": "100644",
+          "sha256": "51fa5252fa201b0a98975112e186ea47d6b70bbe7eef308614e9b3922dff3596"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/isolation_forest.py",
+          "path": "reference/agent-paper-to-code-3/isolation_forest.py",
+          "git_blob": "53c708cb9ecd4ca897ff2ac5ec77e870339ef7ea",
+          "mode": "100644",
+          "sha256": "fd3f37e52204bb852829211e14b81bc9044de37c707fc60403cceb0d48bf393c"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/main.py",
+          "path": "reference/agent-paper-to-code-3/main.py",
+          "git_blob": "a23b530e21be543c8ed6709250b70ea6cec6db71",
+          "mode": "100644",
+          "sha256": "c3df04dc6a6a42d83a106af07a7575cf4f44f05be436ccbb7f99fd8ce2040e62"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/paper.pdf",
+          "path": "reference/agent-paper-to-code-3/paper.pdf",
+          "git_blob": "3ac071b08a74c4ba35db04b89d9eab39016e5f59",
+          "mode": "100755",
+          "sha256": "188a224c40786174ae6c9037d4a64e2ead1bf5bd1eb6da6334b42d3271021862"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/react_loop.py",
+          "path": "reference/agent-paper-to-code-3/react_loop.py",
+          "git_blob": "cfc89bd309bd6080e502ab38be79cfab0c7f43be",
+          "mode": "100644",
+          "sha256": "e66408e849522d655d20883afbf91a9164f94aefd78fcf760485ef8e24068623"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/requirements.txt",
+          "path": "reference/agent-paper-to-code-3/requirements.txt",
+          "git_blob": "8771eb17cac8e83f797383d3509510675eabc585",
+          "mode": "100644",
+          "sha256": "eb21f5c004751f0e4dd47d304d18cf4db8d68cbc614dd3efaacf808b9ce42515"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/test.py",
+          "path": "reference/agent-paper-to-code-3/test.py",
+          "git_blob": "3491d695ca6169c0bcf84bd27a6d544f727eafae",
+          "mode": "100644",
+          "sha256": "1ea0a563fce743e137f9e314422905af082144c5c2cf2155c804735812b9ce64"
+        },
+        {
+          "upstream_path": "agent-paper-to-code-3/tools.py",
+          "path": "reference/agent-paper-to-code-3/tools.py",
+          "git_blob": "ca968cae27b14295b351de761136acd563525d96",
+          "mode": "100644",
+          "sha256": "6cfaf5b1ea1ef6249a0a03f422084a90fd65016d25b9dccd7ec28691460cb40d"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/.gitignore",
+          "path": "reference/observe-think-act-loop/.gitignore",
+          "git_blob": "660219d50114ba479621514cff4af010f79a3867",
+          "mode": "100644",
+          "sha256": "ac4f523b8aa7cbbee5a3f110b2b68f4d242fb82465e2474a001e51bb808f4470"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/README.md",
+          "path": "reference/observe-think-act-loop/README.md",
+          "git_blob": "d5f76b1aaf5635c8807d671478f5e0b12a9e61e0",
+          "mode": "100644",
+          "sha256": "b9ca3d01642b1faa0a53028d5e4f899f20b4bbbb1e438999173cbf6a39635857"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/broken_code.py",
+          "path": "reference/observe-think-act-loop/broken_code.py",
+          "git_blob": "14516b1348c2b2e3c38dc06bcc81d45901565311",
+          "mode": "100644",
+          "sha256": "5d2a9dad7ea97cf78e908d9f7fbaa17cf57ea749ed45ca429a15da3cc5af5464"
+        },
+        {
+          "upstream_path": "observe-think-act-loop/main.py",
+          "path": "reference/observe-think-act-loop/main.py",
+          "git_blob": "055bbb4bbb189765f34fd9f57173bb3cf4dc1114",
+          "mode": "100644",
+          "sha256": "4c14e24e98745943f74788e75215a4aef650223404f498fae235b980e8cdb393"
+        },
+        {
+          "upstream_path": "code-patcher/.gitignore",
+          "path": "reference/code-patcher/.gitignore",
+          "git_blob": "5320e998301b7672c4396e4bb73bc768ab6ebd12",
+          "mode": "100644",
+          "sha256": "d5e3520117d72e49fcdd20a9c0f1abecea330be16ec36718157c4128ea07031b"
+        },
+        {
+          "upstream_path": "code-patcher/README.md",
+          "path": "reference/code-patcher/README.md",
+          "git_blob": "78d3cf960030955fd0a8da7d7b3e8b8439c5c5cb",
+          "mode": "100644",
+          "sha256": "5199a4902113585527a288b184369875c40240dd8e8b274c455a86ef604809a0"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py",
+          "path": "reference/code-patcher/buggy_app.py",
+          "git_blob": "bcc053f8f2e50aecc2c6139bf217a80ea2ce7700",
+          "mode": "100644",
+          "sha256": "224bc8e1697111af9c3b1f527494339bcbe612f7828c148c67ee0e7be750b659"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.orig",
+          "path": "reference/code-patcher/buggy_app.py.orig",
+          "git_blob": "461bd8d69d694b46555b5849814e8d3c264067bf",
+          "mode": "100644",
+          "sha256": "03aeb889251533b25fa703d7a21ea5be256229785d9df444134cf2fe713bb2e6"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.rej",
+          "path": "reference/code-patcher/buggy_app.py.rej",
+          "git_blob": "6108c92bac88a10f4f686fbcbc4c6a815cf26f1f",
+          "mode": "100644",
+          "sha256": "46555ab20c38464d6c310079968ccbb83fa3d937d5a547e510ef8d54b7d05a34"
+        },
+        {
+          "upstream_path": "code-patcher/data.json",
+          "path": "reference/code-patcher/data.json",
+          "git_blob": "b7bba82166f7c6fb0d67d8eff51e4f1dc25735a5",
+          "mode": "100644",
+          "sha256": "7368f61983f44ba4bd99ef8c23ac948bad4964fb4d6ef0f5736a17461329e8e4"
+        },
+        {
+          "upstream_path": "code-patcher/main.py",
+          "path": "reference/code-patcher/main.py",
+          "git_blob": "74a87bad03f2e947335b5dd87ed52de6f8cac7f9",
+          "mode": "100644",
+          "sha256": "7d5fb36805a8204df74921eac0d603a9bfe5c2c97b7f2e1af79785b1999feb60"
+        },
+        {
+          "upstream_path": "code-patcher/settings.json",
+          "path": "reference/code-patcher/settings.json",
+          "git_blob": "779f1b9bf407d9bb24c0aca468f8aca2d9f84696",
+          "mode": "100644",
+          "sha256": "9350b129a028e546d0b44ea74ef908559ce68e13eaa8a947e2baaa6a20382567"
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "post_id": "post/aap-30-persistent-memory-and-retrieval",
+      "title": "AAP-30: Persistent Memory and Retrieval",
+      "directory": "projects/applied-ai-prototypes/aap30",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "memory-persistent"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "memory-persistent/.gitignore",
+          "path": "reference/memory-persistent/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "memory-persistent/README.md",
+          "path": "reference/memory-persistent/README.md",
+          "git_blob": "3e8855f77af6b74524f28679a464db816b01820a",
+          "mode": "100644",
+          "sha256": "1a42c1b5bcde29ce1f1c15992a9e722fd54d6ece42115ccd571154422e4f630f"
+        },
+        {
+          "upstream_path": "memory-persistent/main.py",
+          "path": "reference/memory-persistent/main.py",
+          "git_blob": "0b38e8381ecd78317e469fde9c4b5724a3e0c1c9",
+          "mode": "100644",
+          "sha256": "5ff25ecb0e887ecf1ff33e036b4ffc56d07334dbfe9254d28631c6ca9753bfe4"
+        },
+        {
+          "upstream_path": "memory-persistent/memory_store.json",
+          "path": "reference/memory-persistent/memory_store.json",
+          "git_blob": "dd86d57bccc3fec995c1eaea506bdfdfa7f77fe6",
+          "mode": "100644",
+          "sha256": "49d9258bad4ea33c3273556c6fb975c9d4fabdabaa073efc529e432d1cbd52a3"
+        },
+        {
+          "upstream_path": "memory-persistent/output-1.md",
+          "path": "reference/memory-persistent/output-1.md",
+          "git_blob": "70eda6742f65a4dd4a2065b967e0fbba607659c6",
+          "mode": "100644",
+          "sha256": "a0750f6bbd08b1c5087f247788327e555622ae75f95220ebd0f8fdbd728a9826"
+        },
+        {
+          "upstream_path": "memory-persistent/requirements.txt",
+          "path": "reference/memory-persistent/requirements.txt",
+          "git_blob": "1025564fe705795769da355aa2281648f79afc34",
+          "mode": "100644",
+          "sha256": "a5ceb5f39ee182f63f6dd9f9e771a380b46501d8a0c4c154cdbd0979955beae2"
+        }
+      ]
+    },
+    {
+      "number": 31,
+      "post_id": "post/aap-31-memory-writes-corrections-and-deletion",
+      "title": "AAP-31: Memory Writes, Corrections and Deletion",
+      "directory": "projects/applied-ai-prototypes/aap31",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "evolving-memory"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "evolving-memory/.gitignore",
+          "path": "reference/evolving-memory/.gitignore",
+          "git_blob": "d3dfb15f2fb38bec2b913077e6b70c3cbb0fb824",
+          "mode": "100644",
+          "sha256": "dc331d074e3e59f3a1292e7af9c71892fa3d42d3f2fedcce1a852fa48c49d042"
+        },
+        {
+          "upstream_path": "evolving-memory/README.md",
+          "path": "reference/evolving-memory/README.md",
+          "git_blob": "3b008c9abfbb5e840308e583e5292408ca88cf24",
+          "mode": "100644",
+          "sha256": "6d106ea9c373509f165696abed961f4c4b2688519dd0a8c34099ebfe11b5add4"
+        },
+        {
+          "upstream_path": "evolving-memory/main.py",
+          "path": "reference/evolving-memory/main.py",
+          "git_blob": "335896c11756ce3e93cef5904d37957db10f223d",
+          "mode": "100644",
+          "sha256": "e8d7c565a4d50deda16a5e71ed1460338483dec0991a166e0b070b8b1d0c7461"
+        },
+        {
+          "upstream_path": "evolving-memory/requirements.txt",
+          "path": "reference/evolving-memory/requirements.txt",
+          "git_blob": "46c57aae684272af205fd7fe775f40f0647988ad",
+          "mode": "100644",
+          "sha256": "87e77730564e41a4887f1eb91b7e420b2ff83f0a26d8e18fde4df489314b11fd"
+        }
+      ]
+    },
+    {
+      "number": 32,
+      "post_id": "post/aap-32-working-memory-and-context-budgets",
+      "title": "AAP-32: Working Memory and Context Budgets",
+      "directory": "projects/applied-ai-prototypes/aap32",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "working-memory",
+        "react"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "working-memory/.gitignore",
+          "path": "reference/working-memory/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "working-memory/README.md",
+          "path": "reference/working-memory/README.md",
+          "git_blob": "9b42f8541d5e8d800f7cd9c029f0300d3c8a6a6b",
+          "mode": "100644",
+          "sha256": "76f11d5cc346fe79b6ae025270a58349d2e2bb0c7f9c7a70787b5cd5c310b851"
+        },
+        {
+          "upstream_path": "working-memory/main.py",
+          "path": "reference/working-memory/main.py",
+          "git_blob": "201f1192540e64f857a883790c9dd7de4c578ef4",
+          "mode": "100644",
+          "sha256": "7e762cea3434a6a499f39cd9a7187ef8c2d6b81527ac1dfd8c6eaa2243407bf0"
+        },
+        {
+          "upstream_path": "working-memory/output-1.md",
+          "path": "reference/working-memory/output-1.md",
+          "git_blob": "d10d46d5e74552aefdde335668e527ff132a51a9",
+          "mode": "100644",
+          "sha256": "0f4f13c56636912bc4217448c85ca5cad81529840f70a9eab62aae72a6f2df02"
+        },
+        {
+          "upstream_path": "working-memory/requirements.txt",
+          "path": "reference/working-memory/requirements.txt",
+          "git_blob": "853c76f136a04417c054dc14795ecad674b91eff",
+          "mode": "100644",
+          "sha256": "1335e39bf8ddd6a2520c3c9f189ed65ba4fc82302af6208c8dc79e4602bf3e23"
+        },
+        {
+          "upstream_path": "working-memory/test_embed.py",
+          "path": "reference/working-memory/test_embed.py",
+          "git_blob": "eb773212cdad839ea0941176fa2e7c95f27c3ac7",
+          "mode": "100644",
+          "sha256": "4a4e49992626f0787882b2f52928220bd1c8a92a7f1c20786c968301907b24d4"
+        },
+        {
+          "upstream_path": "react/.gitignore",
+          "path": "reference/react/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "react/README.md",
+          "path": "reference/react/README.md",
+          "git_blob": "dc3e0a5885eaacfea09342672b4933354b52d042",
+          "mode": "100644",
+          "sha256": "281672f7f5fae3d8ed2f5ae650761db0db3b2c5d4988de3549aedb63f55ce36c"
+        },
+        {
+          "upstream_path": "react/main.py",
+          "path": "reference/react/main.py",
+          "git_blob": "1771488d38493e83803f3a32d8ffb3c46f1838b8",
+          "mode": "100644",
+          "sha256": "d081652daec5c27a962723165cdee400686c9c0e6bd5c8f79925958f31d7d731"
+        },
+        {
+          "upstream_path": "react/output-1.md",
+          "path": "reference/react/output-1.md",
+          "git_blob": "8db129ae744e5c861481126044d215d897ebdcd3",
+          "mode": "100644",
+          "sha256": "bfe7464751363ec39316f3ef510200012d8325f17c28b8c63d8e376db1350ccf"
+        },
+        {
+          "upstream_path": "react/requirements.txt",
+          "path": "reference/react/requirements.txt",
+          "git_blob": "5745656da2e080fd4dc5fb9b4aad70772dd69346",
+          "mode": "100644",
+          "sha256": "b2aa0cda6be9ca518ac59f25f5f2e4d01ea66c36ac32314c8b7f4e86b0720b34"
+        }
+      ]
+    },
+    {
+      "number": 33,
+      "post_id": "post/aap-33-orchestrators-and-specialist-contracts",
+      "title": "AAP-33: Orchestrators and Specialist Contracts",
+      "directory": "projects/applied-ai-prototypes/aap33",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "orchestrator-vs-specialist"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "orchestrator-vs-specialist/.gitignore",
+          "path": "reference/orchestrator-vs-specialist/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "orchestrator-vs-specialist/README.md",
+          "path": "reference/orchestrator-vs-specialist/README.md",
+          "git_blob": "1e997a28fd3dad9596f1bc18b7add17356c3d2b8",
+          "mode": "100644",
+          "sha256": "961d5cbb3233384fe44afcade12e2b6bd4f8f58fdf3d407dcf2d7e1543e40bec"
+        },
+        {
+          "upstream_path": "orchestrator-vs-specialist/main.py",
+          "path": "reference/orchestrator-vs-specialist/main.py",
+          "git_blob": "443ed6d7dcb00e98be7d9e34d5d402421a4df80c",
+          "mode": "100644",
+          "sha256": "93515e39863610d80521518749da4ebd238d53320206f937de090cb7762136b5"
+        },
+        {
+          "upstream_path": "orchestrator-vs-specialist/output-1.md",
+          "path": "reference/orchestrator-vs-specialist/output-1.md",
+          "git_blob": "73121b409874ddf96923d1bbe2accd0caa70c6da",
+          "mode": "100644",
+          "sha256": "f8a4fccaa56a3c0c9179114b65e51bee15692dbfd9d4a1f99622ac6bd52680ab"
+        },
+        {
+          "upstream_path": "orchestrator-vs-specialist/requirements.txt",
+          "path": "reference/orchestrator-vs-specialist/requirements.txt",
+          "git_blob": "677da3b79b6c15fbd2bb0ba9e07493790c213838",
+          "mode": "100644",
+          "sha256": "a79eb9cb78ae05220b885cc2b99d726766eb629b883d94ae48008c879ee1e7b2"
+        }
+      ]
+    },
+    {
+      "number": 34,
+      "post_id": "post/aap-34-skills-and-structured-workflows",
+      "title": "AAP-34: Skills and Structured Workflows",
+      "directory": "projects/applied-ai-prototypes/aap34",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "skill-executor"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "skill-executor/.gitignore",
+          "path": "reference/skill-executor/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "skill-executor/README.md",
+          "path": "reference/skill-executor/README.md",
+          "git_blob": "d94f86a7a1626f7fe6db2d44b67dba6caaab1299",
+          "mode": "100644",
+          "sha256": "1ba971c4d10c983f9dfc30537ccda2786e93ac9a839a511bff78c1cd26f0746c"
+        },
+        {
+          "upstream_path": "skill-executor/main.py",
+          "path": "reference/skill-executor/main.py",
+          "git_blob": "b0beba771f469fe202d8413b5e61e1d7b1616064",
+          "mode": "100644",
+          "sha256": "17cc2deb562725d4a21d52f5e770d20168880e2e10f1682e6c9bf9c20a36a8b0"
+        },
+        {
+          "upstream_path": "skill-executor/requirements.txt",
+          "path": "reference/skill-executor/requirements.txt",
+          "git_blob": "f9c82293c9a4f466677a3b694d6e4b9c41297f11",
+          "mode": "100644",
+          "sha256": "34ee36e75385da08fe325a9d179f8e09b4ed9c2930f8c1a8a3e37fd1787bf24b"
+        }
+      ]
+    },
+    {
+      "number": 35,
+      "post_id": "post/aap-35-parallel-research-and-subagent-execution",
+      "title": "AAP-35: Parallel Research and Subagent Execution",
+      "directory": "projects/applied-ai-prototypes/aap35",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "deep-research"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "deep-research/.gitignore",
+          "path": "reference/deep-research/.gitignore",
+          "git_blob": "93526df6cedb8d06cc60e5c1c432292865774ad1",
+          "mode": "100644",
+          "sha256": "df5b27b3f059b3ec85b52b4901257138918fbdc9ea7a147c3c5ccfefc78f5de1"
+        },
+        {
+          "upstream_path": "deep-research/README.md",
+          "path": "reference/deep-research/README.md",
+          "git_blob": "70d36341ab0ed2a55ce1ec118d1ba5bd22baba75",
+          "mode": "100644",
+          "sha256": "8612bb6d177f20be998c906fcfec7e73ad060f551d75828040b390aec1866d7f"
+        },
+        {
+          "upstream_path": "deep-research/main.py",
+          "path": "reference/deep-research/main.py",
+          "git_blob": "7d59c621de90e1b64a9587628edc8e1c79d703c4",
+          "mode": "100644",
+          "sha256": "e5801825d8423f5922a628d479379a833975c2e7f854e1cde04d75a419f61a2a"
+        }
+      ]
+    },
+    {
+      "number": 36,
+      "post_id": "post/aap-36-coordination-progress-and-deadlocks",
+      "title": "AAP-36: Coordination, Progress and Deadlocks",
+      "directory": "projects/applied-ai-prototypes/aap36",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "deadlock",
+        "deep-research"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "deadlock/.gitignore",
+          "path": "reference/deadlock/.gitignore",
+          "git_blob": "c61e7edf90ed6e32159e4e29ab2650f8def6c37c",
+          "mode": "100644",
+          "sha256": "0b438658d89df2c8fe1bc6deefd7cd232482c94c01f34dfd7e9c7be1c54094b0"
+        },
+        {
+          "upstream_path": "deadlock/README.md",
+          "path": "reference/deadlock/README.md",
+          "git_blob": "380d32c722ed399162ee7dcb7e8aaa32f6487486",
+          "mode": "100644",
+          "sha256": "b75f460f54a8b0283104c230b5ecd0d60e0822c0548989425a4f535d83a612a7"
+        },
+        {
+          "upstream_path": "deadlock/main.py",
+          "path": "reference/deadlock/main.py",
+          "git_blob": "b8a10152ca2d2f6d781232209fb2275d0634f47f",
+          "mode": "100644",
+          "sha256": "9252fd0446a3e1c6ca7894a45f5d82f76f9e43d84d590d924779075bfcc90a74"
+        },
+        {
+          "upstream_path": "deadlock/requirements.txt",
+          "path": "reference/deadlock/requirements.txt",
+          "git_blob": "c9be593c62059bdfd642b471f18defb6c1735a4b",
+          "mode": "100644",
+          "sha256": "c1abfde9f26b76e093cb32e18f41e049f14d1c0c219da4017804110bcd1a58e9"
+        },
+        {
+          "upstream_path": "deep-research/.gitignore",
+          "path": "reference/deep-research/.gitignore",
+          "git_blob": "93526df6cedb8d06cc60e5c1c432292865774ad1",
+          "mode": "100644",
+          "sha256": "df5b27b3f059b3ec85b52b4901257138918fbdc9ea7a147c3c5ccfefc78f5de1"
+        },
+        {
+          "upstream_path": "deep-research/README.md",
+          "path": "reference/deep-research/README.md",
+          "git_blob": "70d36341ab0ed2a55ce1ec118d1ba5bd22baba75",
+          "mode": "100644",
+          "sha256": "8612bb6d177f20be998c906fcfec7e73ad060f551d75828040b390aec1866d7f"
+        },
+        {
+          "upstream_path": "deep-research/main.py",
+          "path": "reference/deep-research/main.py",
+          "git_blob": "7d59c621de90e1b64a9587628edc8e1c79d703c4",
+          "mode": "100644",
+          "sha256": "e5801825d8423f5922a628d479379a833975c2e7f854e1cde04d75a419f61a2a"
+        }
+      ]
+    },
+    {
+      "number": 37,
+      "post_id": "post/aap-37-designing-an-incident-remediation-system",
+      "title": "AAP-37: Designing an Incident Remediation System",
+      "directory": "projects/applied-ai-prototypes/aap37",
+      "reference_status": "no_matching_implementation",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [],
+      "related_posts": [
+        11,
+        12,
+        26,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "notes": "The source syllabus names an incident remediation design, but no complete matching implementation was identified. Related earlier examples are not presented as the full system.",
+      "files": []
+    },
+    {
+      "number": 38,
+      "post_id": "post/aap-38-evaluation-datasets-scoring-and-integration",
+      "title": "AAP-38: Evaluation Datasets, Scoring and Integration",
+      "directory": "projects/applied-ai-prototypes/aap38",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "evals",
+        "prompt-regression",
+        "rag-failure-modes"
+      ],
+      "related_posts": [
+        1,
+        3,
+        5,
+        6,
+        7,
+        13,
+        14,
+        15,
+        21
+      ],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "evals/.gitignore",
+          "path": "reference/evals/.gitignore",
+          "git_blob": "93526df6cedb8d06cc60e5c1c432292865774ad1",
+          "mode": "100644",
+          "sha256": "df5b27b3f059b3ec85b52b4901257138918fbdc9ea7a147c3c5ccfefc78f5de1"
+        },
+        {
+          "upstream_path": "evals/main.py",
+          "path": "reference/evals/main.py",
+          "git_blob": "c71da8c2dd7701888b8f0a281661eb4a443eb0ec",
+          "mode": "100644",
+          "sha256": "2a5f0ea53d4a85130e1c26da80fd02f209227344e2a5de67993efe4602d62fb3"
+        },
+        {
+          "upstream_path": "evals/requirements.txt",
+          "path": "reference/evals/requirements.txt",
+          "git_blob": "bcc883ae7ef288cbbe4fe7d0a91ea320003b3646",
+          "mode": "100644",
+          "sha256": "f758c0fa3374d31ddd7ddf399635aa5e0b7e8da7d0dff4b8bab8af25843e885a"
+        },
+        {
+          "upstream_path": "prompt-regression/.gitignore",
+          "path": "reference/prompt-regression/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "prompt-regression/README.md",
+          "path": "reference/prompt-regression/README.md",
+          "git_blob": "af0efe41005a60d4010c7e25e60b8a35d3134e2d",
+          "mode": "100644",
+          "sha256": "dae3a48b9d1684a29c7e141b05ef9a69c5f8bb7674534be38ef6855520d621c6"
+        },
+        {
+          "upstream_path": "prompt-regression/main.py",
+          "path": "reference/prompt-regression/main.py",
+          "git_blob": "480ee950a58d5ffff1b466a0b37ab584aca86a2f",
+          "mode": "100644",
+          "sha256": "041f5050fa4b763da5595c5ceed25fd66eb9f275629e87187bbb134650899cfa"
+        },
+        {
+          "upstream_path": "prompt-regression/output-1.md",
+          "path": "reference/prompt-regression/output-1.md",
+          "git_blob": "52508dbf26f4e1c161b2e3efef41e02d4ce216cf",
+          "mode": "100644",
+          "sha256": "69cb7ce932d6a4e5b71ac265887c9e2d6b8f48a7301ae07b68fbb638c23f7ecf"
+        },
+        {
+          "upstream_path": "prompt-regression/requirements.txt",
+          "path": "reference/prompt-regression/requirements.txt",
+          "git_blob": "0756044eca0be1a6e022903232d3cb971d6d950b",
+          "mode": "100644",
+          "sha256": "349a0007c8b3d647be20c1596abc3872260cc31583aca7397a8b597b6ae85362"
+        },
+        {
+          "upstream_path": "rag-failure-modes/.gitignore",
+          "path": "reference/rag-failure-modes/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "rag-failure-modes/README.md",
+          "path": "reference/rag-failure-modes/README.md",
+          "git_blob": "1d70714de8d2f2747258f3c8462346f079b7200d",
+          "mode": "100644",
+          "sha256": "0f2c74b2e8e6985b490a23ce634ac433a000b9aaff32bee6f5616b4002275157"
+        },
+        {
+          "upstream_path": "rag-failure-modes/main.py",
+          "path": "reference/rag-failure-modes/main.py",
+          "git_blob": "bae82933f3ac6ebe3a91072aefee4ca7b4ab61f7",
+          "mode": "100644",
+          "sha256": "8f9253a53f4d0f341ac867c8adbb7c69e9b4a8b6895d53460c5a4ebf003028aa"
+        },
+        {
+          "upstream_path": "rag-failure-modes/output-1.md",
+          "path": "reference/rag-failure-modes/output-1.md",
+          "git_blob": "816883a347e28c400d74e5e8bd313e8253c51017",
+          "mode": "100644",
+          "sha256": "e2e1c356749e2f544e9a6efb719de1880630bf996444a2d0125cd6e04c3304ee"
+        },
+        {
+          "upstream_path": "rag-failure-modes/requirements.txt",
+          "path": "reference/rag-failure-modes/requirements.txt",
+          "git_blob": "e15115559f913a5b8e97be580cc8c34583b64f6c",
+          "mode": "100644",
+          "sha256": "7279450aeb51de2a0990f235c27cea56bbb535b17f492d6037c2d624220b437e"
+        }
+      ]
+    },
+    {
+      "number": 39,
+      "post_id": "post/aap-39-designing-an-ai-code-reviewer",
+      "title": "AAP-39: Designing an AI Code Reviewer",
+      "directory": "projects/applied-ai-prototypes/aap39",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "skill-executor",
+        "code-patcher"
+      ],
+      "related_posts": [
+        27,
+        33,
+        34,
+        38
+      ],
+      "notes": "The workflow and patcher are reference components, not a completed AI code reviewer. Model-only repository estimates remain unverified.",
+      "files": [
+        {
+          "upstream_path": "skill-executor/.gitignore",
+          "path": "reference/skill-executor/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "skill-executor/README.md",
+          "path": "reference/skill-executor/README.md",
+          "git_blob": "d94f86a7a1626f7fe6db2d44b67dba6caaab1299",
+          "mode": "100644",
+          "sha256": "1ba971c4d10c983f9dfc30537ccda2786e93ac9a839a511bff78c1cd26f0746c"
+        },
+        {
+          "upstream_path": "skill-executor/main.py",
+          "path": "reference/skill-executor/main.py",
+          "git_blob": "b0beba771f469fe202d8413b5e61e1d7b1616064",
+          "mode": "100644",
+          "sha256": "17cc2deb562725d4a21d52f5e770d20168880e2e10f1682e6c9bf9c20a36a8b0"
+        },
+        {
+          "upstream_path": "skill-executor/requirements.txt",
+          "path": "reference/skill-executor/requirements.txt",
+          "git_blob": "f9c82293c9a4f466677a3b694d6e4b9c41297f11",
+          "mode": "100644",
+          "sha256": "34ee36e75385da08fe325a9d179f8e09b4ed9c2930f8c1a8a3e37fd1787bf24b"
+        },
+        {
+          "upstream_path": "code-patcher/.gitignore",
+          "path": "reference/code-patcher/.gitignore",
+          "git_blob": "5320e998301b7672c4396e4bb73bc768ab6ebd12",
+          "mode": "100644",
+          "sha256": "d5e3520117d72e49fcdd20a9c0f1abecea330be16ec36718157c4128ea07031b"
+        },
+        {
+          "upstream_path": "code-patcher/README.md",
+          "path": "reference/code-patcher/README.md",
+          "git_blob": "78d3cf960030955fd0a8da7d7b3e8b8439c5c5cb",
+          "mode": "100644",
+          "sha256": "5199a4902113585527a288b184369875c40240dd8e8b274c455a86ef604809a0"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py",
+          "path": "reference/code-patcher/buggy_app.py",
+          "git_blob": "bcc053f8f2e50aecc2c6139bf217a80ea2ce7700",
+          "mode": "100644",
+          "sha256": "224bc8e1697111af9c3b1f527494339bcbe612f7828c148c67ee0e7be750b659"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.orig",
+          "path": "reference/code-patcher/buggy_app.py.orig",
+          "git_blob": "461bd8d69d694b46555b5849814e8d3c264067bf",
+          "mode": "100644",
+          "sha256": "03aeb889251533b25fa703d7a21ea5be256229785d9df444134cf2fe713bb2e6"
+        },
+        {
+          "upstream_path": "code-patcher/buggy_app.py.rej",
+          "path": "reference/code-patcher/buggy_app.py.rej",
+          "git_blob": "6108c92bac88a10f4f686fbcbc4c6a815cf26f1f",
+          "mode": "100644",
+          "sha256": "46555ab20c38464d6c310079968ccbb83fa3d937d5a547e510ef8d54b7d05a34"
+        },
+        {
+          "upstream_path": "code-patcher/data.json",
+          "path": "reference/code-patcher/data.json",
+          "git_blob": "b7bba82166f7c6fb0d67d8eff51e4f1dc25735a5",
+          "mode": "100644",
+          "sha256": "7368f61983f44ba4bd99ef8c23ac948bad4964fb4d6ef0f5736a17461329e8e4"
+        },
+        {
+          "upstream_path": "code-patcher/main.py",
+          "path": "reference/code-patcher/main.py",
+          "git_blob": "74a87bad03f2e947335b5dd87ed52de6f8cac7f9",
+          "mode": "100644",
+          "sha256": "7d5fb36805a8204df74921eac0d603a9bfe5c2c97b7f2e1af79785b1999feb60"
+        },
+        {
+          "upstream_path": "code-patcher/settings.json",
+          "path": "reference/code-patcher/settings.json",
+          "git_blob": "779f1b9bf407d9bb24c0aca468f8aca2d9f84696",
+          "mode": "100644",
+          "sha256": "9350b129a028e546d0b44ea74ef908559ce68e13eaa8a947e2baaa6a20382567"
+        }
+      ]
+    },
+    {
+      "number": 40,
+      "post_id": "post/aap-40-designing-self-updating-documentation",
+      "title": "AAP-40: Designing Self-Updating Documentation",
+      "directory": "projects/applied-ai-prototypes/aap40",
+      "reference_status": "no_matching_implementation",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [],
+      "related_posts": [
+        26,
+        30,
+        31,
+        34,
+        38,
+        39
+      ],
+      "notes": "No matching full implementation was identified. Clarify the enrolled course's externalized-platform scope before implementing this design.",
+      "files": []
+    },
+    {
+      "number": 41,
+      "post_id": "post/aap-41-generated-tools-and-controlled-capability-changes",
+      "title": "AAP-41: Generated Tools and Controlled Capability Changes",
+      "directory": "projects/applied-ai-prototypes/aap41",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "self-evolving-agent"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "self-evolving-agent/.gitignore",
+          "path": "reference/self-evolving-agent/.gitignore",
+          "git_blob": "9431126f3ac1b7eb268f910fef1cd2af71fd66f5",
+          "mode": "100644",
+          "sha256": "481aa8bd399d4ac520eef5be23398860c7402535cd2df346ef3cc748257ffdd6"
+        },
+        {
+          "upstream_path": "self-evolving-agent/README.md",
+          "path": "reference/self-evolving-agent/README.md",
+          "git_blob": "df4779239b83c935d24f5798fa07f511af190f2f",
+          "mode": "100644",
+          "sha256": "59cc76c8a6dbc8d852906fb66b771b26e64999aa1ade03bb9c1b41f0a50c77b2"
+        },
+        {
+          "upstream_path": "self-evolving-agent/agent.py",
+          "path": "reference/self-evolving-agent/agent.py",
+          "git_blob": "2fd8429949d8860578a6a9a79cb033837f6c8567",
+          "mode": "100644",
+          "sha256": "ab0a70eaf9d6899ec456e3cecd428767e055297b2a1efa1e13bcc49c7c6b0bfa"
+        },
+        {
+          "upstream_path": "self-evolving-agent/main.py",
+          "path": "reference/self-evolving-agent/main.py",
+          "git_blob": "e33a10dabe2403f5e429d79416c33b432b85ca50",
+          "mode": "100644",
+          "sha256": "d2d9932898d71bc693aa98227dc04724ccc17645937fd44cb29f61531d1fd0e3"
+        },
+        {
+          "upstream_path": "self-evolving-agent/tools/__init__.py",
+          "path": "reference/self-evolving-agent/tools/__init__.py",
+          "git_blob": "fa05ad0870ddb5c8e07aec00ea4ddf8ec8fe3ca2",
+          "mode": "100644",
+          "sha256": "ef7f75272af785f77f5e5ffe349904fd71c72997cd2a4f0457d781d94b808bbb"
+        }
+      ]
+    },
+    {
+      "number": 42,
+      "post_id": "post/aap-42-prompt-caching-and-workload-economics",
+      "title": "AAP-42: Prompt Caching and Workload Economics",
+      "directory": "projects/applied-ai-prototypes/aap42",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "prompt-caching"
+      ],
+      "related_posts": [],
+      "notes": "Imported reference examples are not a completed lesson implementation; all assigned authoring gaps remain open.",
+      "files": [
+        {
+          "upstream_path": "prompt-caching/.gitignore",
+          "path": "reference/prompt-caching/.gitignore",
+          "git_blob": "9db548bc0e4f4c7844e22c0cb00e71c4cab79b78",
+          "mode": "100644",
+          "sha256": "519ddfa1deac890932022f068ea32e7961fa12e78a62f932612f59dff0711977"
+        },
+        {
+          "upstream_path": "prompt-caching/README.md",
+          "path": "reference/prompt-caching/README.md",
+          "git_blob": "86f4b28a8e7cd7c2495829c8e5c3f1e14d553987",
+          "mode": "100644",
+          "sha256": "16ab70282ce6afa625ea2e711e7adf8ada0a4f9a0a00d4c9dc5513755bbc60ad"
+        },
+        {
+          "upstream_path": "prompt-caching/main.py",
+          "path": "reference/prompt-caching/main.py",
+          "git_blob": "c9485f1dfac5e357aba61fb4ac70a32d091737d4",
+          "mode": "100644",
+          "sha256": "b7362093abb33e83b9bd367acca02fda567b3f82b3b5c1cac96f2392dce1d1fc"
+        },
+        {
+          "upstream_path": "prompt-caching/requirements.txt",
+          "path": "reference/prompt-caching/requirements.txt",
+          "git_blob": "5745656da2e080fd4dc5fb9b4aad70772dd69346",
+          "mode": "100644",
+          "sha256": "b2aa0cda6be9ca518ac59f25f5f2e4d01ea66c36ac32314c8b7f4e86b0720b34"
+        }
+      ]
+    },
+    {
+      "number": 43,
+      "post_id": "post/aap-43-observability-cost-and-operational-failure",
+      "title": "AAP-43: Observability, Cost and Operational Failure",
+      "directory": "projects/applied-ai-prototypes/aap43",
+      "reference_status": "imported",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [
+        "observability"
+      ],
+      "related_posts": [],
+      "notes": "The tracked upstream `observability/.env` is excluded without reading or copying it. Configure later runs with your own untracked environment; mock traces do not prove backend delivery.",
+      "files": [
+        {
+          "upstream_path": "observability/.gitignore",
+          "path": "reference/observability/.gitignore",
+          "git_blob": "01c85a66319cef541081886620321e7e9ded51d4",
+          "mode": "100644",
+          "sha256": "f1b6b73f4935f067a996e88f29e285eac0816704b135c0ac981827642d90a71a"
+        },
+        {
+          "upstream_path": "observability/README.md",
+          "path": "reference/observability/README.md",
+          "git_blob": "51d5e660a8628a8d0ef3ea6c6400e2cb10925064",
+          "mode": "100644",
+          "sha256": "639363a90d2d89c7555ee224cbff79ef2377623168b3cfa35e47cafd531e3472"
+        },
+        {
+          "upstream_path": "observability/main.py",
+          "path": "reference/observability/main.py",
+          "git_blob": "2fa62a61c36acde925855d605227af1f0f896db9",
+          "mode": "100644",
+          "sha256": "35098f5578476f31efb83ed982b1f04013bcdca298e93f60976d4cfa708ac277"
+        },
+        {
+          "upstream_path": "observability/test_main.py",
+          "path": "reference/observability/test_main.py",
+          "git_blob": "ccee0d2e6fe0e18042f6b917fc498ab4af43b200",
+          "mode": "100644",
+          "sha256": "a254d5708b511459f4ed56e93743ff0d0ffdbb2d81c2a166f1128a4ccf9674cf"
+        }
+      ]
+    },
+    {
+      "number": 44,
+      "post_id": "post/aap-44-designing-a-natural-language-workflow-engine",
+      "title": "AAP-44: Designing a Natural-Language Workflow Engine",
+      "directory": "projects/applied-ai-prototypes/aap44",
+      "reference_status": "no_matching_implementation",
+      "lesson_implementation_status": "not_started",
+      "source_folders": [],
+      "related_posts": [
+        10,
+        11,
+        12,
+        26,
+        33,
+        34,
+        35,
+        36,
+        38,
+        41,
+        42,
+        43
+      ],
+      "notes": "No complete natural-language workflow engine was identified in the pinned public source. Related components are references, not an invented full implementation.",
+      "files": []
+    }
+  ]
+}

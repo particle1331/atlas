@@ -1,17 +1,19 @@
 id: post/aap-2-comparing-prompting-strategies
 created_at: '2026-11-16T07:15:06.939791+00:00'
-updated_at: '2026-11-16T07:15:07.464093+00:00'
+updated_at: '2026-11-16T07:48:40.681789+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-2.
   Open gaps: G01, G03.
-  Reserved companion directory: projects/applied-ai-prototypes/aap2 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap2 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-2-comparing-prompting-strategies.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap2
 related_post_ids: []
-source_digest: a91784332113fb805eee81a50749c0e11c0940ee337f86715a2d5708880f3aed
+source_digest: 92295bd5cf1963fd41b8fdf597c0f02ae0c75c84456f1532dd8404288ed3c4dc
 metadata_digest: 45c3abaeddc10e43a975cf4622a5e2e0450436b0ea0f2b904977f57b93fe654e

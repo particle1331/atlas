@@ -1,17 +1,19 @@
 id: post/aap-12-human-review-and-execution-authority
 created_at: '2026-11-16T07:15:14.818473+00:00'
-updated_at: '2026-11-16T07:15:15.353917+00:00'
+updated_at: '2026-11-16T07:48:49.200305+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-12.
   Open gaps: G10.
-  Reserved companion directory: projects/applied-ai-prototypes/aap12 (not implemented).
+  Companion directory: projects/applied-ai-prototypes/aap12 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+  Import provenance: projects/applied-ai-prototypes/provenance.json.
+  Reference status: imported; the import does not close authoring gaps and ran no prototype/API code.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-12-human-review-and-execution-authority.ipynb
-code_path: null
+code_path: projects/applied-ai-prototypes/aap12
 related_post_ids: []
-source_digest: 0a7e4e8b6c16c2cee76ec8de4f1d463ac51801bcbd8be3f082b345e8bcddd2f8
+source_digest: ca2aa1e4526f275d3e71361cda65676ef34e55b67a962d8374f0f9a3a94d7fe1
 metadata_digest: cf82b21e2760a0e0e655a1b568b9ed8c840d8307d553a68c3bf7fab1fa235ca7
