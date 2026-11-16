@@ -1,6 +1,6 @@
 id: collection/applied-ai-prototypes
 created_at: '2026-11-16T07:12:50.230021+00:00'
-updated_at: '2026-11-16T07:49:17.067820+00:00'
+updated_at: '2026-11-16T14:22:39.277321+00:00'
 status: draft
 internal_notes: |-
   Canonical scope, code destinations and gap register: .atlas/plans/applied-ai-prototypes.md.
@@ -8,7 +8,7 @@ internal_notes: |-
   No source/example execution, model API run or publication was performed.
   Import file provenance: projects/applied-ai-prototypes/provenance.json; all authoring gaps remain open.
 internal_todos: []
-cover_path: null
+cover_path: content/images/eca2d9d47bc73672ea9fa0de5f26b818353e9454869fcc08259c2c26fb3155b8.png
 post_ids:
 - post/aap-1-llm-calls-as-software-components
 - post/aap-2-comparing-prompting-strategies
