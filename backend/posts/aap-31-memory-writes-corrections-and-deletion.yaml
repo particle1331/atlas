@@ -1,0 +1,17 @@
+id: post/aap-31-memory-writes-corrections-and-deletion
+created_at: '2026-11-16T07:15:33.265836+00:00'
+updated_at: '2026-11-16T07:15:34.276944+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-31.
+  Open gaps: G20.
+  Reserved companion directory: projects/applied-ai-prototypes/aap31 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-31-memory-writes-corrections-and-deletion.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 00086698add645acc8f5aba8c3728c69c49814b20cd53f559796a6581bbbc163
+metadata_digest: f72712c6d462f9aa66bc492c047fec92d316c91d3041d137fbad7a0a6b548610

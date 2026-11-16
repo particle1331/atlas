@@ -1,0 +1,17 @@
+id: post/aap-37-designing-an-incident-remediation-system
+created_at: '2026-11-16T07:15:40.168778+00:00'
+updated_at: '2026-11-16T07:15:40.842860+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-37.
+  Open gaps: G34.
+  Reserved companion directory: projects/applied-ai-prototypes/aap37 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-37-designing-an-incident-remediation-system.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 3103853628f65cd24957a3d13774030286ad2369cf83d8c134dbd1a1f99f8f6a
+metadata_digest: 9b09bb7a48cafaf1c7dec845ccb30ee6cb5ccee245321d424838add835259361

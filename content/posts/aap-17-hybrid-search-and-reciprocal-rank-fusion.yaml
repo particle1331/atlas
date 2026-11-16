@@ -1,0 +1,7 @@
+title: 'AAP-17: Hybrid Search and Reciprocal-Rank Fusion'
+short_description: Derive rank fusion and test when combining lexical and embedding retrieval helps or
+  hurts.
+tags:
+- applied-ai
+- llms
+- python

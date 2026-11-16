@@ -1,0 +1,6 @@
+title: 'AAP-25: ReAct, Streaming and Agent Execution State'
+short_description: Build an explicit streaming agent loop with correct tool state, scheduling and termination.
+tags:
+- applied-ai
+- llms
+- python

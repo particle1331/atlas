@@ -1,0 +1,6 @@
+title: 'AAP-42: Prompt Caching and Workload Economics'
+short_description: Measure provider prompt/context cache behaviour and derive costs for a specified workload.
+tags:
+- applied-ai
+- llms
+- python

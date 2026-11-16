@@ -1,0 +1,7 @@
+title: 'AAP-39: Designing an AI Code Reviewer'
+short_description: Tie code-review findings to inspected changes and evaluate them against independently
+  checked defects and benign cases.
+tags:
+- applied-ai
+- llms
+- python

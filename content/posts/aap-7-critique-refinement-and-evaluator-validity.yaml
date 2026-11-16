@@ -1,0 +1,7 @@
+title: 'AAP-7: Critique, Refinement and Evaluator Validity'
+short_description: Test whether rubric-guided revision improves concrete work rather than merely raising
+  a model-generated score.
+tags:
+- applied-ai
+- llms
+- python

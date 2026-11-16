@@ -1,0 +1,7 @@
+title: 'AAP-10: Tool Dispatch and Application Control'
+short_description: Build a dispatcher that validates model requests and executes them under explicit application
+  rules.
+tags:
+- applied-ai
+- llms
+- python

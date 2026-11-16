@@ -1,0 +1,7 @@
+title: 'AAP-18: Metadata Filtering and Access Constraints'
+short_description: Compare pre- and post-filtering while separating query interpretation from trusted
+  access restrictions.
+tags:
+- applied-ai
+- llms
+- python

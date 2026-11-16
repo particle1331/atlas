@@ -1,0 +1,7 @@
+title: 'AAP-37: Designing an Incident Remediation System'
+short_description: Design an incident workflow with evidence collection, scoped actions, human review
+  and recoverable remediation.
+tags:
+- applied-ai
+- llms
+- python

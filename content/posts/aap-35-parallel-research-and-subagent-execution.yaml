@@ -1,0 +1,7 @@
+title: 'AAP-35: Parallel Research and Subagent Execution'
+short_description: Compare bounded parallel research with serial and single-worker baselines on quality,
+  evidence and execution cost.
+tags:
+- applied-ai
+- llms
+- python

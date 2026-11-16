@@ -1,0 +1,17 @@
+id: post/aap-21-diagnosing-rag-failures
+created_at: '2026-11-16T07:15:22.394729+00:00'
+updated_at: '2026-11-16T07:15:23.273990+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-21.
+  Open gaps: G17.
+  Reserved companion directory: projects/applied-ai-prototypes/aap21 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-21-diagnosing-rag-failures.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 9571f382de4df098b29f92792815e10958b1b60bfaa2ba58ff8c23a1fdf8f303
+metadata_digest: c39c7f176504953894f3bffcacc5e583e93e654691ac17430eacf8a0c0617ada

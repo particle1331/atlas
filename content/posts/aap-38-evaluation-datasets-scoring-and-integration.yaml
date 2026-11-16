@@ -1,0 +1,7 @@
+title: 'AAP-38: Evaluation Datasets, Scoring and Integration'
+short_description: Build a versioned evaluation set and choose checks that measure required application
+  behaviour.
+tags:
+- applied-ai
+- llms
+- python

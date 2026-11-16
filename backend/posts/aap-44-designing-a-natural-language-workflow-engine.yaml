@@ -1,0 +1,17 @@
+id: post/aap-44-designing-a-natural-language-workflow-engine
+created_at: '2026-11-16T07:15:47.234689+00:00'
+updated_at: '2026-11-16T07:15:48.282224+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-44.
+  Open gaps: G34.
+  Reserved companion directory: projects/applied-ai-prototypes/aap44 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-44-designing-a-natural-language-workflow-engine.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 580b7a0076233cc889d93fcedd97df4a5f0724aadf0b8cb5f0f968a52dadf4ca
+metadata_digest: ab99706bf5821372af8db7274949f138046065dc6076a979620235ce89b63880

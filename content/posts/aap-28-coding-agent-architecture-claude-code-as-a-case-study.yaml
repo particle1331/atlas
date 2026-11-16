@@ -1,0 +1,7 @@
+title: 'AAP-28: Coding-Agent Architecture: Claude Code as a Case Study'
+short_description: Use documented Claude Code behaviour to examine repository context, search, edits,
+  permissions and delegation.
+tags:
+- applied-ai
+- llms
+- python

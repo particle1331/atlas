@@ -1,0 +1,7 @@
+title: 'AAP-15: System-Instruction Disclosure and Confidentiality'
+short_description: Probe instruction disclosure while separating observed model behaviour from unsupported
+  explanations about its cause.
+tags:
+- applied-ai
+- llms
+- python

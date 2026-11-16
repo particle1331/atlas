@@ -1,0 +1,7 @@
+title: 'AAP-30: Persistent Memory and Retrieval'
+short_description: Store facts across conversations and evaluate useful recall, missed recall and stale
+  information.
+tags:
+- applied-ai
+- llms
+- python

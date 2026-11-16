@@ -1,0 +1,17 @@
+id: post/aap-7-critique-refinement-and-evaluator-validity
+created_at: '2026-11-16T07:15:10.892198+00:00'
+updated_at: '2026-11-16T07:15:11.409508+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-7.
+  Open gaps: G06.
+  Reserved companion directory: projects/applied-ai-prototypes/aap7 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-7-critique-refinement-and-evaluator-validity.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 51e492076a0d8a81d4bec21b202e81215ef274c3db355598132ac37821dbfaca
+metadata_digest: 2c3ac849586cdc859bcf60a6a5108db0b41bc933edd701b14dee2e8a69afb5ea

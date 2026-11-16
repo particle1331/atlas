@@ -1,0 +1,7 @@
+title: 'AAP-24: Observe–Think–Act and Whole-File Repair'
+short_description: Implement a bounded repair loop and test why a runnable replacement is weaker evidence
+  than preserved program behaviour.
+tags:
+- applied-ai
+- llms
+- python

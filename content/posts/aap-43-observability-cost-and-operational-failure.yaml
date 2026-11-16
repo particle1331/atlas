@@ -1,0 +1,7 @@
+title: 'AAP-43: Observability, Cost and Operational Failure'
+short_description: Trace model, retrieval and tool work and compare observed usage with estimates and
+  operational decisions.
+tags:
+- applied-ai
+- llms
+- python

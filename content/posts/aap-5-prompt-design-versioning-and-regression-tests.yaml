@@ -1,0 +1,7 @@
+title: 'AAP-5: Prompt Design, Versioning and Regression Tests'
+short_description: Treat prompts as versioned behaviour and use labelled cases to inspect improvements,
+  regressions and ambiguous requirements.
+tags:
+- applied-ai
+- llms
+- python

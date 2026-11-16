@@ -1,0 +1,17 @@
+id: post/aap-14-encoded-instructions-and-filter-bypasses
+created_at: '2026-11-16T07:15:16.498513+00:00'
+updated_at: '2026-11-16T07:15:17.025133+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-14.
+  Open gaps: G11.
+  Reserved companion directory: projects/applied-ai-prototypes/aap14 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-14-encoded-instructions-and-filter-bypasses.ipynb
+code_path: null
+related_post_ids: []
+source_digest: d1b5475ab72516e9d88a00c6391b1dde2d9cb0533393f87bf5d849c6eabfa0d6
+metadata_digest: 97c85b94989c9effbbe94589bce5fa665536e904e423dc0b02ca94c551809448

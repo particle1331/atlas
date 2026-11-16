@@ -1,0 +1,17 @@
+id: post/aap-18-metadata-filtering-and-access-constraints
+created_at: '2026-11-16T07:15:19.962043+00:00'
+updated_at: '2026-11-16T07:15:20.504516+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-18.
+  Open gaps: G14.
+  Reserved companion directory: projects/applied-ai-prototypes/aap18 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-18-metadata-filtering-and-access-constraints.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 6d93310c303f8c66e89a78649cd93b962270c326d619aa17cf6d82c6564fa24b
+metadata_digest: 7793162b6ab46492d855988594e0903fc50d40f41e56526a97f1f7c9a798ed22

@@ -1,0 +1,7 @@
+title: 'AAP-44: Designing a Natural-Language Workflow Engine'
+short_description: Translate requests into validated workflows with explicit execution, review, recovery
+  and resource limits.
+tags:
+- applied-ai
+- llms
+- python

@@ -1,0 +1,7 @@
+title: 'AAP-21: Diagnosing RAG Failures'
+short_description: Distinguish retrieval misses, misuse of evidence, unsupported answers and misleading
+  evaluation metrics.
+tags:
+- applied-ai
+- llms
+- python

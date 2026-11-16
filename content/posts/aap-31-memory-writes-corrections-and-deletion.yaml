@@ -1,0 +1,7 @@
+title: 'AAP-31: Memory Writes, Corrections and Deletion'
+short_description: Separate model-proposed fact actions from deterministic mutation and durable update
+  semantics.
+tags:
+- applied-ai
+- llms
+- python

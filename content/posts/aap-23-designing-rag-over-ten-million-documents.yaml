@@ -1,0 +1,7 @@
+title: 'AAP-23: Designing RAG over Ten Million Documents'
+short_description: Develop a large-corpus RAG design with explicit ingestion, indexing, access, freshness
+  and capacity assumptions.
+tags:
+- applied-ai
+- llms
+- python

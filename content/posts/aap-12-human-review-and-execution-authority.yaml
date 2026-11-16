@@ -1,0 +1,7 @@
+title: 'AAP-12: Human Review and Execution Authority'
+short_description: Bind human approval to specific operations and distinguish confirmation, authorization
+  and process isolation.
+tags:
+- applied-ai
+- llms
+- python

@@ -1,0 +1,7 @@
+title: 'AAP-8: Designing a Fact-Checking System'
+short_description: Design a fact-checking workflow that separates claims, evidence, support judgements
+  and uncertainty.
+tags:
+- applied-ai
+- llms
+- python

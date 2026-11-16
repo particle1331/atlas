@@ -1,0 +1,7 @@
+title: 'AAP-20: Bi-Encoders, Cross-Encoders and Reranking'
+short_description: Examine candidate generation and joint query–document scoring while measuring ranking
+  quality and computational cost separately.
+tags:
+- applied-ai
+- llms
+- python

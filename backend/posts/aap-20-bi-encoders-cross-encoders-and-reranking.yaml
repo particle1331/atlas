@@ -1,0 +1,17 @@
+id: post/aap-20-bi-encoders-cross-encoders-and-reranking
+created_at: '2026-11-16T07:15:21.544169+00:00'
+updated_at: '2026-11-16T07:15:22.088134+00:00'
+status: draft
+internal_notes: |-
+  Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-20.
+  Open gaps: G16.
+  Reserved companion directory: projects/applied-ai-prototypes/aap20 (not implemented).
+  Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
+  Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/aap-20-bi-encoders-cross-encoders-and-reranking.ipynb
+code_path: null
+related_post_ids: []
+source_digest: 9b3ff73e89f6cf60b612dc5162545a1ee45d4318290ca6a19868a4535f3848d1
+metadata_digest: b9481a2753b93dbbaf40511397da2be5a537bbefeab62bee49e721572118966b

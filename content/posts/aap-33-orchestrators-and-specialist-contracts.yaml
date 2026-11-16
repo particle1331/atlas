@@ -1,0 +1,7 @@
+title: 'AAP-33: Orchestrators and Specialist Contracts'
+short_description: Define typed specialist interfaces and test what they enforce beyond a model's formatted
+  output.
+tags:
+- applied-ai
+- llms
+- python

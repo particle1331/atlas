@@ -1,0 +1,6 @@
+title: 'AAP-32: Working Memory and Context Budgets'
+short_description: Compare eviction, summary compression and retrieval under an explicit total-input budget.
+tags:
+- applied-ai
+- llms
+- python

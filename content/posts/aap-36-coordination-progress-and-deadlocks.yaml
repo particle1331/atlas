@@ -1,0 +1,7 @@
+title: 'AAP-36: Coordination, Progress and Deadlocks'
+short_description: Diagnose cyclic handoffs and stalled workflows with explicit state, progress checks
+  and bounded execution.
+tags:
+- applied-ai
+- llms
+- python
