@@ -208,11 +208,6 @@ h2 {
   padding: 1rem;
 }
 
-/* Preserve this cover's diagrams without changing other collection cards. */
-.quarto-grid-link[href$="/collections/applied-ai-prototypes.html"] .card-img-top img {
-  height: auto !important; /* Override Quarto's inline thumbnail height. */
-}
-
 .quarto-grid-item .card-title {
   margin-top: 0;
   margin-bottom: 0.5rem;
