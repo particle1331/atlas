@@ -1,7 +1,7 @@
 ---
 description: Performs an independent read-only review of proposed changes and identifies regressions or verification gaps.
 mode: subagent
-model: openai/gpt-6.1-sol#high
+model: openai/gpt-6.2-sol#high
 permissions:
   - action: edit
     resource: "*"

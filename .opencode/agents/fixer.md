@@ -1,7 +1,7 @@
 ---
 description: Implements scoped code changes with minimal diffs and verifies the result.
 mode: subagent
-model: openai/gpt-6.1-sol#high
+model: openai/gpt-6.2-sol#high
 permissions:
   - action: subagent
     resource: "*"

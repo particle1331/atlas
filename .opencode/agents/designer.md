@@ -1,7 +1,7 @@
 ---
 description: Designs and implements polished, responsive frontend experiences while preserving the existing design system.
 mode: subagent
-model: openai/gpt-6.1-sol#high
+model: openai/gpt-6.2-sol#high
 permissions:
   - action: subagent
     resource: "*"

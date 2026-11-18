@@ -1,7 +1,7 @@
 ---
 description: Provides architecture advice, root-cause analysis, and high-confidence read-only technical review.
 mode: subagent
-model: openai/gpt-6.1-sol#max
+model: openai/gpt-6.2-astra#xhigh
 permissions:
   - action: edit
     resource: "*"
