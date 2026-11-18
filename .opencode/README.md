@@ -74,3 +74,23 @@ To review existing commits instead, specify a range in your guidance:
 The model and `subagent: true` setting are configured in
 `commands/commit.md` frontmatter. This replaces `/commit-plan`; command changes
 reload automatically.
+
+## Technical mock assessments
+
+Run `/quiz <source> [level] [goal] [minutes]` in OpenCode. Use an exact Atlas
+`post/<id>` or `collection/<id>`. The defaults are `intermediate`,
+`understanding check`, and 40 minutes. Levels are `foundational`,
+`intermediate`, and `senior`; goals are `interview prep`,
+`practical application`, and `understanding check`. Quote the goal when you
+supply it.
+
+```text
+/quiz post/agentic-rag-week-1-infrastructure-setup
+/quiz collection/production-agentic-rag senior "interview prep" 30
+```
+
+The quiz stays in the current conversation. It starts with eight
+multiple-choice questions, then asks eight open-ended questions one at a time.
+After feedback on an open-ended answer, ask a follow-up, revise your answer,
+or say `next`. Say `wrap up` at any point for feedback based on what you've
+answered and pointers to Atlas sections to reread.

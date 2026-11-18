@@ -571,9 +571,10 @@ Project slash commands live in `.opencode/commands/` and run inside OpenCode.
 | Command | Purpose |
 | --- | --- |
 | `/commit` | Review changes, group related work and create local Conventional Commits. Does not push or rewrite history. |
+| [`/quiz`](.opencode/README.md#technical-mock-assessments) | Run a technical mock assessment on an Atlas post or collection. |
 | `/reload` | Force a configuration refresh after editing agents or commands. |
 
-Pass optional guidance after the command:
+Pass optional guidance after `/commit`:
 
 ```text
 /commit keep the content updates separate from tooling changes
