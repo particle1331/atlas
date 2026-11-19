@@ -242,6 +242,9 @@ h2 {
 }
 
 #title-block-header .description {
+  text-align: left;
+  hyphens: auto;
+  hyphenate-character: "-";
   color: #6c757d;
   font-style: italic;
   font-size: 1.05rem;

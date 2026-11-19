@@ -1,8 +1,10 @@
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+from base64 import b64encode
 from collections import Counter
 from pathlib import Path, PurePosixPath
 
@@ -909,6 +911,37 @@ def git_store(store):
     return store
 
 
+@pytest.fixture
+def browser_store(git_store, monkeypatch):
+    """Exercise Git selection and projection independently of Gitleaks."""
+    from atlas import cms_source
+
+    monkeypatch.setattr(cms_source, "scan_source_files", lambda files: files)
+    return git_store
+
+
+def git(store, *args):
+    subprocess.run(["git", *args], cwd=store.root, check=True, capture_output=True)
+
+
+def commit_sources(store, *paths):
+    git(store, "add", "--force", "--", *paths)
+    git(
+        store,
+        "-c",
+        "user.name=Atlas Test",
+        "-c",
+        "user.email=atlas@example.test",
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-qm",
+        "Record source fixtures",
+    )
+
+
 def test_empty_code_path_directory_has_an_empty_browser(git_store):
     store = git_store
     new_post(store)
@@ -917,31 +950,33 @@ def test_empty_code_path_directory_has_an_empty_browser(git_store):
     run(store, "post", "edit", "post/attention", "--code-path", "examples/demo")
     run(store, "sync", "--preview")
     output = store.path("frontend/posts/attention/source")
-    assert "No non-ignored files found." in (output / "index.qmd").read_text()
+    assert "No eligible committed files found." in (output / "index.qmd").read_text()
 
 
-def test_source_browser_never_projects_ignored_files(git_store):
-    store = git_store
+def test_source_browser_never_projects_ignored_files(browser_store):
+    store = browser_store
     new_post(store)
     project = store.path("projects/demo")
-    (project / "private").mkdir(parents=True)
+    (project / "internal").mkdir(parents=True)
     run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
     readme = project / "README.md"
     readme.write_text("# Initially visible\n")
     (project / "public.py").write_text("# unignored by a negated rule\n")
-    (project / "private/secret.py").write_bytes(b"\xff")
-    (project / "excluded.txt").write_bytes(b"\xff")
-    subprocess.run(
-        ["git", "add", "projects/demo/README.md"], cwd=store.root, check=True
-    )
+    (project / "internal/notes.py").write_text("NESTED_IGNORE_SENTINEL")
+    (project / "excluded.txt").write_text("REPO_EXCLUDE_SENTINEL")
+    (project / "global.txt").write_text("GLOBAL_EXCLUDE_SENTINEL")
+    commit_sources(store, "projects/demo")
 
     output = store.path("frontend/posts/attention/source")
     run(store, "sync", "--preview")
     assert (output / "README.md.qmd").is_file()
 
     store.path(".gitignore").write_text("/projects/demo/README.md\n")
-    (project / ".gitignore").write_text("*.py\n!public.py\nprivate/\n")
+    (project / ".gitignore").write_text("*.py\n!public.py\ninternal/\n")
     store.path(".git/info/exclude").write_text("/projects/demo/excluded.txt\n")
+    global_excludes = store.path("git-global-exclude")
+    global_excludes.write_text("/projects/demo/global.txt\n")
+    git(store, "config", "core.excludesFile", str(global_excludes))
 
     run(store, "sync", "--preview")
     assert not (output / "README.md.qmd").exists()
@@ -952,27 +987,34 @@ def test_source_browser_never_projects_ignored_files(git_store):
         run(store, "sync", *options)
         index = (output / "index.qmd").read_text()
         assert "public.py" in index
-        assert ".gitignore" in index
-        for name in ("README.md", "secret.py", "excluded.txt"):
+        for name in (
+            "README.md",
+            "notes.py",
+            "excluded.txt",
+            "global.txt",
+            ".gitignore",
+        ):
             assert name not in index
+        assert {p.name for p in output.glob("*.qmd")} == {"index.qmd", "public.py.qmd"}
 
 
-def test_source_browser_checks_literal_gitignore_for_colon_prefixed_path(git_store):
-    store = git_store
+def test_source_browser_checks_literal_gitignore_for_colon_prefixed_path(browser_store):
+    store = browser_store
     new_post(store)
     project = store.path(":project")
     project.mkdir()
-    (project / "secret.txt").write_text("never project this file\n")
-    subprocess.run(["git", "add", "./:project/secret.txt"], cwd=store.root, check=True)
-    store.path(".gitignore").write_text("/:project/secret.txt\n")
+    (project / "ignored.txt").write_text("never project this file\n")
+    (project / "public.txt").write_text("public contents\n")
+    commit_sources(store, "./:project")
+    store.path(".gitignore").write_text("/:project/ignored.txt\n")
     run(store, "post", "edit", "post/attention", "--code-path", ":project")
     run(store, "sync", "--preview")
     output = store.path("frontend/posts/attention/source")
-    assert {path.name for path in output.iterdir()} == {"index.qmd"}
+    assert {path.name for path in output.iterdir()} == {"index.qmd", "public.txt.qmd"}
 
 
-def test_source_browser_discovers_tree_and_follows_post_publication(git_store):
-    store = git_store
+def test_source_browser_discovers_tree_and_follows_post_publication(browser_store):
+    store = browser_store
     new_post(store)
     project = store.path("projects/demo")
     (project / "examples").mkdir(parents=True)
@@ -989,6 +1031,7 @@ def test_source_browser_discovers_tree_and_follows_post_publication(git_store):
     (project / "examples/second").mkdir()
     (project / "examples/second/main.py").write_text("# another example\n")
     (project / "README.md").write_text("# Sample project\n")
+    commit_sources(store, "projects/demo")
     canonical = store.path("content/posts/attention.ipynb")
     authored = canonical.read_bytes()
     relative = "examples/main.py"
@@ -1027,16 +1070,16 @@ def test_source_browser_discovers_tree_and_follows_post_publication(git_store):
     run(store, "sync")
     assert (output / f"{relative}.qmd").is_file()
     assert (output / "examples/file~__init__.py.qmd").is_file()
-    assert b"Browse source" in generated.read_bytes()
+    assert b"source-browser-link" in generated.read_bytes()
 
     run(store, "post", "edit", "post/attention", "--code-path", "")
     run(store, "sync")
     assert not list(output.rglob("*.qmd"))
-    assert b"Browse source" not in generated.read_bytes()
+    assert b"source-browser-link" not in generated.read_bytes()
 
 
-def test_source_browser_renders_markdown_with_project_links(git_store):
-    store = git_store
+def test_source_browser_renders_markdown_with_project_links(browser_store):
+    store = browser_store
     new_post(store)
     project = store.path("projects/demo")
     (project / "_examples").mkdir(parents=True)
@@ -1060,6 +1103,7 @@ def test_source_browser_renders_markdown_with_project_links(git_store):
     (project / "README.md").write_text(
         "[Quick Start](_examples/setup.md#quick-start)\n"
     )
+    commit_sources(store, "projects/demo")
     run(store, "sync", "--preview")
     output = store.path("frontend/posts/attention/source")
     _, body = split_document((output / "file~_examples/setup.md.qmd").read_text())
@@ -1091,14 +1135,14 @@ def test_source_browser_renders_markdown_with_project_links(git_store):
     assert 'id="L-1"' in source
 
 
-def test_source_browser_handles_binary_and_unusual_names_without_following_links(
-    git_store,
+def test_source_browser_omits_opaque_files_and_preserves_unusual_names(
+    browser_store,
     monkeypatch,
 ):
     from atlas import cms_source
 
-    monkeypatch.setattr(cms_source, "FILE_LIMIT", 1024)
-    store = git_store
+    monkeypatch.setattr(cms_source, "TEXT_LIMIT", 1024)
+    store = browser_store
     new_post(store)
     project = store.path("projects/demo")
     project.mkdir(parents=True)
@@ -1107,11 +1151,18 @@ def test_source_browser_handles_binary_and_unusual_names_without_following_links
     private.write_text("# unrelated project\n")
     (project / "link.py").symlink_to(private)
     (project / "picture.png").write_bytes(b"\x00\xff")
-    (project / "huge.png").write_bytes(b"\x00" * 1025)
+    (project / "invalid.txt").write_bytes(b"\xff")
+    (project / "huge.txt").write_bytes(b"a" * 1025)
     (project / "index").write_text("not the browser index\n")
     (project / "A <tag>.html").write_text("<script>alert(1)</script>\n")
     (project / "README.md").write_text("# Summary\n")
     (project / "README.md.source").write_text("another file\n")
+    nested = Store(project / "nested-checkout")
+    nested.root.mkdir()
+    git(nested, "init", "-q")
+    nested.path("nested-only.txt").write_text("Nested repository data\n")
+    commit_sources(nested, "nested-only.txt")
+    commit_sources(store, "projects/demo")
     run(store, "sync", "--preview")
 
     output = store.path("frontend/posts/attention/source")
@@ -1123,46 +1174,453 @@ def test_source_browser_handles_binary_and_unusual_names_without_following_links
     assert (output / "file~index.qmd").is_file()
     assert (output / "file~raw~README.md.qmd").is_file()
     assert "another" in (output / "README.md.source.qmd").read_text()
-    download = (output / "picture.png.qmd").read_text()
-    assert 'download="picture.png"' in download
-    assert 'href="data:application/octet-stream;base64,AP8="' in download
-    assert "data:" not in (output / "huge.png.qmd").read_text()
-    assert "Symbolic link not followed." in (output / "link.py.qmd").read_text()
-    assert "unrelated project" not in (output / "link.py.qmd").read_text()
-    assert not (output / "private.py.qmd").exists()
+    for name in (
+        "link.py",
+        "private.py",
+        "picture.png",
+        "invalid.txt",
+        "huge.txt",
+        "nested-checkout",
+    ):
+        assert name not in index
+        assert not (output / f"{name}.qmd").exists()
 
 
 @pytest.mark.parametrize("swap_parent", [True, False])
-def test_source_file_read_refuses_symlink_swaps(git_store, swap_parent):
-    from atlas.cms_source import read_source_file, source_files
+def test_source_browser_excludes_replaced_paths(browser_store, swap_parent):
+    from atlas.cms_source import source_files
 
-    store = git_store
+    store = browser_store
     project = store.path("project")
     directory = project / "nested"
     directory.mkdir(parents=True)
     sample = directory / "sample.txt"
     sample.write_text("safe")
+    commit_sources(store, "project")
     outside = store.path("private")
     outside.mkdir()
     (outside / "sample.txt").write_text("not for the browser")
-    files = source_files(store, {"id": "post/example", "code_path": "project"})
-    assert files[PurePosixPath("nested/sample.txt")] == sample
+    records = [{"id": "post/example", "code_path": "project"}]
+    assert source_files(store, records)["post/example"] == {
+        PurePosixPath("nested/sample.txt"): "safe"
+    }
     if swap_parent:
         directory.rename(project / "backup")
         directory.symlink_to(outside)
     else:
         sample.unlink()
         sample.symlink_to(outside / "sample.txt")
-    with pytest.raises(OSError):
-        read_source_file(store.root, sample)
+    assert source_files(store, records)["post/example"] == {}
+
+
+def test_source_browser_reads_only_head_and_reserves_its_projection(browser_store):
+    store = browser_store
+    new_post(store)
+    project = store.path("project")
+    project.mkdir()
+    tracked = project / "committed.txt"
+    tracked.write_text("REVIEWED_CONTENT\n")
+    commit_sources(store, "project")
+    tracked.write_text("STAGED_REPLACEMENT\n")
+    (project / "staged.txt").write_text("STAGED_ADDITION\n")
+    git(store, "add", "project")
+    tracked.write_text("WORKTREE_REPLACEMENT\n")
+    (project / "untracked.txt").write_text("WORKTREE_ADDITION\n")
+    (project / "local.txt").write_text("IGNORED_ADDITION\n")
+    store.path(".gitignore").write_text(
+        "/project/local.txt\n/content/posts/figures/local.txt\n"
+    )
+    sidecar = store.path("content/posts/attention/source/committed.txt.qmd")
+    sidecar.parent.mkdir(parents=True)
+    sidecar.write_text("SIDECAR_OVERRIDE\n")
+    figures = store.path("content/posts/figures")
+    figures.mkdir()
+    (figures / "local.txt").write_text("IGNORED_SIDECAR\n")
+    (figures / "public.svg").write_text("<svg/>")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    run(store, "sync", "--preview")
+    browser = store.path("frontend/posts/attention/source")
+    assert {p.name for p in browser.iterdir()} == {"index.qmd", "committed.txt.qmd"}
+    body = (browser / "committed.txt.qmd").read_text()
+    assert "REVIEWED_CONTENT" in body
+    for marker in ("STAGED_REPLACEMENT", "WORKTREE_REPLACEMENT", "SIDECAR_OVERRIDE"):
+        assert marker not in body
+    assert store.path("frontend/posts/figures/public.svg").exists()
+    assert not store.path("frontend/posts/figures/local.txt").exists()
+
+
+@pytest.mark.skipif(
+    shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
+)
+def test_source_browser_screens_committed_paths_and_contents(
+    git_store, caplog, monkeypatch
+):
+    store = git_store
+    new_post(store)
+    project = store.path("project")
+    project.mkdir()
+    known_token = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
+    github_token = "ghp_" + "abcdefghij1234567890ABCDEFGHIJ123456"
+    password = "deliberatelyweak"
+    unsafe_notebook = nb.notebook("# Credential in cell source")
+    unsafe_notebook["cells"].append(nb.cell(f'token = "{known_token}"', "code"))
+    unsafe_output = nb.cell("show_environment()", "code")
+    unsafe_output["outputs"] = [
+        {
+            "output_type": "stream",
+            "name": "stdout",
+            "text": ["jina_\x1b[31m", known_token.removeprefix("jina_"), "\x1b[0m"],
+        }
+    ]
+    cases = {
+        ".env": "IGNORED_ENV_CANARY",
+        "client.PEM": "KEYFILE_CANARY",
+        "notebook.ipynb": '{"outputs": ["NOTEBOOK_CANARY"]}',
+        "unsafe.ipynb": json.dumps(unsafe_notebook),
+        "unsafe-output.ipynb": json.dumps(nb.notebook() | {"cells": [unsafe_output]}),
+        "credentials/settings.ini": "CREDENTIAL_DIR_CANARY",
+        "ordinary.yml": f'password: "{password}"',
+        "token-example.md": f"# Setup\n\n{known_token} <!-- gitleaks:allow -->",
+        "provider.txt": github_token,
+        "encoded.txt": b64encode(github_token.encode()).decode(),
+        f"{known_token}/module.py": "TOKEN_PATH_CANARY",
+        "guide.md": "# Public companion guide\n",
+    }
+    for name, body in cases.items():
+        file = project / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(body)
+    commit_sources(store, "project")
+    monkeypatch.setenv("GITLEAKS_CONFIG_TOML", "title = 'Empty configuration'")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    publish(store, "post/attention")
+    run(store, "sync")
+
+    output = store.path("frontend/posts/attention/source")
+    assert {p.name for p in output.iterdir()} == {
+        "index.qmd",
+        "guide.md.qmd",
+        "file~raw~guide.md.qmd",
+    }
+    assert "omitted 7 file(s) with possible secrets" in caplog.text
+    assert known_token not in caplog.text
+    assert github_token not in caplog.text
+    assert password not in caplog.text
+
+
+@pytest.mark.parametrize("failure", ["missing", "crash", "malformed-report"])
+def test_source_browser_fails_closed_and_removes_previous_pages(
+    git_store, monkeypatch, caplog, failure
+):
+    from atlas import cms_source
+
+    store = git_store
+    new_post(store)
+    project = store.path("project")
+    project.mkdir()
+    (project / "example.py").write_text("# A committed source file\n")
+    commit_sources(store, "project")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    publish(store, "post/attention")
+    scanner = store.path("fake-gitleaks")
+    scanner.write_text("#!/bin/sh\nprintf '[]\\n'\n")
+    scanner.chmod(0o700)
+    which = shutil.which
+    failure_script = {
+        "crash": "#!/bin/sh\nprintf SCANNER_PRIVATE_CANARY >&2\nexit 2\n",
+        "malformed-report": "#!/bin/sh\nprintf SCANNER_PRIVATE_CANARY\n",
+    }
+
+    def executable(name):
+        return str(scanner) if name == "gitleaks" else which(name)
+
+    monkeypatch.setattr(cms_source.shutil, "which", executable)
+    run(store, "sync")
+    output = store.path("frontend/posts/attention/source")
+    assert (output / "example.py.qmd").is_file()
+    rendered = []
+    for site in ("_site", "_site-preview"):
+        page = store.path(f"frontend/{site}/posts/attention/source/example.py.html")
+        page.parent.mkdir(parents=True)
+        page.write_text("STALE_RENDERED_SOURCE")
+        rendered.append(page)
+
+    if failure == "missing":
+        monkeypatch.setattr(
+            cms_source.shutil,
+            "which",
+            lambda name: None if name == "gitleaks" else which(name),
+        )
+    else:
+        scanner.write_text(failure_script[failure])
+    report = run(store, "check", code=1)
+    assert any(
+        issue["id"] == "post/attention" and "source" in issue["message"].lower()
+        for issue in report["diagnostics"]
+    )
+    run(store, "sync")
+    assert not list(output.rglob("*.qmd"))
+    assert not any(path.exists() for path in rendered)
+    assert (
+        b"source-browser-link"
+        not in store.path("frontend/posts/attention.ipynb").read_bytes()
+    )
+    assert "Companion source disabled." in caplog.text
+    assert "SCANNER_PRIVATE_CANARY" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("case", "message"),
+    [
+        ("hidden", "private path"),
+        ("symlink", "link or special file"),
+        ("hardlink", "link or special file"),
+        ("raw-notebook", "unrendered source file"),
+        ("preview", "draft preview output"),
+        ("stale-browser-page", "unapproved source page"),
+        ("ignored-static-asset", "Git-ignored asset"),
+    ],
+)
+def test_pages_artifact_rejects_unsafe_output(git_store, case, message):
+    from atlas.cms_site import verify_pages_artifact
+
+    store = git_store
+    artifact = store.path("frontend/_site")
+    artifact.mkdir()
+    index = artifact / "index.html"
+    index.write_text("<h1>Public site</h1>")
+    if case == "hidden":
+        (artifact / ".env").write_text("LOCAL_ONLY")
+    elif case == "symlink":
+        (artifact / "download").symlink_to(store.root)
+    elif case == "hardlink":
+        os.link(index, artifact / "copy.html")
+    elif case == "raw-notebook":
+        (artifact / "analysis.ipynb").write_text("{}")
+    elif case == "preview":
+        (artifact / "_site-preview").mkdir()
+    elif case == "stale-browser-page":
+        stale = artifact / "posts/old/source/stale.html"
+        stale.parent.mkdir(parents=True)
+        stale.write_text("OLD_ARTIFACT")
+    elif case == "ignored-static-asset":
+        asset = store.path("frontend/assets/attachment.txt")
+        asset.parent.mkdir(parents=True)
+        asset.write_text("PRIVATE_ASSET")
+        commit_sources(store, "frontend/assets")
+        store.path(".gitignore").write_text("/frontend/assets/attachment.txt\n")
+        (artifact / "assets").mkdir()
+        shutil.copyfile(asset, artifact / "assets/attachment.txt")
+    with pytest.raises(ValueError, match=message):
+        verify_pages_artifact(store)
+
+
+@pytest.mark.skipif(
+    shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
+)
+@pytest.mark.parametrize("in_filename", [True, False])
+def test_pages_artifact_rejects_possible_secrets(git_store, in_filename):
+    from atlas.cms_site import verify_pages_artifact
+
+    artifact = git_store.path("frontend/_site")
+    artifact.mkdir()
+    token = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
+    (artifact / "index.html").write_text("<h1>Public site</h1>")
+    if in_filename:
+        (artifact / f"{token}.txt").write_text("Ordinary contents")
+    else:
+        (artifact / "search.json").write_text(json.dumps([{"text": token}]))
+    with pytest.raises(ValueError, match="possible secrets in 1 output path") as error:
+        verify_pages_artifact(git_store)
+    assert token not in str(error.value)
+
+
+def test_pages_artifact_build_stops_when_source_scanning_is_unavailable(
+    git_store, monkeypatch
+):
+    from atlas import cms, cms_source
+
+    store = git_store
+    new_post(store)
+    project = store.path("project")
+    project.mkdir()
+    (project / "example.py").write_text("# A committed source file\n")
+    commit_sources(store, "project")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    publish(store, "post/attention")
+    monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
+    monkeypatch.setattr(cms_source.shutil, "which", lambda _: None)
+    result = invoke(store, "build", "--for-pages", code=2)
+    assert "Install Gitleaks" in result.stderr
+    assert not store.path("frontend/_site").exists()
+    result = invoke(store, "build", "--for-pages", "--preview", code=2)
+    assert "requires a public build" in result.stderr
+
+
+@pytest.mark.skipif(
+    not (shutil.which("quarto") and shutil.which("gitleaks")),
+    reason="Quarto and Gitleaks are required",
+)
+def test_build_and_sync_remove_stale_source_from_both_render_profiles(
+    git_store, monkeypatch
+):
+    from atlas import cms
+
+    store = git_store
+    new_post(store)
+    project = store.path("project")
+    project.mkdir()
+    (project / "manual").mkdir()
+    (project / "manual/guide.md").write_text(
+        "# Previously browsable\n\nSTALE_MARKDOWN_CANARY\n"
+    )
+    (project / "settings.txt").write_text("STALE_SETTINGS_CANARY\n")
+    (project / "useful.txt").write_text("ACTIVE_TEXT_CANARY\n")
+    Image.new("RGB", (2, 2), "blue").save(project / "diagram.png")
+    notebook = nb.notebook("# Hybrid search\n\n[Jump to the example](#example)")
+    notebook["metadata"]["private"] = "PRIVATE_NOTEBOOK_METADATA"
+    notebook["cells"][0]["attachments"] = {
+        "inline.png": {"image/png": "PRIVATE_ATTACHMENT"}
+    }
+    setup_cell = nb.cell(
+        'jina_api_key = "your_jina_api_key_here"\n'
+        'raise RuntimeError("Notebook rendering must never execute this cell")',
+        "code",
+    )
+    setup_cell["outputs"] = [
+        {
+            "output_type": "stream",
+            "name": "stdout",
+            "text": ['SAVED_OUTPUT_CANARY <script id="fixture-output">void 0</script>'],
+        },
+        {
+            "output_type": "execute_result",
+            "data": {"text/plain": "SAVED_RESULT_CANARY", "text/html": "PRIVATE_HTML"},
+        },
+        {
+            "output_type": "display_data",
+            "data": {
+                "text/markdown": "**Saved Markdown output**",
+                "image/png": "PRIVATE_IMAGE",
+            },
+        },
+        {
+            "output_type": "error",
+            "traceback": ["\x1b[31mSAVED_ERROR_CANARY\x1b[0m"],
+        },
+    ]
+    notebook["cells"].append(nb.cell("## Example"))
+    notebook["cells"].append(setup_cell)
+    (project / "hybrid.ipynb").write_bytes(nb.dump(notebook))
+    ignored = project / "ignored.qmd"
+    ignored.write_text("IGNORED_INCLUDE_CANARY\n")
+    store.path(".gitignore").write_text("/project/ignored.qmd\n")
+    (project / "instructions.md").write_text(
+        "# Instructions\n\n"
+        f"{{{{< include {ignored} >}}}}\n\n"
+        '<script id="fixture-active-script">void 0</script>\n\n'
+        "[Outside file](ignored.qmd) · [Diagram](diagram.png)\n"
+    )
+    commit_sources(store, "project")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    publish(store, "post/attention")
+    new_post(store, "Unpublished")
+    run(store, "post", "edit", "post/unpublished", "--code-path", "project")
+    monkeypatch.setenv("QUARTO", shutil.which("quarto"))
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: None)
+
+    def render(command, *, cwd, stdout):
+        return subprocess.run(
+            command, cwd=cwd, capture_output=True, check=True
+        ).returncode
+
+    monkeypatch.setattr(cms.subprocess, "call", render)
+    invoke(store, "build", "--for-pages")
+    assert not store.path("frontend/_site/posts/unpublished.html").exists()
+    assert not store.path("frontend/_site/posts/unpublished").exists()
+    invoke(store, "build", "--preview")
+    for site in ("_site", "_site-preview"):
+        browser = store.path(f"frontend/{site}/posts/attention/source")
+        assert (
+            b"STALE_MARKDOWN_CANARY" in (browser / "manual/guide.md.html").read_bytes()
+        )
+        assert (
+            b"STALE_MARKDOWN_CANARY"
+            in (browser / "manual/file~raw~guide.md.html").read_bytes()
+        )
+        assert b"STALE_SETTINGS_CANARY" in (browser / "settings.txt.html").read_bytes()
+        assert (browser / "useful.txt.html").is_file()
+        assert not list(browser.rglob("*diagram*"))
+        assert "diagram.png" not in (browser / "index.html").read_text()
+        notebook_view = (browser / "hybrid.ipynb.html").read_bytes()
+        assert b"your_jina_api_key_here" in notebook_view
+        assert (
+            b'<h1 id="source-heading-hybrid-search">Hybrid search</h1>' in notebook_view
+        )
+        assert b'href="#source-heading-example"' in notebook_view
+        assert b'<div class="source-preview"' in notebook_view
+        assert b"Notebook rendering must never execute this cell" in notebook_view
+        assert b'<div class="cell-output mb-3">' in notebook_view
+        assert notebook_view.index(
+            b"your_jina_api_key_here"
+        ) < notebook_view.index(b"SAVED_OUTPUT_CANARY")
+        assert b"SAVED_RESULT_CANARY" in notebook_view
+        assert b"<strong>Saved Markdown output</strong>" in notebook_view
+        assert b"SAVED_ERROR_CANARY" in notebook_view and b"\x1b" not in notebook_view
+        assert b'<script id="fixture-output">' not in notebook_view
+        assert b"PRIVATE_" not in notebook_view
+        instructions = (browser / "instructions.md.html").read_bytes()
+        assert b"Diagram" in instructions and b"diagram.png" not in instructions
+        for page in browser.rglob("*.html"):
+            assert b"data:application/octet-stream;base64," not in page.read_bytes()
+        # A future-dated render is stale when its projection changes too.
+        future = 4_102_444_800  # 2100-01-01 UTC
+        os.utime(browser / "settings.txt.html", (future, future))
+        (browser / "old-download.bin").write_bytes(b"STALE_RESOURCE_CANARY")
+
+    store.path(".gitignore").write_text("/project/ignored.qmd\n/project/manual/\n")
+    (project / "settings.txt").write_text("UPDATED_SETTINGS_CANARY\n")
+    commit_sources(store, "project/settings.txt")
+    run(store, "sync")
+    assert not store.path("frontend/posts/attention/source/manual").exists()
+    for site in ("_site", "_site-preview"):
+        browser = store.path(f"frontend/{site}/posts/attention/source")
+        assert {p.name for p in browser.iterdir()} == {
+            "hybrid.ipynb.html",
+            "useful.txt.html",
+            "instructions.md.html",
+            "file~raw~instructions.md.html",
+        }
+
+    invoke(store, "build", "--for-pages")
+    invoke(store, "build", "--preview")
+    for site in ("_site", "_site-preview"):
+        output = store.path(f"frontend/{site}")
+        browser = output / "posts/attention/source"
+        assert (
+            b"UPDATED_SETTINGS_CANARY" in (browser / "settings.txt.html").read_bytes()
+        )
+        assert "guide.md" not in (browser / "index.html").read_text()
+        assert (
+            b'<script id="fixture-active-script">'
+            not in (browser / "instructions.md.html").read_bytes()
+        )
+        for path in output.rglob("*"):
+            if path.is_file():
+                rendered = path.read_bytes()
+                assert b"STALE_" not in rendered, path.relative_to(output)
+                assert b"IGNORED_INCLUDE_CANARY" not in rendered, path.relative_to(
+                    output
+                )
 
 
 @pytest.mark.skipif(shutil.which("quarto") is None, reason="Quarto is not installed")
-def test_quarto_renders_source_shortcut_above_outline(git_store):
-    store = git_store
+def test_quarto_renders_source_shortcut_above_outline(browser_store):
+    store = browser_store
     new_post(store)
     store.path("project").mkdir()
     store.path("project/example.py").write_text("# Example source\n")
+    commit_sources(store, "project")
     run(store, "post", "edit", "post/attention", "--code-path", "project")
     publish(store, "post/attention")
     run(store, "sync")
@@ -1176,7 +1634,7 @@ def test_quarto_renders_source_shortcut_above_outline(git_store):
     rendered = store.path("frontend/_site/posts/attention.html").read_text()
     desktop, mobile = re.findall(
         r'<a\b(?=[^>]*href="[^"]*attention/source/index\.html")'
-        r'(?=[^>]*class="source-browser-link")[^>]*>📁 <code>Browse source</code></a>',
+        r'(?=[^>]*class="source-browser-link")[^>]*>📁 <code>source</code></a>',
         rendered,
     )
     header = rendered.index('class="quarto-margin-header"')
@@ -1188,15 +1646,16 @@ def test_quarto_renders_source_shortcut_above_outline(git_store):
 
 
 @pytest.mark.skipif(shutil.which("quarto") is None, reason="Quarto is not installed")
-def test_quarto_renders_source_filename_as_literal_text(git_store):
+def test_quarto_renders_source_filename_as_literal_text(browser_store):
     from atlas.cms_source import source_page
 
-    store = git_store
+    store = browser_store
     new_post(store)
     project = store.path("project")
     project.mkdir()
     filename = PurePosixPath("A <em> marker.txt")
     (project / filename).write_text("file contents\n")
+    commit_sources(store, "project")
     run(store, "post", "edit", "post/attention", "--code-path", "project")
     publish(store, "post/attention")
     run(store, "sync")
@@ -1741,15 +2200,16 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
 
 
 def test_quick_preview_skips_source_browser_and_removes_stale_preview_pages(
-    git_store, monkeypatch
+    browser_store, monkeypatch
 ):
     from atlas import cms
 
-    store = git_store
+    store = browser_store
     new_post(store)
     project = store.path("projects/demo")
     project.mkdir(parents=True)
     (project / "main.py").write_text("print('example')\n")
+    commit_sources(store, "projects/demo")
     run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
     run(store, "sync", "--preview")
     assert store.path("frontend/posts/attention/source/main.py.qmd").is_file()
@@ -1779,7 +2239,7 @@ def test_quick_preview_skips_source_browser_and_removes_stale_preview_pages(
         assert public.is_file()
         assert not store.path("frontend/posts/attention/source/main.py.qmd").exists()
         assert (
-            b"Browse source"
+            b"source-browser-link"
             not in store.path("frontend/posts/attention.ipynb").read_bytes()
         )
         return FinishedPreview()
@@ -1905,9 +2365,12 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
     }
     calls = []
 
-    def regenerate(actual_store, preview, *, watch_snapshot, source_browser):
+    def regenerate(
+        actual_store, preview, *, watch_snapshot, source_browser, require_source_scan
+    ):
         assert actual_store is store and preview is True
         assert source_browser is True
+        assert require_source_scan is False
         calls.append(("generate", preview_clock.monotonic()))
         return generate(actual_store, preview, watch_snapshot=watch_snapshot)
 
@@ -1924,38 +2387,47 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
     assert calls[1][1] == calls[0][1]
 
 
-def test_preview_watcher_restarts_for_new_source_pages(
-    git_store, monkeypatch, preview_clock
+@pytest.mark.parametrize("existing_page", [False, True])
+def test_preview_watcher_restarts_for_changed_source_pages(
+    browser_store, monkeypatch, preview_clock, existing_page
 ):
     from atlas import cms
 
-    store = git_store
+    store = browser_store
     new_post(store)
     file = store.path("projects/demo/main.py")
     file.parent.mkdir(parents=True)
+    if existing_page:
+        file.write_text("# Old contents\n")
+        commit_sources(store, "projects/demo")
     run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
     generate(store, preview=True)
     preview_clock.edits = {
         1: lambda: (
             file.write_text("print('sample')\n"),
+            commit_sources(store, "projects/demo"),
             store.path(".gitignore").write_text("# refresh the source index\n"),
         )
     }
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *args: None)
     assert cms.watch_preview(store, "/bin/quarto", preview_clock) is not None
-    assert store.path("frontend/posts/attention/source/main.py.qmd").is_file()
+    assert (
+        "sample"
+        in store.path("frontend/posts/attention/source/main.py.qmd").read_text()
+    )
 
 
 def test_preview_watcher_removes_newly_ignored_source_pages(
-    store, monkeypatch, preview_clock
+    browser_store, monkeypatch, preview_clock
 ):
     from atlas import cms
 
-    subprocess.run(["git", "init", "-q", str(store.root)], check=True)
+    store = browser_store
     new_post(store)
     file = store.path("projects/demo/README.md")
     file.parent.mkdir(parents=True)
     file.write_text("# Sample\n")
+    commit_sources(store, "projects/demo")
     run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
     generate(store, preview=True)
     page = store.path("frontend/posts/attention/source/README.md.qmd")

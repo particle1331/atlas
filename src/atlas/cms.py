@@ -22,7 +22,13 @@ from PIL import Image
 from rich.console import Console
 from rich.table import Table
 
-from atlas.cms_site import file_stamp, generate, initialize
+from atlas.cms_site import (
+    file_stamp,
+    generate,
+    initialize,
+    prune_source_output,
+    verify_pages_artifact,
+)
 from atlas.cms_source import source_files
 from atlas.cms_store import (
     Ambiguous,
@@ -400,7 +406,7 @@ def post_edit(
     code_path: Annotated[
         str | None,
         typer.Option(
-            help="Existing supporting directory relative to the workspace root; pass an empty string to clear."
+            help="Supporting directory relative to the workspace root. The browser uses screened files from Git HEAD. Pass an empty string to clear."
         ),
     ] = None,
     related: Annotated[
@@ -910,12 +916,13 @@ def check(ctx: typer.Context):
                         ),
                     }
                 )
+        browsable = []
         for kind, items in records.items():
             for record in items:
                 try:
                     store.references(record)
-                    if kind == "post":
-                        source_files(store, record)
+                    if kind == "post" and record["code_path"] is not None:
+                        browsable.append(record)
                     if kind != "resume":
                         store.ready(record)
                 except (ValueError, OSError) as error:
@@ -926,6 +933,22 @@ def check(ctx: typer.Context):
                             "message": str(error),
                         }
                     )
+        try:
+            source_files(store, browsable)
+        except (ValueError, OSError) as error:
+            detail = (
+                "Companion source inputs could not be read."
+                if isinstance(error, OSError)
+                else str(error)
+            )
+            diagnostics.extend(
+                {
+                    "id": record["id"],
+                    "status": record["status"],
+                    "message": f"Companion source screening unavailable. {detail}",
+                }
+                for record in browsable
+            )
     emit({"diagnostics": diagnostics})
     if diagnostics:
         raise typer.Exit(1)
@@ -1027,9 +1050,14 @@ def prepare_site(
     *,
     watch_snapshot: dict | None = None,
     source_browser: bool = True,
+    require_source_scan: bool = False,
 ) -> dict:
     result = generate(
-        store, preview, watch_snapshot=watch_snapshot, source_browser=source_browser
+        store,
+        preview,
+        watch_snapshot=watch_snapshot,
+        source_browser=source_browser,
+        require_source_scan=require_source_scan,
     )
     if preview:
         prune_preview_output(store)
@@ -1041,7 +1069,7 @@ def prune_preview_output(store: Store):
     """An incremental render won't necessarily remove pages with no input."""
     frontend = store.path("frontend")
     output = store.path("frontend/_site-preview")
-    for pattern in ("posts/*.html", "collections/*.html", "posts/*/source/**/*.html"):
+    for pattern in ("posts/*.html", "collections/*.html"):
         for rendered in output.glob(pattern):
             if not rendered.is_file():
                 continue
@@ -1055,7 +1083,9 @@ def prune_preview_output(store: Store):
                 )
 
 
-def render_site(store: Store, preview: bool):
+def render_site(store: Store, preview: bool, *, for_pages: bool = False):
+    if preview and for_pages:
+        raise ValueError("--for-pages requires a public build.")
     with site_lock(store, "render"):
         if preview:
             with site_lock(store, "live-preview", wait=False) as idle:
@@ -1063,12 +1093,16 @@ def render_site(store: Store, preview: bool):
                     # The live preview watches the source files created by the CMS.
                     return
         options = preview_options(store) if preview else []
+        if for_pages:
+            options = ["--output-dir", "_site"]
         executable = quarto_executable()
-        result = prepare_site(store, executable, preview)
+        result = prepare_site(store, executable, preview, require_source_scan=for_pages)
         command = [executable, "render", result["site"], "--no-execute", *options]
         status = subprocess.call(command, cwd=store.root, stdout=sys.stderr)
         if status:
             raise typer.Exit(status)
+        if for_pages:
+            verify_pages_artifact(store)
 
 
 def preview_snapshot(store: Store) -> dict:
@@ -1111,8 +1145,12 @@ def preview_pages(snapshot: dict) -> set[str]:
     }
 
 
-def preview_source_pages(store: Store) -> set[Path]:
-    return set(store.path("frontend/posts").glob("*/source/**/*.qmd"))
+def preview_source_pages(store: Store) -> dict[Path, tuple[int, int, int]]:
+    pages = {}
+    for path in store.path("frontend/posts").glob("*/source/**/*.qmd"):
+        with suppress(FileNotFoundError):
+            pages[path] = file_stamp(path)
+    return pages
 
 
 def watch_preview(
@@ -1139,6 +1177,7 @@ def watch_preview(
         if changed_at is None or time.monotonic() - changed_at < 0.5:
             continue
         changed_at = None
+        synced = False
         try:
             with site_lock(store, "render"):
                 prepare_site(
@@ -1148,19 +1187,18 @@ def watch_preview(
                     watch_snapshot=previous,
                     source_browser=source_browser,
                 )
+            synced = True
         except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
             # A half-written or invalid save must not kill the preview server.
             typer.echo(
                 f"Preview sync failed: {error}. Fix the source and save again.",
                 err=True,
             )
-        else:
-            # Quarto watches the project input files it knew when it started.
-            if (
-                preview_pages(previous) != pages
-                or preview_source_pages(store) != source_pages
-            ):
-                return previous
+        if preview_source_pages(store) != source_pages or (
+            synced and preview_pages(previous) != pages
+        ):
+            return previous
+        if synced:
             typer.echo("Preview content synced.")
     return None
 
@@ -1175,9 +1213,16 @@ def build(
             "--preview", help="Include drafts and render to frontend/_site-preview/."
         ),
     ] = False,
+    for_pages: Annotated[
+        bool,
+        typer.Option(
+            "--for-pages",
+            help="Require secret screening and verify the public GitHub Pages output.",
+        ),
+    ] = False,
 ):
     """Sync and render the site once without executing notebooks."""
-    render_site(store_for(ctx), preview)
+    render_site(store_for(ctx), preview, for_pages=for_pages)
 
 
 @app.command("preview")
@@ -1218,6 +1263,7 @@ def preview(
                 source_browser=source_browser,
             )
         while True:
+            source_pages = preview_source_pages(store)
             process = subprocess.Popen(
                 [executable, "preview", result["site"], *options],
                 cwd=store.root,
@@ -1231,7 +1277,16 @@ def preview(
                 stop_preview(process)
             if previous is None:
                 raise typer.Exit(process.returncode)
-            typer.echo("Refreshing live preview for the changed page list.")
+            # The stopped preview might have finished writing an old view
+            # while sync updated its projection.
+            with site_lock(store, "render"):
+                invalidated = {
+                    path
+                    for path, stamp in preview_source_pages(store).items()
+                    if source_pages.get(path) != stamp
+                }
+                prune_source_output(store, preview_only=True, invalidated=invalidated)
+            typer.echo("Refreshing live preview for changed pages.")
             if "--no-browser" not in options:
                 options.append("--no-browser")
 

@@ -382,7 +382,7 @@ class Store:
         self._install(path, raw)
         return path
 
-    def commit(self, changes: dict[Path, bytes | None]):
+    def commit(self, changes: dict[Path, bytes | None]) -> set[Path]:
         entries = []
         for path, raw in changes.items():
             relative = path.relative_to(self.root).as_posix()
@@ -406,6 +406,7 @@ class Store:
                 self.path(".atlas/cms/pending.json"), json.dumps(entries).encode()
             )
             self.recover()
+        return {self.root / entry["path"] for entry in entries}
 
     def require_initialized(self):
         marker = self.path("backend/cms.yaml")

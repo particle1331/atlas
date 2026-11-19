@@ -149,18 +149,25 @@ See [Images](#images) for importing and replacing figures, thumbnails and covers
 #### Browse companion source
 
 A post with a `code_path` automatically gets a 📁 `source` link above
-the table of contents (or above the article on small screens). Git supplies
-the file tree: it includes existing tracked and untracked files under
-`code_path`, excluding anything matched by Git ignore rules, even if it is
-already tracked. There is no per-post allowlist. This feature requires a Git
-checkout.
+the table of contents (or above the article on small screens). Install
+[Gitleaks](https://github.com/gitleaks/gitleaks) with `brew install gitleaks`
+to publish companion source from a Git checkout. The browser reads committed
+bytes from `HEAD`. Staged and untracked files and uncommitted edits stay local.
+Git's repository, nested and global ignore rules also apply to committed files.
 
-Markdown opens as formatted text with a **View source** link. Other UTF-8 text
-files open with line numbers and syntax highlighting when available. Binary
-files and text over 1 MiB are downloadable up to 8 MiB; larger files are listed
-without their contents. Symlinks are listed but not followed. Relative links
-work for files and folders in the tree. Images are not embedded, raw HTML and
-Quarto directives are not processed, and no project code runs.
+The browser is for reading and exploring code. Markdown opens as formatted text
+with a **View source** link. Other UTF-8 text files up to 1 MiB open with line
+numbers and syntax highlighting when available. Binaries are omitted from the
+file tree, along with symlinks, hidden paths, common credential and backup
+filenames. Jupyter notebooks up to 1 MiB show formatted Markdown, highlighted
+code, and saved text or Markdown outputs in cell order. The browser reads
+stored outputs without running a kernel. The view omits notebook attachments,
+binary outputs, and HTML or interactive output bundles. Gitleaks screens
+filenames, cell source, and displayed output before projection. Files with
+findings are omitted and the CLI reports a count. If screening cannot run or
+fails, sync and builds omit the browser, and `cms check` reports the problem.
+Relative links work for visible files and folders. The views display project
+markup as inert content and do not execute project code.
 
 Set the post's path with `uv run at cms post edit post/<id> --code-path PATH`.
 It must name an existing directory relative to the workspace root. `cms check`
@@ -168,13 +175,15 @@ reports paths that later go missing, and sync/build rejects them for included po
 The workspace root and internal CMS directories such as `content/`, `backend/`
 and `frontend/` cannot be browsed as companion source.
 
-The browser follows the post's publication status. Before publishing, review
-the companion directory for sensitive files and confirm you can redistribute
-its contents. Untracked files that are not ignored will also be included.
+The browser follows the post's publication status. Review the committed
+companion source before publishing because pattern-based screening can miss
+credentials and other private data. Sync removes stale browser pages when their
+projections change or disappear. Notebook sidecars follow Git ignore rules and
+cannot write into the generated browser directories.
 
-The live preview watches the root `.gitignore`. After editing a project file,
-a nested `.gitignore`, or a Git exclude file, restart `make preview` or stop it
-and run `uv run at cms build --preview` for a one-time render.
+The live preview watches the root `.gitignore`. After committing companion
+changes or editing a nested `.gitignore` or Git exclude file, restart
+`make preview` or run `uv run at cms build --preview` with live preview stopped.
 
 ### Notebook tools
 
@@ -446,12 +455,13 @@ pages. A clean preview can still take longer because the source browser adds a
 page for each file. `make preview SOURCES=0` (or `uv run at cms preview
 --no-source-browser`) skips those pages and their links without affecting full
 builds. The next normal preview regenerates the skipped pages. When pages are
-added or removed, Atlas restarts Quarto at the same preview URL so it can
-update the page list.
+added or removed, or a companion source page changes, Atlas restarts Quarto
+at the same preview URL.
 
 Individual posts use a 792 px desktop body grid set in
-`frontend/posts/_metadata.yml`. Page titles and section headings are left-aligned;
-body paragraphs retain their existing alignment. HTML post tables use
+`frontend/posts/_metadata.yml`. Page titles, section headings and short
+descriptions in post and collection headers are left-aligned. Short descriptions
+use automatic hyphenation when long words split across lines. HTML post tables use
 `tbl-colwidths: false` so the browser sizes columns from their content rather than
 applying Markdown-derived width hints. The posts listing sets its own grid in
 `frontend/_cms/posts.qmd` to fit the table and right-hand filters. The
@@ -466,6 +476,20 @@ cached download. CMS templates under `frontend/_cms/` and bundled fonts are watc
 as well. Invalid intermediate saves report an error without stopping preview;
 fix the source and save again to retry. Hidden files and notebook checkpoints are
 ignored. Builds and preview never execute notebook code. Press Ctrl-C to stop.
+
+#### Deploy to GitHub Pages
+
+Set the publishing source to **GitHub Actions** in the repository's **Settings → Pages**.
+The [Pages workflow](.github/workflows/pages.yml) runs on pushes to `master` and
+can also be started from the Actions tab on that branch. It builds from a fresh
+checkout with a pinned Gitleaks release, runs the publication regression tests,
+and uploads `frontend/_site/` after verification passes.
+
+`uv run at cms build --for-pages` runs the same public build locally. It requires
+source screening to complete and screens the rendered filenames and UTF-8
+contents before allowing upload. It also rejects hidden or unrendered source
+files, links, Git-ignored frontend assets, and browser pages without a current
+CMS projection. Draft preview output stays outside the artifact.
 
 #### Résumé PDF
 

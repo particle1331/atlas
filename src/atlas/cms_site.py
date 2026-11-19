@@ -1,8 +1,11 @@
 """Import the frontend scaffold and project allowlisted public content for Quarto."""
 
+import errno
+import logging
 import posixpath
 import re
 import shutil
+import stat
 import tempfile
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -13,7 +16,14 @@ from uuid import uuid4
 import yaml
 
 from atlas import cms_notebooks as nb
-from atlas.cms_source import source_files, write_source_browser
+from atlas.cms_source import (
+    PRIVATE_NAME,
+    SourceBrowserUnavailable,
+    ignored_source_paths,
+    secret_findings,
+    source_files,
+    write_source_browser,
+)
 from atlas.cms_store import (
     CONTENT_DEFAULTS,
     CONTENT_FIELDS,
@@ -30,6 +40,8 @@ from atlas.cms_store import (
     slug,
     split_document,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 def imported_body(body: str) -> str:
@@ -382,12 +394,152 @@ def file_stamp(path: Path) -> tuple[int, int, int]:
     return stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size
 
 
+def copy_post_sidecars(store: Store, source: Path, destination: Path):
+    """Keep public sidecars out of the generated browser namespace."""
+    files = {}
+    for directory, subdirs, filenames in source.walk():
+        relative = directory.relative_to(source)
+
+        def allowed(name):
+            return (
+                not name.startswith(".")
+                and Path(name).suffix.lower() not in {".ipynb", ".md", ".yaml", ".yml"}
+                and not (len(relative.parts) == 1 and name.casefold() == "source")
+            )
+
+        subdirs[:] = [name for name in subdirs if allowed(name)]
+        for name in filenames:
+            if not allowed(name):
+                continue
+            file = directory / name
+            if file.is_symlink():
+                raise ValueError("Notebook sidecars cannot be symlinks.")
+            if file.is_file():
+                files[PurePosixPath(file.relative_to(store.root))] = file
+    ignored = (
+        ignored_source_paths(store.root, files)
+        if (store.root / ".git").exists()
+        else set()
+    )
+    for path, file in files.items():
+        if path not in ignored:
+            target = destination / file.relative_to(source)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(file, target)
+
+
+def prune_empty_source_dirs(browser: Path):
+    for directory, _, _ in browser.walk(top_down=False):
+        try:
+            directory.rmdir()
+        except OSError as error:
+            if error.errno not in {errno.ENOENT, errno.ENOTEMPTY, errno.EEXIST}:
+                raise
+
+
+def prune_source_output(store: Store, *, preview_only: bool, invalidated: set[Path]):
+    """Invalidate rendered browser pages even when sync runs without Quarto."""
+    frontend = store.path("frontend")
+    outputs = ("_site-preview",) if preview_only else ("_site", "_site-preview")
+    for output in outputs:
+        posts = store.path(f"frontend/{output}/posts")
+        for post in posts.iterdir() if posts.is_dir() else ():
+            if post.is_symlink() or not post.is_dir():
+                continue
+            browser = post / "source"
+            if browser.is_symlink():
+                browser.unlink()
+                continue
+            for path in browser.rglob("*"):
+                if path.is_symlink():
+                    path.unlink()
+                elif path.is_file():
+                    projection = frontend / "posts" / post.name / path.relative_to(post)
+                    projection = projection.with_suffix(".qmd")
+                    try:
+                        stale = (
+                            path.suffix != ".html"
+                            or projection in invalidated
+                            or path.stat().st_mtime_ns < projection.stat().st_mtime_ns
+                        )
+                    except FileNotFoundError:
+                        stale = True
+                    if stale:
+                        path.unlink(missing_ok=True)
+            prune_empty_source_dirs(browser)
+
+
+def verify_pages_artifact(store: Store):
+    """Check the exact output directory that the Pages workflow uploads."""
+    site = store.path("frontend/_site")
+    if not (site / "index.html").is_file():
+        raise ValueError("GitHub Pages output is missing its index.")
+    files = {}
+    assets = set()
+
+    def raise_walk_error(error: OSError):
+        raise error
+
+    try:
+        for directory, subdirs, filenames in site.walk(on_error=raise_walk_error):
+            for name in subdirs + filenames:
+                path = directory / name
+                relative = PurePosixPath(path.relative_to(site))
+                if name.startswith(".") or PRIVATE_NAME.search(name):
+                    raise ValueError("GitHub Pages output contains a private path.")
+                if name.casefold() == "_site-preview":
+                    raise ValueError(
+                        "GitHub Pages output contains draft preview output."
+                    )
+                info = path.lstat()
+                if stat.S_ISDIR(info.st_mode):
+                    files[relative] = ""
+                    continue
+                if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                    raise ValueError(
+                        "GitHub Pages output contains a link or special file."
+                    )
+                if relative.suffix.casefold() in {".ipynb", ".qmd"}:
+                    raise ValueError(
+                        "GitHub Pages output contains an unrendered source file."
+                    )
+                if (
+                    len(relative.parts) >= 4
+                    and relative.parts[0] == "posts"
+                    and relative.parts[2] == "source"
+                ):
+                    projection = store.path(f"frontend/{relative.with_suffix('.qmd')}")
+                    if relative.suffix != ".html" or not projection.is_file():
+                        raise ValueError(
+                            "GitHub Pages output contains an unapproved source page."
+                        )
+                if relative.parts[0] == "assets" and not relative.is_relative_to(
+                    "assets/cms"
+                ):
+                    # Authored frontend assets are also copied as Quarto resources.
+                    assets.add(PurePosixPath("frontend") / relative)
+                try:
+                    files[relative] = path.read_bytes().decode("utf-8")
+                except UnicodeDecodeError:
+                    files[relative] = ""  # Screen binary asset names.
+        if ignored_source_paths(store.root, assets):
+            raise ValueError("GitHub Pages output contains a Git-ignored asset.")
+        blocked = secret_findings(files)
+    except OSError:
+        raise ValueError("GitHub Pages output could not be verified.") from None
+    if blocked:
+        raise ValueError(
+            f"GitHub Pages verification found possible secrets in {len(blocked)} output path(s)."
+        )
+
+
 def generate(
     store: Store,
     preview: bool = False,
     *,
     watch_snapshot: dict | None = None,
     source_browser: bool = True,
+    require_source_scan: bool = False,
 ) -> dict:
     """Project saved source and public metadata into ignored frontend files."""
     with store.lock():
@@ -442,6 +594,22 @@ def generate(
             store.references(record)
             if not preview:
                 store.ready(record)
+        browsers = {}
+        if source_browser:
+            try:
+                browsers = source_files(store, selected_posts)
+            except SourceBrowserUnavailable as error:
+                if require_source_scan:
+                    raise
+                LOGGER.warning("Companion source disabled. %s", error)
+            except OSError:
+                if require_source_scan:
+                    raise SourceBrowserUnavailable(
+                        "Companion source inputs could not be read."
+                    ) from None
+                LOGGER.warning(
+                    "Companion source disabled because its inputs could not be read."
+                )
         site = store.path("frontend")
         stage = Path(
             tempfile.mkdtemp(prefix="projection-", dir=store.path(".atlas/cms"))
@@ -493,9 +661,9 @@ def generate(
                         if projected != original:
                             item["source"] = projected.splitlines(keepends=True)
                 meta = public_meta(record)
-                files = source_files(store, record) if source_browser else None
+                files = browsers.get(record["id"])
                 if files is not None:
-                    href = write_source_browser(stage, store.root, record, files)
+                    href = write_source_browser(stage, record, files)
                     shortcut = f"[📁 `source`]({href}){{.source-browser-link}}"
                     meta["margin-header"] = shortcut
                     # Quarto hides the margin sidebar below the md breakpoint.
@@ -513,31 +681,7 @@ def generate(
                 if source_dir in copied_sidecars:
                     continue
                 copied_sidecars.add(source_dir)
-                for sidecar in source_dir.iterdir() if source_dir.exists() else []:
-                    if sidecar.name.startswith(".") or sidecar.suffix in (
-                        ".ipynb",
-                        ".md",
-                        ".yaml",
-                        ".yml",
-                    ):
-                        continue
-                    if sidecar.is_symlink() or (
-                        sidecar.is_dir()
-                        and any(p.is_symlink() for p in sidecar.rglob("*"))
-                    ):
-                        raise ValueError("Notebook sidecars cannot be symlinks.")
-                    destination = stage / "posts" / sidecar.name
-                    if sidecar.is_dir():
-                        shutil.copytree(
-                            sidecar,
-                            destination,
-                            dirs_exist_ok=True,
-                            ignore=shutil.ignore_patterns(
-                                ".*", "*.yaml", "*.yml", "*.md", "*.ipynb"
-                            ),
-                        )
-                    else:
-                        shutil.copyfile(sidecar, destination)
+                copy_post_sidecars(store, source_dir, stage / "posts")
             for record in selected_collections:
                 lines = []
                 if record["cover_path"]:
@@ -633,7 +777,7 @@ def generate(
                     if (
                         path.is_file()
                         and path not in generated
-                        and path.name != "_metadata.yml"
+                        and path != site / directory / "_metadata.yml"
                     ):
                         generated[path] = None
             for page in ("resume.qmd", "posts.qmd", "collections.qmd"):
@@ -641,7 +785,13 @@ def generate(
             generated[store.path(".atlas/cms/resume.qmd")] = document(
                 pdf_meta, pdf_body
             )
-            store.commit(generated)
+            invalidated = store.commit(generated)
+            for browser in (site / "posts").glob("*/source"):
+                if not browser.is_symlink():
+                    prune_empty_source_dirs(browser)
+            prune_source_output(
+                store, preview_only=not source_browser, invalidated=invalidated
+            )
         finally:
             if stage.exists():
                 shutil.rmtree(stage)
