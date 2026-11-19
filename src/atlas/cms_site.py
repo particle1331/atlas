@@ -13,6 +13,7 @@ from uuid import uuid4
 import yaml
 
 from atlas import cms_notebooks as nb
+from atlas.cms_source import source_files, write_source_browser
 from atlas.cms_store import (
     CONTENT_DEFAULTS,
     CONTENT_FIELDS,
@@ -382,7 +383,11 @@ def file_stamp(path: Path) -> tuple[int, int, int]:
 
 
 def generate(
-    store: Store, preview: bool = False, *, watch_snapshot: dict | None = None
+    store: Store,
+    preview: bool = False,
+    *,
+    watch_snapshot: dict | None = None,
+    source_browser: bool = True,
 ) -> dict:
     """Project saved source and public metadata into ignored frontend files."""
     with store.lock():
@@ -442,23 +447,11 @@ def generate(
             tempfile.mkdtemp(prefix="projection-", dir=store.path(".atlas/cms"))
         )
         try:
-            shutil.copytree(
-                store.path("frontend"),
-                stage,
-                dirs_exist_ok=True,
-                ignore=shutil.ignore_patterns(
-                    "_site*", ".quarto", "_cms", "__pycache__"
-                ),
-            )
+            # Stage only new projections. The existing generated pages and
+            # static frontend assets do not need to be copied on every sync.
             for directory in ("posts", "collections"):
-                target = stage / directory
-                target.mkdir(exist_ok=True)
-                for path in target.rglob("*"):
-                    if path.is_file() and path.name != "_metadata.yml":
-                        path.unlink()
-            if (stage / "assets/cms").exists():
-                shutil.rmtree(stage / "assets/cms")
-            (stage / "assets/cms").mkdir(parents=True, exist_ok=True)
+                (stage / directory).mkdir()
+            (stage / "assets/cms").mkdir(parents=True)
             for record in selected_posts + selected_collections:
                 image = record.get("thumbnail_path", record.get("cover_path"))
                 if image and store.path(image).exists():
@@ -499,7 +492,17 @@ def generate(
                         )
                         if projected != original:
                             item["source"] = projected.splitlines(keepends=True)
-                metadata_cell = nb.cell(document(public_meta(record)).decode())
+                meta = public_meta(record)
+                files = source_files(store, record) if source_browser else None
+                if files is not None:
+                    href = write_source_browser(stage, store.root, record, files)
+                    shortcut = f"[📁 `Browse source`]({href}){{.source-browser-link}}"
+                    meta["margin-header"] = shortcut
+                    # Quarto hides the margin sidebar below the md breakpoint.
+                    source_cell = nb.cell(f"::: {{.d-md-none}}\n{shortcut}\n:::")
+                    source_cell["id"] = "cms-source-browser"
+                    value["cells"].insert(0, source_cell)
+                metadata_cell = nb.cell(document(meta).decode())
                 metadata_cell["id"] = "cms-metadata"
                 value["cells"].insert(0, metadata_cell)
                 (stage / "posts" / f"{record['id'].split('/')[1]}.ipynb").write_bytes(

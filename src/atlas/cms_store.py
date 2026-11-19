@@ -575,7 +575,33 @@ class Store:
             ):
                 raise ValueError("Cover caption must be single-line Markdown text.")
 
+    def code_directory(self, record: dict) -> Path | None:
+        code_path = record.get("code_path")
+        if code_path is None:
+            return None
+        directory = self.path(code_path)
+        parts = directory.relative_to(self.root).parts
+        if not parts or parts[0].casefold() in {
+            "backend",
+            "content",
+            "frontend",
+            ".atlas",
+            ".git",
+            ".opencode",
+        }:
+            raise ValueError(
+                f"{record['id']}: code_path must not overlap CMS or repository "
+                f"internal directories: {code_path}"
+            )
+        if not directory.is_dir():
+            raise ValueError(
+                f"{record['id']}: code_path must be an existing directory "
+                f"relative to the workspace root: {code_path}"
+            )
+        return directory
+
     def references(self, record: dict):
+        self.code_directory(record)
         links = record.get("related_post_ids", record.get("post_ids", []))
         for identity in links:
             self.get(identity)
@@ -756,7 +782,9 @@ class Store:
                 changes[self.path(relative)] = raw
                 record["thumbnail_path" if kind == "post" else "cover_path"] = relative
             self.validate(record)
-            if "related_post_ids" in patch or "post_ids" in patch:
+            if {"related_post_ids", "post_ids", "code_path"} & patch.keys() or (
+                kind == "post" and patch.get("status") == "published"
+            ):
                 self.references(record)
             if patch.get("status") == "published":
                 self.ready(record)

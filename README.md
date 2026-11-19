@@ -146,6 +146,36 @@ published posts. `post rm` rejects a conflicting source before changing files.
 
 See [Images](#images) for importing and replacing figures, thumbnails and covers.
 
+#### Browse companion source
+
+A post with a `code_path` automatically gets a 📁 `Browse source` link above
+the table of contents (or above the article on small screens). Git supplies
+the file tree: it includes existing tracked and untracked files under
+`code_path`, excluding anything matched by Git ignore rules, even if it is
+already tracked. There is no per-post allowlist. This feature requires a Git
+checkout.
+
+Markdown opens as formatted text with a **View source** link. Other UTF-8 text
+files open with line numbers and syntax highlighting when available. Binary
+files and text over 1 MiB are downloadable up to 8 MiB; larger files are listed
+without their contents. Symlinks are listed but not followed. Relative links
+work for files and folders in the tree. Images are not embedded, raw HTML and
+Quarto directives are not processed, and no project code runs.
+
+Set the post's path with `uv run at cms post edit post/<id> --code-path PATH`.
+It must name an existing directory relative to the workspace root. `cms check`
+reports paths that later go missing, and sync/build rejects them for included posts.
+The workspace root and internal CMS directories such as `content/`, `backend/`
+and `frontend/` cannot be browsed as companion source.
+
+The browser follows the post's publication status. Before publishing, review
+the companion directory for sensitive files and confirm you can redistribute
+its contents. Untracked files that are not ignored will also be included.
+
+The live preview watches the root `.gitignore`. After editing a project file,
+a nested `.gitignore`, or a Git exclude file, restart `make preview` or stop it
+and run `uv run at cms build --preview` for a one-time render.
+
 ### Notebook tools
 
 Notebook navigation and cell operations are separate from CMS record editing.
@@ -379,6 +409,7 @@ Avoid simultaneous CLI and IDE saves to the same source.
 ```sh
 make preview                  # Live preview at http://localhost:4200
 make preview PORT=4300        # Use a different port
+make preview SOURCES=0        # Skip the project source browser when editing posts
 make build                    # Render frontend/_site/
 uv run at cms build --preview  # Render frontend/_site-preview/ once
 uv run at cms sync --preview   # Regenerate draft copies without rendering
@@ -410,9 +441,13 @@ still returns the saved draft and reports the preview problem. Use
 Keep `make preview` running while editing. It watches `content/` and `backend/`
 (including notebook sidecars, metadata and CMS record changes), debounces saves,
 and automatically syncs the frontend. Only changed projections are written, so
-Quarto can incrementally render affected pages and reload the browser rather than
-rebuilding the whole site. When pages are added or removed, Atlas restarts
-Quarto at the same preview URL so it can render the updated page list.
+Quarto reuses up-to-date pages on startup and only renders missing or changed
+pages. A clean preview can still take longer because the source browser adds a
+page for each file. `make preview SOURCES=0` (or `uv run at cms preview
+--no-source-browser`) skips those pages and their links without affecting full
+builds. The next normal preview regenerates the skipped pages. When pages are
+added or removed, Atlas restarts Quarto at the same preview URL so it can
+update the page list.
 
 Individual posts use a 792 px desktop body grid set in
 `frontend/posts/_metadata.yml`. Page titles and section headings are left-aligned;

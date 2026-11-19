@@ -23,6 +23,7 @@ from rich.console import Console
 from rich.table import Table
 
 from atlas.cms_site import file_stamp, generate, initialize
+from atlas.cms_source import source_files
 from atlas.cms_store import (
     Ambiguous,
     Conflict,
@@ -398,7 +399,9 @@ def post_edit(
     tags: str | None = None,
     code_path: Annotated[
         str | None,
-        typer.Option(help="Supporting directory; pass an empty string to clear."),
+        typer.Option(
+            help="Existing supporting directory relative to the workspace root; pass an empty string to clear."
+        ),
     ] = None,
     related: Annotated[
         list[str] | None,
@@ -884,7 +887,7 @@ def resume_profile(
 @app.command("check")
 @guard
 def check(ctx: typer.Context):
-    """Validate records/references and report publication blockers without writing."""
+    """Validate records and source-browser files; report publication blockers."""
     store = store_for(ctx)
     diagnostics = []
     with store.lock():
@@ -911,6 +914,8 @@ def check(ctx: typer.Context):
             for record in items:
                 try:
                     store.references(record)
+                    if kind == "post":
+                        source_files(store, record)
                     if kind != "resume":
                         store.ready(record)
                 except (ValueError, OSError) as error:
@@ -1021,10 +1026,33 @@ def prepare_site(
     preview: bool,
     *,
     watch_snapshot: dict | None = None,
+    source_browser: bool = True,
 ) -> dict:
-    result = generate(store, preview, watch_snapshot=watch_snapshot)
+    result = generate(
+        store, preview, watch_snapshot=watch_snapshot, source_browser=source_browser
+    )
+    if preview:
+        prune_preview_output(store)
     render_resume_pdf(store, executable)
     return result
+
+
+def prune_preview_output(store: Store):
+    """An incremental render won't necessarily remove pages with no input."""
+    frontend = store.path("frontend")
+    output = store.path("frontend/_site-preview")
+    for pattern in ("posts/*.html", "collections/*.html", "posts/*/source/**/*.html"):
+        for rendered in output.glob(pattern):
+            if not rendered.is_file():
+                continue
+            source = frontend / rendered.relative_to(output)
+            if not source.is_file() and not any(
+                source.with_suffix(extension).is_file()
+                for extension in (".qmd", ".ipynb")
+            ):
+                store.path(rendered.relative_to(store.root).as_posix()).unlink(
+                    missing_ok=True
+                )
 
 
 def render_site(store: Store, preview: bool):
@@ -1046,6 +1074,12 @@ def render_site(store: Store, preview: bool):
 def preview_snapshot(store: Store) -> dict:
     """Track authored inputs, not generated output or editor checkpoint files."""
     snapshot = {}
+    ignore_file = store.root / ".gitignore"
+    try:
+        if not ignore_file.is_symlink() and ignore_file.is_file():
+            snapshot[".gitignore"] = file_stamp(ignore_file)
+    except FileNotFoundError:
+        pass  # An editor may have replaced it between the stat calls.
     for directory in (
         "content",
         "backend",
@@ -1077,13 +1111,23 @@ def preview_pages(snapshot: dict) -> set[str]:
     }
 
 
+def preview_source_pages(store: Store) -> set[Path]:
+    return set(store.path("frontend/posts").glob("*/source/**/*.qmd"))
+
+
 def watch_preview(
-    store: Store, executable: str, process, previous: dict | None = None
+    store: Store,
+    executable: str,
+    process,
+    previous: dict | None = None,
+    *,
+    source_browser: bool = True,
 ) -> dict | None:
     """Sync source changes and return the latest snapshot if Quarto must restart."""
     if previous is None:
         previous = preview_snapshot(store)
     pages = preview_pages(previous)
+    source_pages = preview_source_pages(store)
     changed_at = None
     typer.echo("Watching content/ and backend/ for CMS changes.")
     while process.poll() is None:
@@ -1097,7 +1141,13 @@ def watch_preview(
         changed_at = None
         try:
             with site_lock(store, "render"):
-                prepare_site(store, executable, preview=True, watch_snapshot=previous)
+                prepare_site(
+                    store,
+                    executable,
+                    preview=True,
+                    watch_snapshot=previous,
+                    source_browser=source_browser,
+                )
         except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
             # A half-written or invalid save must not kill the preview server.
             typer.echo(
@@ -1106,7 +1156,10 @@ def watch_preview(
             )
         else:
             # Quarto watches the project input files it knew when it started.
-            if preview_pages(previous) != pages:
+            if (
+                preview_pages(previous) != pages
+                or preview_source_pages(store) != source_pages
+            ):
                 return previous
             typer.echo("Preview content synced.")
     return None
@@ -1130,7 +1183,15 @@ def build(
 @app.command("preview")
 @guard
 def preview(
-    ctx: typer.Context, port: Annotated[int, typer.Option(min=1, max=65535)] = 4200
+    ctx: typer.Context,
+    port: Annotated[int, typer.Option(min=1, max=65535)] = 4200,
+    source_browser: Annotated[
+        bool,
+        typer.Option(
+            "--source-browser/--no-source-browser",
+            help="Skip the project source browser for a quicker preview.",
+        ),
+    ] = True,
 ):
     """Preview drafts and watch content/backend edits; sync changed files without executing code."""
     store = store_for(ctx)
@@ -1140,7 +1201,7 @@ def preview(
         "--port",
         str(port),
         "--render",
-        "all",
+        "none",
         "--no-execute",
     ]
     with site_lock(store, "live-preview", wait=False) as available:
@@ -1150,7 +1211,11 @@ def preview(
             # Watch for creations made while Quarto is starting.
             previous = preview_snapshot(store)
             result = prepare_site(
-                store, executable, preview=True, watch_snapshot=previous
+                store,
+                executable,
+                preview=True,
+                watch_snapshot=previous,
+                source_browser=source_browser,
             )
         while True:
             process = subprocess.Popen(
@@ -1159,7 +1224,9 @@ def preview(
                 start_new_session=True,
             )
             try:
-                previous = watch_preview(store, executable, process, previous)
+                previous = watch_preview(
+                    store, executable, process, previous, source_browser=source_browser
+                )
             finally:
                 stop_preview(process)
             if previous is None:

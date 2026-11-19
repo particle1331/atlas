@@ -3,9 +3,10 @@
 
 QUARTO ?= quarto
 PORT ?= 4200
+SOURCES ?= 1
 
 preview:
-	QUARTO="$(QUARTO)" uv run at cms preview --port $(PORT)
+	QUARTO="$(QUARTO)" uv run at cms preview --port $(PORT) $(if $(filter 0,$(SOURCES)),--no-source-browser)
 
 build:
 	QUARTO="$(QUARTO)" uv run at cms build

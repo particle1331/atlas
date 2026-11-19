@@ -3,7 +3,8 @@
 Supporting project code lives here, separately from the canonical post notebooks
 under `content/posts/`. A post's CMS `code_path` identifies its companion source;
 follow that path rather than assuming the latest implementation matches a lesson.
-Project files are not copied into the Quarto site by CMS sync.
+CMS sync projects the non-ignored files in each companion directory into a
+[read-only source browser](../README.md#browse-companion-source).
 
 ## Versioned reference sources
 

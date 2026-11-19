@@ -1,8 +1,10 @@
 import json
 import re
+import shutil
+import subprocess
 import sys
 from collections import Counter
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 from PIL import Image
@@ -420,6 +422,7 @@ def test_cli_bookkeeping_preserves_direct_post_yaml_edits(store):
     edited = store.get("post/attention")
     run(store, "notes", "post/attention", "--file", "-", input="Private notes")
     assert path.read_bytes() == raw
+    store.path("examples").mkdir()
     run(store, "post", "edit", "post/attention", "--code-path", "examples")
     assert path.read_bytes() == raw
     changed = store.update("post/attention", {"short_description": "CLI summary"})
@@ -428,6 +431,52 @@ def test_cli_bookkeeping_preserves_direct_post_yaml_edits(store):
     assert changed["record"]["metadata_digest"] == digest(path.read_bytes())
     assert changed["record"]["source_digest"] == edited["record"]["source_digest"]
     assert decode(path.read_bytes())["short_description"] == "CLI summary"
+
+
+@pytest.mark.parametrize("regular_file", [False, True])
+def test_post_edit_rejects_invalid_code_path_without_saving(store, regular_file):
+    created = new_post(store)
+    if regular_file:
+        store.path("example.py").write_text("# not a directory\n")
+    error = invoke(
+        store, "post", "edit", "post/attention", "--code-path", "example.py", code=2
+    )
+    assert "code_path must be an existing directory" in error.output
+    assert store.get("post/attention") == created
+
+
+@pytest.mark.parametrize(
+    "path", [".", "backend/posts", "content/posts", "frontend/posts"]
+)
+def test_post_rejects_code_path_that_exposes_cms_sources(store, path):
+    created = new_post(store)
+    error = invoke(store, "post", "edit", "post/attention", "--code-path", path, code=2)
+    assert "code_path must not overlap CMS" in error.output
+    assert store.get("post/attention") == created
+
+
+@pytest.mark.parametrize("published", [False, True])
+def test_missing_saved_code_path_blocks_check_and_sync_until_cleared(store, published):
+    new_post(store)
+    project = store.path("projects/demo")
+    project.mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    if published:
+        publish(store, "post/attention")
+    project.rmdir()
+
+    issues = run(store, "check", code=1)["diagnostics"]
+    assert any(
+        issue["id"] == "post/attention"
+        and "code_path must be an existing directory" in issue["message"]
+        for issue in issues
+    )
+    # Select the post in either preview or public mode.
+    options = [] if published else ["--preview"]
+    assert "projects/demo" in invoke(store, "sync", *options, code=2).output
+    cleared = run(store, "post", "edit", "post/attention", "--code-path", "")
+    assert cleared["record"]["code_path"] is None
+    run(store, "sync", *options)
 
 
 @pytest.mark.parametrize(
@@ -852,6 +901,316 @@ def test_sync_injects_metadata_without_mutating_source_and_is_deterministic(stor
     run(store, "sync", "--preview")
     assert output.read_bytes() == generated_bytes
     assert not store.path("frontend/posts/attention.yaml").exists()
+
+
+@pytest.fixture
+def git_store(store):
+    subprocess.run(["git", "init", "-q", str(store.root)], check=True)
+    return store
+
+
+def test_empty_code_path_directory_has_an_empty_browser(git_store):
+    store = git_store
+    new_post(store)
+    project = store.path("examples/demo")
+    project.mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "examples/demo")
+    run(store, "sync", "--preview")
+    output = store.path("frontend/posts/attention/source")
+    assert "No non-ignored files found." in (output / "index.qmd").read_text()
+
+
+def test_source_browser_never_projects_ignored_files(git_store):
+    store = git_store
+    new_post(store)
+    project = store.path("projects/demo")
+    (project / "private").mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    readme = project / "README.md"
+    readme.write_text("# Initially visible\n")
+    (project / "public.py").write_text("# unignored by a negated rule\n")
+    (project / "private/secret.py").write_bytes(b"\xff")
+    (project / "excluded.txt").write_bytes(b"\xff")
+    subprocess.run(
+        ["git", "add", "projects/demo/README.md"], cwd=store.root, check=True
+    )
+
+    output = store.path("frontend/posts/attention/source")
+    run(store, "sync", "--preview")
+    assert (output / "README.md.qmd").is_file()
+
+    store.path(".gitignore").write_text("/projects/demo/README.md\n")
+    (project / ".gitignore").write_text("*.py\n!public.py\nprivate/\n")
+    store.path(".git/info/exclude").write_text("/projects/demo/excluded.txt\n")
+
+    run(store, "sync", "--preview")
+    assert not (output / "README.md.qmd").exists()
+    assert not (output / "file~raw~README.md.qmd").exists()
+
+    publish(store, "post/attention")
+    for options in (["--preview"], []):
+        run(store, "sync", *options)
+        index = (output / "index.qmd").read_text()
+        assert "public.py" in index
+        assert ".gitignore" in index
+        for name in ("README.md", "secret.py", "excluded.txt"):
+            assert name not in index
+
+
+def test_source_browser_checks_literal_gitignore_for_colon_prefixed_path(git_store):
+    store = git_store
+    new_post(store)
+    project = store.path(":project")
+    project.mkdir()
+    (project / "secret.txt").write_text("never project this file\n")
+    subprocess.run(["git", "add", "./:project/secret.txt"], cwd=store.root, check=True)
+    store.path(".gitignore").write_text("/:project/secret.txt\n")
+    run(store, "post", "edit", "post/attention", "--code-path", ":project")
+    run(store, "sync", "--preview")
+    output = store.path("frontend/posts/attention/source")
+    assert {path.name for path in output.iterdir()} == {"index.qmd"}
+
+
+def test_source_browser_discovers_tree_and_follows_post_publication(git_store):
+    store = git_store
+    new_post(store)
+    project = store.path("projects/demo")
+    (project / "examples").mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    file = project / "examples/main.py"
+    file.write_text(
+        "raise RuntimeError('never execute')\n"
+        "# <script>alert(1)</script>\n"
+        "# {{< include /missing-private-file.qmd >}}\n"
+        "# ```\n"
+    )
+    (project / "settings.toml").write_text("[settings]\nenabled = true\n")
+    (project / "examples/__init__.py").write_text("# package marker\n")
+    (project / "examples/second").mkdir()
+    (project / "examples/second/main.py").write_text("# another example\n")
+    (project / "README.md").write_text("# Sample project\n")
+    canonical = store.path("content/posts/attention.ipynb")
+    authored = canonical.read_bytes()
+    relative = "examples/main.py"
+    run(store, "sync")
+    assert not store.path("frontend/posts/attention/source/index.qmd").exists()
+    run(store, "sync", "--preview")
+
+    output = store.path("frontend/posts/attention/source")
+    generated = store.path("frontend/posts/attention.ipynb")
+    index_meta, index = split_document((output / "index.qmd").read_text())
+    assert index_meta["draft"] is True
+    assert '<div class="source-tree"><ul>' in index
+    assert 'id="folder-examples" class="source-folder"' in index
+    assert 'id="folder-examples:second" class="source-folder"' in index
+    assert 'href="./examples/second/main.py.html"' in index
+    assert 'href="./examples/main.py.html"' in index
+    assert 'href="./README.md.html"' in index
+    assert "../../attention.html" in index
+    _, content = split_document((output / f"{relative}.qmd").read_text())
+    assert content.count("[← All project files](../index.html)") == 1
+    assert "[Skip source listing](#end-of-file)" in content
+    assert '::: {#end-of-file tabindex="-1"}' in content
+    assert 'id="L-2"' in content and 'href="#L-2"' in content
+    assert "&lt;script&gt;" in content and "<script>" not in content
+    assert "{{<" not in content and "&#96;&#96;&#96;" in content
+    assert "missing-private-file.qmd" in content
+    assert (output / "settings.toml.qmd").is_file()
+    cells = nb.load(generated.read_bytes())["cells"]
+    metadata, _ = split_document(nb.source(cells[0]))
+    link = "[📁 `Browse source`](./attention/source/index.html){.source-browser-link}"
+    assert metadata["margin-header"] == link
+    assert nb.source(cells[1]) == f"::: {{.d-md-none}}\n{link}\n:::"
+    assert canonical.read_bytes() == authored
+
+    publish(store, "post/attention")
+    run(store, "sync")
+    assert (output / f"{relative}.qmd").is_file()
+    assert (output / "examples/file~__init__.py.qmd").is_file()
+    assert b"Browse source" in generated.read_bytes()
+
+    run(store, "post", "edit", "post/attention", "--code-path", "")
+    run(store, "sync")
+    assert not list(output.rglob("*.qmd"))
+    assert b"Browse source" not in generated.read_bytes()
+
+
+def test_source_browser_renders_markdown_with_project_links(git_store):
+    store = git_store
+    new_post(store)
+    project = store.path("projects/demo")
+    (project / "_examples").mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    (project / "_examples/setup.md").write_text(
+        "# Quick Start\n\n[Script](__init__.py#L-1) · [Examples](./)\n\n"
+        "| Field | Value |\n| --- | --- |\n| One | Two |\n\n"
+        "[Private](../secret.txt) · [Outside](../../secret.txt) · "
+        "[Root](/secret.txt) · [External](https://example.com) · "
+        "[Protocol-relative](//example.com) · [Hostless](https:secret.txt)\n\n"
+        "[Readme <tel:5550100>](../README.md) followed by ordinary text.\n\n"
+        "## Title Block Header\n\n[Jump](#title-block-header)\n\n"
+        "![Diagram](https://example.com/trace.png)\n\n"
+        "<script>never_render()</script>\n\n"
+        "{{< include ../secret.txt >}}\n\n"
+        "```{python}\nraise RuntimeError('never run')\n```\n"
+    )
+    (project / "_examples/__init__.py").write_text("# sample\n")
+    (project / "secret.txt").write_text("ignored\n")
+    store.path(".gitignore").write_text("/projects/demo/secret.txt\n")
+    (project / "README.md").write_text(
+        "[Quick Start](_examples/setup.md#quick-start)\n"
+    )
+    run(store, "sync", "--preview")
+    output = store.path("frontend/posts/attention/source")
+    _, body = split_document((output / "file~_examples/setup.md.qmd").read_text())
+    assert "[View source](./file~raw~setup.md.html)" in body
+    assert '<h1 id="source-heading-quick-start">Quick Start</h1>' in body
+    assert '<a href="file~__init__.py.html#L-1">Script</a>' in body
+    assert '<a href="../index.html#folder-file~_examples">Examples</a>' in body
+    assert "<table>" in body
+    assert '<a href="https://example.com">External</a>' in body
+    assert "Private · Outside · Root" in body
+    assert "<img" not in body and "trace.png" not in body and "Diagram" in body
+    assert "Protocol-relative · Hostless" in body
+    assert "https:secret.txt" not in body
+    assert (
+        '<a href="../README.md.html">Readme tel:5550100</a> followed by ordinary text.'
+        in body
+    )
+    assert '<h2 id="source-heading-title-block-header">Title Block Header</h2>' in body
+    assert '<a href="#source-heading-title-block-header">Jump</a>' in body
+    assert "&lt;script&gt;" in body and "<script>" not in body
+    assert "{{<" not in body and "&#123;&#123;&lt; include" in body
+    assert "```{python}" not in body and "never run" in body
+    assert (
+        'href="file~_examples/setup.md.html#source-heading-quick-start"'
+        in (output / "README.md.qmd").read_text()
+    )
+    source = (output / "file~_examples/file~raw~setup.md.qmd").read_text()
+    assert "[View rendered](./setup.md.html)" in source
+    assert 'id="L-1"' in source
+
+
+def test_source_browser_handles_binary_and_unusual_names_without_following_links(
+    git_store,
+    monkeypatch,
+):
+    from atlas import cms_source
+
+    monkeypatch.setattr(cms_source, "FILE_LIMIT", 1024)
+    store = git_store
+    new_post(store)
+    project = store.path("projects/demo")
+    project.mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    private = store.path("projects/private.py")
+    private.write_text("# unrelated project\n")
+    (project / "link.py").symlink_to(private)
+    (project / "picture.png").write_bytes(b"\x00\xff")
+    (project / "huge.png").write_bytes(b"\x00" * 1025)
+    (project / "index").write_text("not the browser index\n")
+    (project / "A <tag>.html").write_text("<script>alert(1)</script>\n")
+    (project / "README.md").write_text("# Summary\n")
+    (project / "README.md.source").write_text("another file\n")
+    run(store, "sync", "--preview")
+
+    output = store.path("frontend/posts/attention/source")
+    index = (output / "index.qmd").read_text()
+    assert "&lt;tag&gt;" in index and "<tag>" not in index
+    unusual = cms_source.source_page(PurePosixPath("A <tag>.html"))
+    unusual_page = (output / f"{unusual}.qmd").read_text()
+    assert "&#60;tag&#62;" in unusual_page and "<tag>" not in unusual_page
+    assert (output / "file~index.qmd").is_file()
+    assert (output / "file~raw~README.md.qmd").is_file()
+    assert "another" in (output / "README.md.source.qmd").read_text()
+    download = (output / "picture.png.qmd").read_text()
+    assert 'download="picture.png"' in download
+    assert 'href="data:application/octet-stream;base64,AP8="' in download
+    assert "data:" not in (output / "huge.png.qmd").read_text()
+    assert "Symbolic link not followed." in (output / "link.py.qmd").read_text()
+    assert "unrelated project" not in (output / "link.py.qmd").read_text()
+    assert not (output / "private.py.qmd").exists()
+
+
+@pytest.mark.parametrize("swap_parent", [True, False])
+def test_source_file_read_refuses_symlink_swaps(git_store, swap_parent):
+    from atlas.cms_source import read_source_file, source_files
+
+    store = git_store
+    project = store.path("project")
+    directory = project / "nested"
+    directory.mkdir(parents=True)
+    sample = directory / "sample.txt"
+    sample.write_text("safe")
+    outside = store.path("private")
+    outside.mkdir()
+    (outside / "sample.txt").write_text("not for the browser")
+    files = source_files(store, {"id": "post/example", "code_path": "project"})
+    assert files[PurePosixPath("nested/sample.txt")] == sample
+    if swap_parent:
+        directory.rename(project / "backup")
+        directory.symlink_to(outside)
+    else:
+        sample.unlink()
+        sample.symlink_to(outside / "sample.txt")
+    with pytest.raises(OSError):
+        read_source_file(store.root, sample)
+
+
+@pytest.mark.skipif(shutil.which("quarto") is None, reason="Quarto is not installed")
+def test_quarto_renders_source_shortcut_above_outline(git_store):
+    store = git_store
+    new_post(store)
+    store.path("project").mkdir()
+    store.path("project/example.py").write_text("# Example source\n")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    publish(store, "post/attention")
+    run(store, "sync")
+
+    subprocess.run(
+        ["quarto", "render", "posts/attention.ipynb", "--no-execute", "--toc"],
+        cwd=store.path("frontend"),
+        capture_output=True,
+        check=True,
+    )
+    rendered = store.path("frontend/_site/posts/attention.html").read_text()
+    desktop, mobile = re.findall(
+        r'<a\b(?=[^>]*href="[^"]*attention/source/index\.html")'
+        r'(?=[^>]*class="source-browser-link")[^>]*>📁 <code>Browse source</code></a>',
+        rendered,
+    )
+    header = rendered.index('class="quarto-margin-header"')
+    outline = rendered.index('id="toc-title"')
+    fallback = rendered.index('class="d-md-none"', outline)
+    body = rendered.index("Meaningful prose.", fallback)
+    assert header < rendered.index(desktop, header) < outline
+    assert fallback < rendered.index(mobile, fallback) < body
+
+
+@pytest.mark.skipif(shutil.which("quarto") is None, reason="Quarto is not installed")
+def test_quarto_renders_source_filename_as_literal_text(git_store):
+    from atlas.cms_source import source_page
+
+    store = git_store
+    new_post(store)
+    project = store.path("project")
+    project.mkdir()
+    filename = PurePosixPath("A <em> marker.txt")
+    (project / filename).write_text("file contents\n")
+    run(store, "post", "edit", "post/attention", "--code-path", "project")
+    publish(store, "post/attention")
+    run(store, "sync")
+    page = source_page(filename)
+    directory = store.path("frontend/posts/attention/source")
+    subprocess.run(
+        ["quarto", "render", f"{page}.qmd", "--no-execute"],
+        cwd=directory,
+        capture_output=True,
+        check=True,
+    )
+    rendered = next((store.root / "frontend").rglob(f"{page}.html")).read_text()
+    assert "A &lt;em&gt; marker.txt" in rendered
+    assert "A <em>" not in rendered
 
 
 def test_private_edits_preserve_public_dates_and_generated_bytes(store):
@@ -1324,6 +1683,7 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
             assert ("--profile" in args) == (command != "build")
             if command == "preview":
                 assert args[args.index("--port") + 1] == "4300"
+                assert args[args.index("--render") + 1] == "none"
         return 0
 
     class FinishedPreview:
@@ -1378,6 +1738,55 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
     assert b"A freshly edited summary." in download.read_bytes()
     assert b"A freshly edited accomplishment." in download.read_bytes()
     assert not list(store.path(".atlas/cms").glob("resume-pdf-*"))
+
+
+def test_quick_preview_skips_source_browser_and_removes_stale_preview_pages(
+    git_store, monkeypatch
+):
+    from atlas import cms
+
+    store = git_store
+    new_post(store)
+    project = store.path("projects/demo")
+    project.mkdir(parents=True)
+    (project / "main.py").write_text("print('example')\n")
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    run(store, "sync", "--preview")
+    assert store.path("frontend/posts/attention/source/main.py.qmd").is_file()
+    preview_dir = store.path("frontend/_site-preview")
+    stale = preview_dir / "posts/attention/source/main.py.html"
+    current = preview_dir / "posts/attention.html"
+    old_post = preview_dir / "posts/removed.html"
+    public = store.path("frontend/_site/posts/attention/source/main.py.html")
+    for path in (stale, current, old_post, public):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("Rendered page.")
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: None)
+
+    class FinishedPreview:
+        returncode = 0
+
+        def poll(self):
+            return 0
+
+        def wait(self, timeout=None):
+            return 0
+
+    def start_preview(*args, **kwargs):
+        assert not stale.exists()
+        assert not old_post.exists()
+        assert current.is_file()
+        assert public.is_file()
+        assert not store.path("frontend/posts/attention/source/main.py.qmd").exists()
+        assert (
+            b"Browse source"
+            not in store.path("frontend/posts/attention.ipynb").read_bytes()
+        )
+        return FinishedPreview()
+
+    monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
+    monkeypatch.setattr(cms.subprocess, "Popen", start_preview)
+    invoke(store, "preview", "--no-source-browser")
 
 
 def test_preview_snapshot_tracks_only_recursive_visible_source_files(tmp_path):
@@ -1496,8 +1905,9 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
     }
     calls = []
 
-    def regenerate(actual_store, preview, *, watch_snapshot):
+    def regenerate(actual_store, preview, *, watch_snapshot, source_browser):
         assert actual_store is store and preview is True
+        assert source_browser is True
         calls.append(("generate", preview_clock.monotonic()))
         return generate(actual_store, preview, watch_snapshot=watch_snapshot)
 
@@ -1512,6 +1922,50 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
     assert [kind for kind, _ in calls] == ["generate", "pdf"]
     assert calls[0][1] >= 1.0  # Half a second after the final save.
     assert calls[1][1] == calls[0][1]
+
+
+def test_preview_watcher_restarts_for_new_source_pages(
+    git_store, monkeypatch, preview_clock
+):
+    from atlas import cms
+
+    store = git_store
+    new_post(store)
+    file = store.path("projects/demo/main.py")
+    file.parent.mkdir(parents=True)
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    generate(store, preview=True)
+    preview_clock.edits = {
+        1: lambda: (
+            file.write_text("print('sample')\n"),
+            store.path(".gitignore").write_text("# refresh the source index\n"),
+        )
+    }
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *args: None)
+    assert cms.watch_preview(store, "/bin/quarto", preview_clock) is not None
+    assert store.path("frontend/posts/attention/source/main.py.qmd").is_file()
+
+
+def test_preview_watcher_removes_newly_ignored_source_pages(
+    store, monkeypatch, preview_clock
+):
+    from atlas import cms
+
+    subprocess.run(["git", "init", "-q", str(store.root)], check=True)
+    new_post(store)
+    file = store.path("projects/demo/README.md")
+    file.parent.mkdir(parents=True)
+    file.write_text("# Sample\n")
+    run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
+    generate(store, preview=True)
+    page = store.path("frontend/posts/attention/source/README.md.qmd")
+    assert page.is_file()
+    preview_clock.edits = {
+        1: lambda: store.path(".gitignore").write_text("/projects/demo/README.md\n")
+    }
+    monkeypatch.setattr(cms, "render_resume_pdf", lambda *args: None)
+    assert cms.watch_preview(store, "/bin/quarto", preview_clock) is not None
+    assert not page.exists()
 
 
 def test_preview_watcher_ignores_generated_output_and_hidden_edits(
@@ -1695,9 +2149,12 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
 
     monkeypatch.setattr(cms.os, "killpg", kill_group)
 
-    def interrupt(actual_store, executable, actual_process, previous):
+    def interrupt(
+        actual_store, executable, actual_process, previous, *, source_browser
+    ):
         assert actual_store.root == store.root and actual_process is process
         assert executable == "/bin/quarto"
+        assert source_browser is True
         raise KeyboardInterrupt
 
     monkeypatch.setattr(cms, "watch_preview", interrupt)
