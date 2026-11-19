@@ -1018,7 +1018,7 @@ def test_source_browser_discovers_tree_and_follows_post_publication(git_store):
     assert (output / "settings.toml.qmd").is_file()
     cells = nb.load(generated.read_bytes())["cells"]
     metadata, _ = split_document(nb.source(cells[0]))
-    link = "[📁 `Browse source`](./attention/source/index.html){.source-browser-link}"
+    link = "[📁 `source`](./attention/source/index.html){.source-browser-link}"
     assert metadata["margin-header"] == link
     assert nb.source(cells[1]) == f"::: {{.d-md-none}}\n{link}\n:::"
     assert canonical.read_bytes() == authored

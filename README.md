@@ -148,7 +148,7 @@ See [Images](#images) for importing and replacing figures, thumbnails and covers
 
 #### Browse companion source
 
-A post with a `code_path` automatically gets a 📁 `Browse source` link above
+A post with a `code_path` automatically gets a 📁 `source` link above
 the table of contents (or above the article on small screens). Git supplies
 the file tree: it includes existing tracked and untracked files under
 `code_path`, excluding anything matched by Git ignore rules, even if it is

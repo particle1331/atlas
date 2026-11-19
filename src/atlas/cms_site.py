@@ -496,7 +496,7 @@ def generate(
                 files = source_files(store, record) if source_browser else None
                 if files is not None:
                     href = write_source_browser(stage, store.root, record, files)
-                    shortcut = f"[📁 `Browse source`]({href}){{.source-browser-link}}"
+                    shortcut = f"[📁 `source`]({href}){{.source-browser-link}}"
                     meta["margin-header"] = shortcut
                     # Quarto hides the margin sidebar below the md breakpoint.
                     source_cell = nb.cell(f"::: {{.d-md-none}}\n{shortcut}\n:::")
