@@ -33,6 +33,7 @@ wheels/
 /frontend/posts.qmd
 /frontend/collections.qmd
 /frontend/assets/cms/
+/.pytest_cache/
 
 # misc
 /scratch.ipynb
