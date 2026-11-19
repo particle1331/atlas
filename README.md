@@ -481,15 +481,17 @@ ignored. Builds and preview never execute notebook code. Press Ctrl-C to stop.
 
 Set the publishing source to **GitHub Actions** in the repository's **Settings → Pages**.
 The [Pages workflow](.github/workflows/pages.yml) runs on pushes to `master` and
-can also be started from the Actions tab on that branch. It builds from a fresh
-checkout with a pinned Gitleaks release, runs the publication regression tests,
-and uploads `frontend/_site/` after verification passes.
+can also be started from the Actions tab on that branch. It installs a pinned
+Gitleaks release and runs `make build-pages`. The target requires `frontend/_site/`
+to be absent and runs the publication regression tests before building the site.
+GitHub Pages deploys the verified `frontend/_site/` artifact.
 
-`uv run at cms build --for-pages` runs the same public build locally. It requires
-source screening to complete and screens the rendered filenames and UTF-8
-contents before allowing upload. It also rejects hidden or unrendered source
-files, links, Git-ignored frontend assets, and browser pages without a current
-CMS projection. Draft preview output stays outside the artifact.
+Run `make build-pages` locally from a fresh checkout with Quarto and Gitleaks on
+`PATH`. The target uses `at cms build --for-pages`, which requires source screening
+to complete and screens rendered filenames and UTF-8 contents before allowing
+upload. It also rejects hidden or unrendered source files, links, Git-ignored
+frontend assets, and browser pages without a current CMS projection. Draft
+preview output stays outside the artifact.
 
 #### Résumé PDF
 
