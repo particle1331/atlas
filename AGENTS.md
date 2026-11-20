@@ -226,6 +226,10 @@ see [preview and build](README.md#preview-and-build). Sync/build can observe
 external source edits and update backend public modification dates in UTC;
 review those changes alongside the authored content.
 
+Use the [repository secret scan](README.md#secret-scanning) before sharing
+changes. It is separate from `cms check`; the Pages build also checks the
+rendered artifact before upload. Never print suspected credential values.
+
 Finish by re-reading edited cells/records and inspecting `notebook diff` and
 `git diff` as applicable. Report what changed and what was verified. For CLI
 implementation changes, run relevant pytest tests. Prose-only edits do not

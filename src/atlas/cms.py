@@ -22,6 +22,7 @@ from PIL import Image
 from rich.console import Console
 from rich.table import Table
 
+from atlas.cms_secrets import verify_repository
 from atlas.cms_site import (
     file_stamp,
     generate,
@@ -406,7 +407,7 @@ def post_edit(
     code_path: Annotated[
         str | None,
         typer.Option(
-            help="Supporting directory relative to the workspace root. The browser uses screened files from Git HEAD. Pass an empty string to clear."
+            help="Supporting directory relative to the workspace root. The browser uses eligible files from Git HEAD. Pass an empty string to clear."
         ),
     ] = None,
     related: Annotated[
@@ -945,7 +946,7 @@ def check(ctx: typer.Context):
                 {
                     "id": record["id"],
                     "status": record["status"],
-                    "message": f"Companion source screening unavailable. {detail}",
+                    "message": f"Companion source unavailable. {detail}",
                 }
                 for record in browsable
             )
@@ -1050,14 +1051,14 @@ def prepare_site(
     *,
     watch_snapshot: dict | None = None,
     source_browser: bool = True,
-    require_source_scan: bool = False,
+    require_source_browser: bool = False,
 ) -> dict:
     result = generate(
         store,
         preview,
         watch_snapshot=watch_snapshot,
         source_browser=source_browser,
-        require_source_scan=require_source_scan,
+        require_source_browser=require_source_browser,
     )
     if preview:
         prune_preview_output(store)
@@ -1094,9 +1095,12 @@ def render_site(store: Store, preview: bool, *, for_pages: bool = False):
                     return
         options = preview_options(store) if preview else []
         if for_pages:
+            verify_repository(store.root)
             options = ["--output-dir", "_site"]
         executable = quarto_executable()
-        result = prepare_site(store, executable, preview, require_source_scan=for_pages)
+        result = prepare_site(
+            store, executable, preview, require_source_browser=for_pages
+        )
         command = [executable, "render", result["site"], "--no-execute", *options]
         status = subprocess.call(command, cwd=store.root, stdout=sys.stderr)
         if status:
@@ -1203,6 +1207,22 @@ def watch_preview(
     return None
 
 
+@app.command("scan-secrets")
+@guard
+def scan_secrets(
+    ctx: typer.Context,
+    staged: Annotated[
+        bool,
+        typer.Option(
+            "--staged", help="Scan only the full Git index (the next commit)."
+        ),
+    ] = False,
+):
+    """Scan tracked and non-ignored untracked files, plus HEAD and staged contents."""
+    verify_repository(store_for(ctx).root, staged=staged)
+    typer.echo("Repository secret scan passed.")
+
+
 @app.command("build")
 @guard
 def build(
@@ -1217,7 +1237,7 @@ def build(
         bool,
         typer.Option(
             "--for-pages",
-            help="Require secret screening and verify the public GitHub Pages output.",
+            help="Scan repository inputs before rendering and verify the public Pages output.",
         ),
     ] = False,
 ):
