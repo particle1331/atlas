@@ -242,7 +242,8 @@ def test_initialization_imports_yaml_and_bare_notebooks_once(workspace):
     result = run(workspace, "init")
     assert result["imported"] == {"post": 1, "collection": 1, "resume": 3}
     post = workspace.get("post/example")["record"]
-    assert post["status"] == "draft"  # The scaffold has no required thumbnail.
+    assert post["status"] == "published"
+    assert post["thumbnail_path"] is None
     assert post["tags"] == ["Python"]
     raw = workspace.path("content/posts/example.ipynb").read_bytes()
     assert nb.source(nb.load(raw)["cells"][0]) == "## Original body\n\nWrite freely."
@@ -1918,8 +1919,22 @@ def test_invalid_cover_caption_leaves_content_and_metadata_unchanged(store, capt
 def test_publication_and_public_projection_filter_drafts(store):
     new_post(store, "Public")
     new_post(store, "Private")
-    invoke(store, "post", "publish", "post/public", code=2)
-    publish(store, "post/public")
+    blocked = invoke(store, "post", "publish", "post/public", code=2)
+    assert "A notebook with meaningful content is required" in blocked.stderr
+    notebook_invoke(
+        store,
+        "edit-cell",
+        "post/public",
+        "--index",
+        "0",
+        "--content",
+        "Meaningful prose.",
+    )
+    diagnostics = run(store, "check", code=1)["diagnostics"]
+    assert not any(diagnostic["id"] == "post/public" for diagnostic in diagnostics)
+    published = run(store, "post", "publish", "post/public")["record"]
+    assert published["status"] == "published"
+    assert published["thumbnail_path"] is None
     run(store, "post", "edit", "post/public", "--related", "post/private")
     run(store, "collection", "new", "Reading", "--description", "Read in order")
     run(
@@ -1931,18 +1946,22 @@ def test_publication_and_public_projection_filter_drafts(store):
         "-",
         input="A useful introduction.",
     )
+    run(store, "collection", "add", "collection/reading", "post/private")
+    run(store, "collection", "add", "collection/reading", "post/public")
+    blocked = invoke(store, "collection", "publish", "collection/reading", code=2)
+    assert "A collection cover is required" in blocked.stderr
+    cover = store.root / "cover.png"
+    Image.new("RGB", (8, 8), "blue").save(cover)
     run(
         store,
         "collection",
         "edit",
         "collection/reading",
         "--cover",
-        str(store.root / "thumbnail.png"),
+        str(cover),
         "--cover-caption",
         "*Public cover* by the artist",
     )
-    run(store, "collection", "add", "collection/reading", "post/private")
-    run(store, "collection", "add", "collection/reading", "post/public")
     run(store, "collection", "publish", "collection/reading")
     assert store.get("post/private")["record"]["status"] == "draft"
     run(store, "sync", "--preview")
@@ -1953,8 +1972,11 @@ def test_publication_and_public_projection_filter_drafts(store):
     assert "![*Public cover* by the artist](../assets/cms/" in page
     assert "[Private]" not in page
     assert "| 1 | [Public]" in page
-    assert "Related:" not in store.path("frontend/posts/public.ipynb").read_text()
     previous = store.path("frontend/posts/public.ipynb").read_bytes()
+    meta, _ = split_document(nb.source(nb.load(previous)["cells"][0]))
+    assert meta["draft"] is False
+    assert "image" not in meta
+    assert b"Related:" not in previous
     run(store, "post", "draft", "post/public")
     invoke(store, "sync", code=2)  # Published collection now has no published members.
     assert store.path("frontend/posts/public.ipynb").read_bytes() == previous
