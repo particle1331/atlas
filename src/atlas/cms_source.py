@@ -10,7 +10,7 @@ import string
 import subprocess
 import tempfile
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 from html import escape
 from pathlib import Path, PurePosixPath
@@ -26,6 +26,9 @@ from pygments.lexers import (
     get_lexer_for_filename,
 )
 from pygments.util import ClassNotFound
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
 
 from atlas import cms_notebooks as nb
 from atlas.cms_store import Store, document
@@ -77,6 +80,12 @@ class NotebookView:
 
 
 type SourceFiles = dict[PurePosixPath, str | NotebookView]
+
+
+@dataclass
+class SecretFinding:
+    rules: set[str] = field(default_factory=set)
+    path_spans: list[tuple[int, int]] = field(default_factory=list)
 
 
 class SourceBrowserUnavailable(ValueError):
@@ -439,10 +448,28 @@ def read_committed_text(
     return files
 
 
-def secret_findings(files: dict[PurePosixPath, str]) -> set[PurePosixPath]:
-    """Screen UTF-8 contents and filenames without logging either."""
+def path_match_span(path: str, finding: dict) -> tuple[int, int]:
+    """Convert Gitleaks' inclusive byte columns to a slice of the scanned path."""
+    length = len(path.encode("utf-8"))
+    start, end = finding.get("StartColumn"), finding.get("EndColumn")
+    if (
+        "\n" not in path
+        and "\r" not in path
+        and finding.get("StartLine") == finding.get("EndLine") == 1
+        and type(start) is int
+        and type(end) is int
+        and 1 <= start <= end <= length
+    ):
+        return start - 1, end
+    return 0, length
+
+
+def secret_findings(
+    files: dict[PurePosixPath, str],
+) -> dict[PurePosixPath, SecretFinding]:
+    """Collect rule IDs and the path spans to redact in diagnostics."""
     if not files:
-        return set()
+        return {}
     scanner = shutil.which("gitleaks")
     if scanner is None:
         raise SourceBrowserUnavailable("Install Gitleaks to screen public files.")
@@ -459,7 +486,7 @@ def secret_findings(files: dict[PurePosixPath, str]) -> set[PurePosixPath]:
             for kind, text in (("content", content), ("path", display_path(path))):
                 name = f"{index}-{kind}.txt"
                 (inputs / name).write_bytes(text.encode("utf-8"))
-                scan_paths[name] = path
+                scan_paths[name] = (path, kind)
         try:
             result = subprocess.run(
                 [
@@ -502,11 +529,38 @@ def secret_findings(files: dict[PurePosixPath, str]) -> set[PurePosixPath]:
                 or bool(findings) != (result.returncode == 23)
             ):
                 raise ValueError
-            blocked = {scan_paths[Path(finding["File"]).name] for finding in findings}
+            blocked = {}
+            for finding in findings:
+                path, kind = scan_paths[Path(finding["File"]).name]
+                rule = finding["RuleID"]
+                if not re.fullmatch(r"[A-Za-z0-9_-]+", rule):
+                    raise ValueError
+                entry = blocked.setdefault(path, SecretFinding())
+                entry.rules.add(rule)
+                if kind == "path":
+                    entry.path_spans.append(
+                        path_match_span(display_path(path), finding)
+                    )
         except (OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired):
             # Never print scanner output: it was produced from private input.
             raise SourceBrowserUnavailable("The secret scan failed.") from None
     return blocked
+
+
+def redact_path(path: PurePosixPath, spans: list[tuple[int, int]]) -> str:
+    raw = display_path(path).encode("utf-8")
+    visible = []
+    offset = 0
+    # Overlapping and adjacent findings share a single mask.
+    for start, end in sorted(spans):
+        if not visible or start > offset:
+            visible.append(raw[offset:start])
+        offset = max(offset, end)
+    visible.append(raw[offset:])
+    try:
+        return b"***".join(visible).decode("utf-8")
+    except UnicodeDecodeError:
+        return "***"
 
 
 def scan_source_files(files: SourceFiles) -> SourceFiles:
@@ -518,8 +572,22 @@ def scan_source_files(files: SourceFiles) -> SourceFiles:
         }
     )
     if blocked:
+        table = Table()
+        table.add_column("Repository path", overflow="fold")
+        table.add_column("Scanner rule", overflow="fold")
+        for path, finding in sorted(blocked.items()):
+            label = redact_path(path, finding.path_spans)
+            label = "".join(
+                char if char.isprintable() else repr(char)[1:-1] for char in label
+            )
+            table.add_row(Text(label), ", ".join(sorted(finding.rules)))
+        console = Console(stderr=True, color_system=None)
+        with console.capture() as capture:
+            console.print(table)
         LOGGER.warning(
-            "Companion source omitted %d file(s) with possible secrets.", len(blocked)
+            "Companion source omitted %d file(s) with possible secrets.\n%s",
+            len(blocked),
+            capture.get().rstrip(),
         )
     return {path: content for path, content in files.items() if path not in blocked}
 
