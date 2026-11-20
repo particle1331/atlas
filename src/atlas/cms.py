@@ -564,7 +564,7 @@ def status(ctx, identity, kind, value, expected):
 def post_publish(
     ctx: typer.Context, identity: Identity, expected_revision: Revision = None
 ):
-    """Check title, description, image and notebook content, then mark eligible."""
+    """Require a title, description and notebook content. Thumbnails are optional."""
     status(ctx, identity, "post", "published", expected_revision)
 
 

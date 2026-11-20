@@ -146,11 +146,7 @@ def initialize(store: Store, empty: bool = False) -> dict:
                     )
                 # Incomplete scaffold pages become drafts under the content model.
                 if kind == "post":
-                    if (
-                        not record["thumbnail_path"]
-                        or not body.strip()
-                        or not record["short_description"].strip()
-                    ):
+                    if not body.strip() or not record["short_description"].strip():
                         record["status"] = "draft"
                     if record["status"] == "published":
                         published_posts.add(identity)

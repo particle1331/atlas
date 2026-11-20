@@ -131,8 +131,9 @@ thumbnail, code path, related-post IDs, dates, notes and to-dos remain in
 `backend/` and are managed through the CMS. The optional `post edit` command
 writes title, description and tag changes to the same authored YAML.
 
-A published post needs a description, verified thumbnail and notebook content;
-publishing makes it eligible for a build and does not deploy anything. `rm`
+A published post needs a description and notebook content. Thumbnails are
+optional and must pass image validation when supplied. Publishing makes the
+post eligible for a build and does not deploy anything. `rm`
 deletes the record and its notebook and metadata YAML, detaches the post from
 collections and related-post lists, and keeps managed images in `content/images/`. It prompts
 unless `--yes` is used.

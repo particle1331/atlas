@@ -646,9 +646,10 @@ class Store:
         if not record["short_description"].strip():
             raise ValueError("A short description is required to publish.")
         image = record["thumbnail_path" if kind == "post" else "cover_path"]
-        if not image:
-            raise ValueError("A thumbnail/cover is required to publish.")
-        self.image(self.path(image))
+        if kind == "collection" and not image:
+            raise ValueError("A collection cover is required to publish.")
+        if image:
+            self.image(self.path(image))
         if kind == "post":
             value = nb.load(self.path(record["source_path"]).read_bytes())
             if not any(nb.source(item).strip() for item in value["cells"]):
