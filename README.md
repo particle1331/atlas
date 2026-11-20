@@ -157,9 +157,10 @@ Git's repository, nested and global ignore rules also apply to committed files.
 
 The browser is for reading and exploring code. Markdown opens as formatted text
 with a **View source** link. Other UTF-8 text files up to 1 MiB open with line
-numbers and syntax highlighting when available. Binaries are omitted from the
-file tree, along with symlinks, hidden paths, common credential and backup
-filenames. Jupyter notebooks up to 1 MiB show formatted Markdown, highlighted
+numbers and syntax highlighting when available. The file index and file pages
+share a 1053 px desktop body grid. Binaries are omitted from the file tree,
+along with symlinks, hidden paths, common credential and backup filenames.
+Jupyter notebooks up to 1 MiB show formatted Markdown, highlighted
 code, and saved text or Markdown outputs in cell order. The browser reads
 stored outputs without running a kernel. The view omits notebook attachments,
 binary outputs, and HTML or interactive output bundles. Gitleaks screens

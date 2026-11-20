@@ -1050,7 +1050,8 @@ def test_source_browser_discovers_tree_and_follows_post_publication(browser_stor
     assert 'href="./examples/main.py.html"' in index
     assert 'href="./README.md.html"' in index
     assert "../../attention.html" in index
-    _, content = split_document((output / f"{relative}.qmd").read_text())
+    file_meta, content = split_document((output / f"{relative}.qmd").read_text())
+    assert index_meta["grid"] == file_meta["grid"] == {"body-width": "1053px"}
     assert content.count("[← All project files](../index.html)") == 1
     assert "[Skip source listing](#end-of-file)" in content
     assert '::: {#end-of-file tabindex="-1"}' in content
