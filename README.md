@@ -148,46 +148,26 @@ See [Images](#images) for importing and replacing figures, thumbnails and covers
 
 #### Browse companion source
 
-A post with a `code_path` automatically gets a 📁 `source` link above
-the table of contents (or above the article on small screens). Install
-[Gitleaks](https://github.com/gitleaks/gitleaks) with `brew install gitleaks`
-to publish companion source from a Git checkout. The browser reads committed
-bytes from `HEAD`. Staged and untracked files and uncommitted edits stay local.
-Git's repository, nested and global ignore rules also apply to committed files.
+To add a 📁 `source` link to a post, run
+`uv run at cms post edit post/<id> --code-path PATH`. Use an existing project
+directory relative to the workspace root, such as `projects/my-project`.
+Install [Gitleaks](https://github.com/gitleaks/gitleaks) with
+`brew install gitleaks` to enable the browser.
 
-The browser is for reading and exploring code. Markdown opens as formatted text
-with a **View source** link. Other UTF-8 text files up to 1 MiB open with line
-numbers and syntax highlighting when available. The file index and file pages
-share a 1053 px desktop body grid. Binaries are omitted from the file tree,
-along with symlinks, hidden paths, common credential and backup filenames.
-Jupyter notebooks up to 1 MiB show formatted Markdown, highlighted
-code, and saved text or Markdown outputs in cell order. The browser reads
-stored outputs without running a kernel. The view omits notebook attachments,
-binary outputs, and HTML or interactive output bundles. Gitleaks screens
-filenames, cell source, and displayed output before projection. Files with
-findings are omitted. The CLI warns with a count and a table of repository-relative
-paths and matching scanner rules. It replaces matching portions of a path with
-`***` and masks the whole path when the match location cannot be used safely.
-If screening cannot run or fails, sync and builds omit the browser, and
-`cms check` reports the problem.
-Relative links work for visible files and folders. The views display project
-markup as inert content and do not execute project code.
+The browser follows the post's publication status and shows eligible files up to
+1 MiB committed at `HEAD`, subject to Git ignore rules. Markdown opens as formatted
+text with a **View source** link. Code is syntax-highlighted where available.
+Notebooks show code, Markdown and saved text or Markdown outputs without running
+a kernel. Relative links work for visible files and folders.
 
-Set the post's path with `uv run at cms post edit post/<id> --code-path PATH`.
-It must name an existing directory relative to the workspace root. `cms check`
-reports paths that later go missing, and sync/build rejects them for included posts.
-The workspace root and internal CMS directories such as `content/`, `backend/`
-and `frontend/` cannot be browsed as companion source.
+Gitleaks screens filenames and displayed content. Files with findings are
+omitted. If screening fails, the browser is omitted and `uv run at cms check`
+reports the problem. Review committed source before publishing because screening
+can miss private data.
 
-The browser follows the post's publication status. Review the committed
-companion source before publishing because pattern-based screening can miss
-credentials and other private data. Sync removes stale browser pages when their
-projections change or disappear. Notebook sidecars follow Git ignore rules and
-cannot write into the generated browser directories.
-
-The live preview watches the root `.gitignore`. After committing companion
-changes or editing a nested `.gitignore` or Git exclude file, restart
-`make preview` or run `uv run at cms build --preview` with live preview stopped.
+After committing companion changes or editing a nested ignore or exclude file,
+restart `make preview` or run `uv run at cms build --preview` with live preview
+stopped.
 
 ### Notebook tools
 
@@ -429,57 +409,19 @@ uv run at cms sync --preview   # Regenerate draft copies without rendering
 uv run at cms sync             # Regenerate published copies without rendering
 ```
 
-Builds and live preview first sync source notebooks with title, description,
-dates, categories and publication metadata into `frontend/posts/*.ipynb`.
-Quarto applies the global TOC settings when rendering. Atlas generates
-collection contents and post links from ordered IDs and builds the résumé
-from its YAML entries.
-These projections are gitignored. Private notes, to-dos and revision data stay out
-of the frontend. Builds never write back to or execute source notebooks.
+Preview includes drafts. Public builds include published content. Both refresh
+the generated pages from their authored sources without executing notebooks.
+`uv run at cms check` reports invalid references and publication blockers,
+including blockers for unfinished drafts.
 
-Preview includes drafts in `frontend/_site-preview/`; public builds include only
-published content in `frontend/_site/`. The existing 11 stub posts, 3 collections
-and 12 résumé entries have been imported. Incomplete samples are drafts until
-their publication requirements are met. `uv run at cms check` reports references
-and publication blockers for drafts as well as published records; exit status 1
-can be expected for unfinished drafts.
+`make preview` watches `content/`, `backend/`, CMS templates and bundled fonts.
+If a save reports an error, fix the source and save again. Use
+`make preview SOURCES=0` or `uv run at cms preview --no-source-browser` to skip
+companion source pages while editing posts. Press Ctrl-C to stop preview.
 
-`post new` and `collection new` save the draft and automatically refresh its
-page and listing in `frontend/_site-preview/`. When live preview is running,
-its watcher handles the refresh. Otherwise the creation command renders the
-draft site once. If Quarto is unavailable or the render fails, the command
-still returns the saved draft and reports the preview problem. Use
-`uv run at cms build --preview` to retry the render after fixing it.
-
-Keep `make preview` running while editing. It watches `content/` and `backend/`
-(including notebook sidecars, metadata and CMS record changes), debounces saves,
-and automatically syncs the frontend. Only changed projections are written, so
-Quarto reuses up-to-date pages on startup and only renders missing or changed
-pages. A clean preview can still take longer because the source browser adds a
-page for each file. `make preview SOURCES=0` (or `uv run at cms preview
---no-source-browser`) skips those pages and their links without affecting full
-builds. The next normal preview regenerates the skipped pages. When pages are
-added or removed, or a companion source page changes, Atlas restarts Quarto
-at the same preview URL.
-
-Individual posts use a 792 px desktop body grid set in
-`frontend/posts/_metadata.yml`. Page titles, section headings and short
-descriptions in post and collection headers are left-aligned. Short descriptions
-use automatic hyphenation when long words split across lines. HTML post tables use
-`tbl-colwidths: false` so the browser sizes columns from their content rather than
-applying Markdown-derived width hints. The posts listing sets its own grid in
-`frontend/_cms/posts.qmd` to fit the table and right-hand filters. The
-posts-only table styles in `frontend/assets/styles.css` give the title and
-description columns a 3:5 width ratio.
-The right-hand listing sidebar shows date filters before categories.
-Collection contents tables reserve 18% of their width for the last modified
-date, with 34% for titles and 46% for short descriptions.
-
-Résumé edits also refresh the downloadable PDF; unchanged PDF inputs reuse the
-cached download. CMS templates under `frontend/_cms/` and bundled fonts are watched
-as well. Invalid intermediate saves report an error without stopping preview;
-fix the source and save again to retry. Hidden files and notebook checkpoints are
-ignored. Builds and preview never execute notebook code. Press Ctrl-C to stop.
+`post new` and `collection new` save the draft and refresh its preview page and
+listing. If rendering fails, the saved draft is available and
+`uv run at cms build --preview` retries the render.
 
 #### Deploy to GitHub Pages
 
@@ -499,30 +441,13 @@ preview output stays outside the artifact.
 
 #### Résumé PDF
 
-`frontend/_cms/resume-pdf.qmd` and `frontend/_cms/resume-pdf/` control
-the PDF layout and contact links; its title, summary and entries come from the
-same YAML sources as the web page.
+Preview and build update the downloadable résumé using Quarto's bundled Typst
+engine. The PDF and web page share the same YAML sources. Edit the PDF layout
+and contact links in `frontend/_cms/resume-pdf.qmd` and
+`frontend/_cms/resume-pdf/`. Set `resume-pdf-main-roles` in the template to choose
+how many employment entries appear before the page break. The default is four.
 
-The A4 PDF uses the Ubuntu name font, bundled Latin Modern Sans body fonts,
-orange bullets and right-aligned dates. Set
-`resume-pdf-main-roles` in the PDF template to choose how many employment entries
-appear before the page break (default: four); remaining roles appear under Early
-Employment after education. The web page retains the CMS section order.
-PDF subtitles use generated `.resume-subtitle` divs for the layout filter.
-
-Body fonts and licenses are bundled under `frontend/_cms/resume-pdf/fonts/`.
-The isolated render stages the PDF support directory and
-`frontend/assets/fonts/`, so it needs no system font installation. Preview and
-build render it with Quarto's bundled Typst engine before Quarto copies assets
-into the site output. No separate LaTeX installation is needed. No build reads
-the Watchtower checkout.
-
-Unchanged content, PDF layout/support files and fonts reuse
-`frontend/assets/resume.pdf` without rewriting it, avoiding PDF timestamp
-changes in Git. The ignored
-`.atlas/cms/resume-pdf.cache.yaml` records input and output hashes; a missing
-cache, missing/changed PDF or changed renderer triggers a fresh render.
-A failed PDF render stops the command and preserves the previous download.
+If PDF rendering fails, the command stops and preserves the previous download.
 
 ## Vault
 
