@@ -893,7 +893,7 @@ def resume_profile(
 @app.command("check")
 @guard
 def check(ctx: typer.Context):
-    """Validate records and source-browser files; report publication blockers."""
+    """Validate records, list omitted companion files, and report publication blockers."""
     store = store_for(ctx)
     diagnostics = []
     with store.lock():

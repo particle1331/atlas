@@ -164,8 +164,11 @@ code, and saved text or Markdown outputs in cell order. The browser reads
 stored outputs without running a kernel. The view omits notebook attachments,
 binary outputs, and HTML or interactive output bundles. Gitleaks screens
 filenames, cell source, and displayed output before projection. Files with
-findings are omitted and the CLI reports a count. If screening cannot run or
-fails, sync and builds omit the browser, and `cms check` reports the problem.
+findings are omitted. The CLI warns with a count and a table of repository-relative
+paths and matching scanner rules. It replaces matching portions of a path with
+`***` and masks the whole path when the match location cannot be used safely.
+If screening cannot run or fails, sync and builds omit the browser, and
+`cms check` reports the problem.
 Relative links work for visible files and folders. The views display project
 markup as inert content and do not execute project code.
 

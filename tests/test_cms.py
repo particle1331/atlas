@@ -1261,6 +1261,7 @@ def test_source_browser_screens_committed_paths_and_contents(
     project.mkdir()
     known_token = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
     github_token = "ghp_" + "abcdefghij1234567890ABCDEFGHIJ123456"
+    encoded_token = b64encode(known_token.encode()).decode()
     password = "deliberatelyweak"
     unsafe_notebook = nb.notebook("# Credential in cell source")
     unsafe_notebook["cells"].append(nb.cell(f'token = "{known_token}"', "code"))
@@ -1279,11 +1280,13 @@ def test_source_browser_screens_committed_paths_and_contents(
         "unsafe.ipynb": json.dumps(unsafe_notebook),
         "unsafe-output.ipynb": json.dumps(nb.notebook() | {"cells": [unsafe_output]}),
         "credentials/settings.ini": "CREDENTIAL_DIR_CANARY",
-        "ordinary.yml": f'password: "{password}"',
+        "ordinary.yml": f'password: "{password}"\nfixture: "{known_token}"',
         "token-example.md": f"# Setup\n\n{known_token} <!-- gitleaks:allow -->",
         "provider.txt": github_token,
         "encoded.txt": b64encode(github_token.encode()).decode(),
-        f"{known_token}/module.py": "TOKEN_PATH_CANARY",
+        f"café/{known_token}/example.{known_token}.py": "TOKEN_PATH_CANARY",
+        f"example.{encoded_token}.txt": "ENCODED_PATH_CANARY",
+        f"notes\nfolder/{known_token}.txt": "MULTILINE_PATH_CANARY",
         "guide.md": "# Public companion guide\n",
     }
     for name, body in cases.items():
@@ -1291,6 +1294,7 @@ def test_source_browser_screens_committed_paths_and_contents(
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(body)
     commit_sources(store, "project")
+    monkeypatch.setenv("COLUMNS", "80")
     monkeypatch.setenv("GITLEAKS_CONFIG_TOML", "title = 'Empty configuration'")
     run(store, "post", "edit", "post/attention", "--code-path", "project")
     publish(store, "post/attention")
@@ -1302,8 +1306,18 @@ def test_source_browser_screens_committed_paths_and_contents(
         "guide.md.qmd",
         "file~raw~guide.md.qmd",
     }
-    assert "omitted 7 file(s) with possible secrets" in caplog.text
+    assert "omitted 9 file(s) with possible secrets" in caplog.text
+    assert "Repository path" in caplog.text
+    assert "Scanner rule" in caplog.text
+    assert re.search(
+        r"project/ordinary\.yml\s+│ atlas-jina-api-key, atlas-literal-password",
+        caplog.text,
+    )
+    assert "project/café/***/example.***.py" in caplog.text
+    assert "project/example.***.txt" in caplog.text
+    assert re.search(r"│ \*\*\*\s+│ atlas-jina-api-key", caplog.text)
     assert known_token not in caplog.text
+    assert encoded_token not in caplog.text
     assert github_token not in caplog.text
     assert password not in caplog.text
 
