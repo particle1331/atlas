@@ -1,10 +1,11 @@
 # Production Agentic RAG: weekly source snapshots
 
-These are unmodified source snapshots from [Jam With AI's course
-repository](https://github.com/jamwithai/production-agentic-rag-course), not
-implementations authored for Atlas. Each folder contains the complete tracked
-tree for its release, including the upstream README, notebooks, lockfile, tests,
-assets, and MIT `LICENSE`. There are no nested Git repositories or submodules.
+These weekly source snapshots come from [Jam With AI's course
+repository](https://github.com/jamwithai/production-agentic-rag-course). Each
+folder contains the tracked tree for its release, including the upstream README,
+notebooks, lockfile, tests, assets, and MIT `LICENSE`. Atlas sanitizes credential
+examples in the files listed below. There are no nested Git repositories or
+submodules.
 
 The [release manifest](releases.json) records exact commit IDs and post IDs.
 The commits, rather than the movable tags or `main`, define these snapshots.
@@ -67,8 +68,24 @@ Atlas, fetch the matching tag, confirm its peeled commit with
 new empty directory. Compare the result before replacing anything; never
 overwrite local experiments or `.env` files. Preserve each release's license.
 
-Keep the weekly reference trees unchanged. Put deliberate adaptations in a
-separately named project directory and document how they differ from upstream.
+Atlas replaced credential values in the following files for the companion
+source browser.
+
+| Releases | File | Credential examples |
+| --- | --- | --- |
+| Weeks 1–7 | `airflow/dags/hello_world_dag.py` | PostgreSQL password |
+| Weeks 1–7 | `notebooks/week1/week1_setup.ipynb` | PostgreSQL password and Airflow admin password where shown, including saved output |
+| Week 6 | `notebooks/week4/week4_hybrid_search.ipynb` | Jina API key and PostgreSQL connection examples |
+| Week 7 | `compose.yml` | PostgreSQL password and initial Langfuse admin password |
+
+The Airflow DAG and setup notebook read `POSTGRES_PASSWORD` from the
+environment of the process running the example. Set it to the password
+configured for that week's database when running those examples. Week 7 Compose
+also accepts `POSTGRES_PASSWORD` and `LANGFUSE_INIT_USER_PASSWORD` from the local
+environment.
+
+Put new adaptations in a separately named project directory and document how
+they differ from upstream.
 Root Atlas tests/formatters exclude these imported projects; run the upstream
 tests from the appropriate isolated project environment when needed. The
 committed `.env.test` files in Weeks 3–7 are upstream test fixtures, not local

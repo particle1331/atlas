@@ -4,6 +4,7 @@ Hello World DAG for Week 1 testing.
 This is a simple DAG to verify Airflow is working correctly.
 """
 
+import os
 from datetime import datetime, timedelta
 
 import psycopg2
@@ -31,7 +32,7 @@ def check_services():
             port=5432,
             database="rag_db",
             user="rag_user",
-            password="rag_password"
+            password=os.getenv("POSTGRES_PASSWORD", "your_postgres_password_here")
         )
         print("Database: Connected successfully")
         conn.close()
