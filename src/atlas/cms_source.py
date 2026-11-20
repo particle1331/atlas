@@ -667,7 +667,12 @@ def write_source_browser(stage: Path, record: dict, files: SourceFiles) -> str:
     slug = record["id"].split("/")[1]
     directory = stage / "posts" / slug / "source"
     directory.mkdir(parents=True, exist_ok=True)
-    meta = {"toc": False, "search": False, "draft": record["status"] == "draft"}
+    meta = {
+        "toc": False,
+        "search": False,
+        "draft": record["status"] == "draft",
+        "grid": {"body-width": "1053px"},
+    }
     index = [f"[← Back to post](../../{slug}.html)", "## Project files"]
     tree: SourceTree = {}
     pages = {relative: source_page(relative) for relative in files}
