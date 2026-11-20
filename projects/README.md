@@ -3,7 +3,7 @@
 Supporting project code lives here, separately from the canonical post notebooks
 under `content/posts/`. A post's CMS `code_path` identifies its companion source;
 follow that path rather than assuming the latest implementation matches a lesson.
-CMS sync projects eligible, screened files from the current Git commit into a
+CMS sync projects eligible files from the current Git commit into a
 [read-only source browser](../README.md#browse-companion-source).
 
 ## Versioned reference sources

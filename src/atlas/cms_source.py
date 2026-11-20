@@ -1,7 +1,6 @@
-"""Project committed, screened companion text without executing it."""
+"""Project eligible committed companion text without executing it."""
 
 import json
-import logging
 import os
 import posixpath
 import re
@@ -26,9 +25,6 @@ from pygments.lexers import (
     get_lexer_for_filename,
 )
 from pygments.util import ClassNotFound
-from rich.console import Console
-from rich.table import Table
-from rich.text import Text
 
 from atlas import cms_notebooks as nb
 from atlas.cms_store import Store, document
@@ -38,7 +34,6 @@ HEADING_PREFIX = "source-heading-"
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TEXT_LIMIT = 1024 * 1024
 GIT = ["git", "--no-replace-objects", "-c", "core.fsmonitor=false"]
-LOGGER = logging.getLogger(__name__)
 PRIVATE_NAME = re.compile(
     r"^(?:id_(?:rsa|dsa|ecdsa|ed25519)|kubeconfig|private)(?:\.|$)"
     r"|(?:^|[._-])(?:credentials?|secrets?|passwords?|passwd|"
@@ -56,15 +51,30 @@ description = "Jina API key"
 regex = '''\bjina_[A-Za-z0-9_-]{24,}\b'''
 keywords = ["jina_"]
 
-[[rules.allowlists]]
-description = "Literal placeholder shown in the Hybrid Search notebook"
-regexes = ['''^your_jina_api_key_here$''']
-
 [[rules]]
 id = "atlas-literal-password"
 description = "Literal password or client secret"
 regex = '''(?im)(?:^|[\s{,])["']?(?:[a-z_]*password|passwd|client_secret)["']?\s*[:=]\s*["'][^"'\r\n]{8,}["']'''
 keywords = ["password", "passwd", "client_secret"]
+
+[[rules]]
+id = "atlas-unquoted-password"
+description = "Unquoted password or client secret in an environment assignment"
+regex = '''(?m)^[\t ]*(?:export[\t ]+)?(?:[A-Z_][A-Z0-9_]*_)?(?:PASSWORD|PASSWD|CLIENT_SECRET)[\t ]*=[\t ]*([^\t \r\n"'`#][^\t \r\n"'`]{7,})[\t ]*(?:[\t ]#.*)?\r?$'''
+secretGroup = 1
+keywords = ["password", "passwd", "client_secret"]
+
+[[rules.allowlists]]
+description = "Unquoted environment variable references, not literal values"
+regexes = ['''^\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})$''']
+
+[[rules.allowlists]]
+description = "Exact Redis example placeholders that mirror their field names"
+regexTarget = "match"
+regexes = [
+    '''^LANGFUSE_REDIS_PASSWORD=langfuse_redis_password$''',
+    '''^REDIS__PASSWORD=redis_password$''',
+]
 """
 type SourceTree = dict[str, str | SourceTree]
 
@@ -89,7 +99,7 @@ class SecretFinding:
 
 
 class SourceBrowserUnavailable(ValueError):
-    """The source browser could not establish that its output is safe to publish."""
+    """The source browser could not read its inputs safely."""
 
 
 def folder_id(folder: PurePosixPath) -> str:
@@ -472,7 +482,7 @@ def secret_findings(
         return {}
     scanner = shutil.which("gitleaks")
     if scanner is None:
-        raise SourceBrowserUnavailable("Install Gitleaks to screen public files.")
+        raise ValueError("Install Gitleaks to scan for secrets.")
     with tempfile.TemporaryDirectory(prefix="atlas-source-scan-") as temporary:
         workspace = Path(temporary)
         config = workspace / "scan.toml"
@@ -543,7 +553,7 @@ def secret_findings(
                     )
         except (OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired):
             # Never print scanner output: it was produced from private input.
-            raise SourceBrowserUnavailable("The secret scan failed.") from None
+            raise ValueError("The secret scan failed.") from None
     return blocked
 
 
@@ -563,37 +573,8 @@ def redact_path(path: PurePosixPath, spans: list[tuple[int, int]]) -> str:
         return "***"
 
 
-def scan_source_files(files: SourceFiles) -> SourceFiles:
-    """Drop both the name and the content of any file with a scanner finding."""
-    blocked = secret_findings(
-        {
-            path: content.text if isinstance(content, NotebookView) else content
-            for path, content in files.items()
-        }
-    )
-    if blocked:
-        table = Table()
-        table.add_column("Repository path", overflow="fold")
-        table.add_column("Scanner rule", overflow="fold")
-        for path, finding in sorted(blocked.items()):
-            label = redact_path(path, finding.path_spans)
-            label = "".join(
-                char if char.isprintable() else repr(char)[1:-1] for char in label
-            )
-            table.add_row(Text(label), ", ".join(sorted(finding.rules)))
-        console = Console(stderr=True, color_system=None)
-        with console.capture() as capture:
-            console.print(table)
-        LOGGER.warning(
-            "Companion source omitted %d file(s) with possible secrets.\n%s",
-            len(blocked),
-            capture.get().rstrip(),
-        )
-    return {path: content for path, content in files.items() if path not in blocked}
-
-
 def source_files(store: Store, records: Iterable[dict]) -> dict[str, SourceFiles]:
-    """Screen committed companion text before generating the browser pages."""
+    """Read eligible committed companion text for the browser pages."""
     projects = {}
     for record in records:
         project = store.code_directory(record)
@@ -610,7 +591,7 @@ def source_files(store: Store, records: Iterable[dict]) -> dict[str, SourceFiles
         raise SourceBrowserUnavailable("Git could not resolve the source commit.")
     commit = head.stdout.strip().decode("ascii")
     blobs = project_blobs(store.root, commit, set(projects.values()))
-    files = scan_source_files(read_committed_text(store.root, blobs))
+    files = read_committed_text(store.root, blobs)
     return {
         identity: {
             path.relative_to(base): text

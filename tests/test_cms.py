@@ -4,7 +4,6 @@ import re
 import shutil
 import subprocess
 import sys
-from base64 import b64encode
 from collections import Counter
 from pathlib import Path, PurePosixPath
 
@@ -913,11 +912,7 @@ def git_store(store):
 
 
 @pytest.fixture
-def browser_store(git_store, monkeypatch):
-    """Exercise Git selection and projection independently of Gitleaks."""
-    from atlas import cms_source
-
-    monkeypatch.setattr(cms_source, "scan_source_files", lambda files: files)
+def browser_store(git_store):
     return git_store
 
 
@@ -1251,83 +1246,7 @@ def test_source_browser_reads_only_head_and_reserves_its_projection(browser_stor
     assert not store.path("frontend/posts/figures/local.txt").exists()
 
 
-@pytest.mark.skipif(
-    shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
-)
-def test_source_browser_screens_committed_paths_and_contents(
-    git_store, caplog, monkeypatch
-):
-    store = git_store
-    new_post(store)
-    project = store.path("project")
-    project.mkdir()
-    known_token = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
-    github_token = "ghp_" + "abcdefghij1234567890ABCDEFGHIJ123456"
-    encoded_token = b64encode(known_token.encode()).decode()
-    password = "deliberatelyweak"
-    unsafe_notebook = nb.notebook("# Credential in cell source")
-    unsafe_notebook["cells"].append(nb.cell(f'token = "{known_token}"', "code"))
-    unsafe_output = nb.cell("show_environment()", "code")
-    unsafe_output["outputs"] = [
-        {
-            "output_type": "stream",
-            "name": "stdout",
-            "text": ["jina_\x1b[31m", known_token.removeprefix("jina_"), "\x1b[0m"],
-        }
-    ]
-    cases = {
-        ".env": "IGNORED_ENV_CANARY",
-        "client.PEM": "KEYFILE_CANARY",
-        "notebook.ipynb": '{"outputs": ["NOTEBOOK_CANARY"]}',
-        "unsafe.ipynb": json.dumps(unsafe_notebook),
-        "unsafe-output.ipynb": json.dumps(nb.notebook() | {"cells": [unsafe_output]}),
-        "credentials/settings.ini": "CREDENTIAL_DIR_CANARY",
-        "ordinary.yml": f'password: "{password}"\nfixture: "{known_token}"',
-        "token-example.md": f"# Setup\n\n{known_token} <!-- gitleaks:allow -->",
-        "provider.txt": github_token,
-        "encoded.txt": b64encode(github_token.encode()).decode(),
-        f"café/{known_token}/example.{known_token}.py": "TOKEN_PATH_CANARY",
-        f"example.{encoded_token}.txt": "ENCODED_PATH_CANARY",
-        f"notes\nfolder/{known_token}.txt": "MULTILINE_PATH_CANARY",
-        "guide.md": "# Public companion guide\n",
-    }
-    for name, body in cases.items():
-        file = project / name
-        file.parent.mkdir(parents=True, exist_ok=True)
-        file.write_text(body)
-    commit_sources(store, "project")
-    monkeypatch.setenv("COLUMNS", "80")
-    monkeypatch.setenv("GITLEAKS_CONFIG_TOML", "title = 'Empty configuration'")
-    run(store, "post", "edit", "post/attention", "--code-path", "project")
-    publish(store, "post/attention")
-    run(store, "sync")
-
-    output = store.path("frontend/posts/attention/source")
-    assert {p.name for p in output.iterdir()} == {
-        "index.qmd",
-        "guide.md.qmd",
-        "file~raw~guide.md.qmd",
-    }
-    assert "omitted 9 file(s) with possible secrets" in caplog.text
-    assert "Repository path" in caplog.text
-    assert "Scanner rule" in caplog.text
-    assert re.search(
-        r"project/ordinary\.yml\s+│ atlas-jina-api-key, atlas-literal-password",
-        caplog.text,
-    )
-    assert "project/café/***/example.***.py" in caplog.text
-    assert "project/example.***.txt" in caplog.text
-    assert re.search(r"│ \*\*\*\s+│ atlas-jina-api-key", caplog.text)
-    assert known_token not in caplog.text
-    assert encoded_token not in caplog.text
-    assert github_token not in caplog.text
-    assert password not in caplog.text
-
-
-@pytest.mark.parametrize("failure", ["missing", "crash", "malformed-report"])
-def test_source_browser_fails_closed_and_removes_previous_pages(
-    git_store, monkeypatch, caplog, failure
-):
+def test_source_browser_does_not_run_the_secret_scanner(git_store, monkeypatch):
     from atlas import cms_source
 
     store = git_store
@@ -1338,51 +1257,16 @@ def test_source_browser_fails_closed_and_removes_previous_pages(
     commit_sources(store, "project")
     run(store, "post", "edit", "post/attention", "--code-path", "project")
     publish(store, "post/attention")
-    scanner = store.path("fake-gitleaks")
-    scanner.write_text("#!/bin/sh\nprintf '[]\\n'\n")
-    scanner.chmod(0o700)
-    which = shutil.which
-    failure_script = {
-        "crash": "#!/bin/sh\nprintf SCANNER_PRIVATE_CANARY >&2\nexit 2\n",
-        "malformed-report": "#!/bin/sh\nprintf SCANNER_PRIVATE_CANARY\n",
-    }
 
-    def executable(name):
-        return str(scanner) if name == "gitleaks" else which(name)
+    def unexpected_scan(*args):
+        pytest.fail("CMS source projection should not scan for secrets")
 
-    monkeypatch.setattr(cms_source.shutil, "which", executable)
-    run(store, "sync")
-    output = store.path("frontend/posts/attention/source")
-    assert (output / "example.py.qmd").is_file()
-    rendered = []
-    for site in ("_site", "_site-preview"):
-        page = store.path(f"frontend/{site}/posts/attention/source/example.py.html")
-        page.parent.mkdir(parents=True)
-        page.write_text("STALE_RENDERED_SOURCE")
-        rendered.append(page)
-
-    if failure == "missing":
-        monkeypatch.setattr(
-            cms_source.shutil,
-            "which",
-            lambda name: None if name == "gitleaks" else which(name),
-        )
-    else:
-        scanner.write_text(failure_script[failure])
+    monkeypatch.setattr(cms_source, "secret_findings", unexpected_scan)
     report = run(store, "check", code=1)
-    assert any(
-        issue["id"] == "post/attention" and "source" in issue["message"].lower()
-        for issue in report["diagnostics"]
-    )
+    assert {item["id"] for item in report["diagnostics"]} == {"collection/guide"}
     run(store, "sync")
-    assert not list(output.rglob("*.qmd"))
-    assert not any(path.exists() for path in rendered)
-    assert (
-        b"source-browser-link"
-        not in store.path("frontend/posts/attention.ipynb").read_bytes()
-    )
-    assert "Companion source disabled." in caplog.text
-    assert "SCANNER_PRIVATE_CANARY" not in caplog.text
+    output = store.path("frontend/posts/attention/source/example.py.qmd")
+    assert output.is_file()
 
 
 @pytest.mark.parametrize(
@@ -1394,6 +1278,7 @@ def test_source_browser_fails_closed_and_removes_previous_pages(
         ("raw-notebook", "unrendered source file"),
         ("preview", "draft preview output"),
         ("stale-browser-page", "unapproved source page"),
+        ("malformed-browser-page", "unapproved source page"),
         ("ignored-static-asset", "Git-ignored asset"),
     ],
 )
@@ -1415,8 +1300,13 @@ def test_pages_artifact_rejects_unsafe_output(git_store, case, message):
         (artifact / "analysis.ipynb").write_text("{}")
     elif case == "preview":
         (artifact / "_site-preview").mkdir()
-    elif case == "stale-browser-page":
-        stale = artifact / "posts/old/source/stale.html"
+    elif case in {"stale-browser-page", "malformed-browser-page"}:
+        name = (
+            r"bad\PRIVATE_ARTIFACT_CANARY.html"
+            if case == "malformed-browser-page"
+            else "stale.html"
+        )
+        stale = artifact / "posts/old/source" / name
         stale.parent.mkdir(parents=True)
         stale.write_text("OLD_ARTIFACT")
     elif case == "ignored-static-asset":
@@ -1427,8 +1317,9 @@ def test_pages_artifact_rejects_unsafe_output(git_store, case, message):
         store.path(".gitignore").write_text("/frontend/assets/attachment.txt\n")
         (artifact / "assets").mkdir()
         shutil.copyfile(asset, artifact / "assets/attachment.txt")
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(ValueError, match=message) as error:
         verify_pages_artifact(store)
+    assert "PRIVATE_ARTIFACT_CANARY" not in str(error.value)
 
 
 @pytest.mark.skipif(
@@ -1457,20 +1348,63 @@ def test_pages_artifact_build_stops_when_source_scanning_is_unavailable(
     from atlas import cms, cms_source
 
     store = git_store
-    new_post(store)
-    project = store.path("project")
-    project.mkdir()
-    (project / "example.py").write_text("# A committed source file\n")
-    commit_sources(store, "project")
-    run(store, "post", "edit", "post/attention", "--code-path", "project")
-    publish(store, "post/attention")
-    monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
+    (store.root / "example.py").write_text("# Outside any browser project\n")
+
+    def unexpected_render():
+        pytest.fail("Pages build should stop before looking up Quarto")
+
+    monkeypatch.setattr(cms, "quarto_executable", unexpected_render)
     monkeypatch.setattr(cms_source.shutil, "which", lambda _: None)
     result = invoke(store, "build", "--for-pages", code=2)
     assert "Install Gitleaks" in result.stderr
     assert not store.path("frontend/_site").exists()
     result = invoke(store, "build", "--for-pages", "--preview", code=2)
     assert "requires a public build" in result.stderr
+
+
+@pytest.mark.skipif(
+    shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
+)
+def test_pages_artifact_build_rejects_repository_findings_before_render(git_store):
+    key = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
+    git_store.path("draft-not-published.txt").write_text(key)
+
+    for args in [("scan-secrets",), ("build", "--for-pages")]:
+        result = invoke(git_store, *args, code=2)
+        assert "draft-not-published.txt" in result.stderr
+        assert "atlas-jina-api-key" in result.stderr
+        assert key not in result.stderr
+    assert not git_store.path("frontend/_site").exists()
+    result = invoke(git_store, "scan-secrets", "--staged")
+    assert "Repository secret scan passed" in result.stdout
+
+
+@pytest.mark.skipif(
+    shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
+)
+def test_pages_artifact_build_rejects_a_secret_introduced_by_render(
+    git_store, monkeypatch
+):
+    from atlas import cms
+
+    store = git_store
+    key = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
+    monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
+    monkeypatch.setattr(
+        cms, "prepare_site", lambda *args, **kwargs: {"site": "frontend"}
+    )
+
+    def render(command, *, cwd, stdout):
+        assert "--no-execute" in command
+        artifact = store.path("frontend/_site")
+        artifact.mkdir()
+        (artifact / "index.html").write_text(f"<p>{key}</p>")
+        return 0
+
+    monkeypatch.setattr(cms.subprocess, "call", render)
+    result = invoke(store, "build", "--for-pages", code=2)
+    assert "possible secrets in 1 output path" in result.stderr
+    assert key not in result.stderr
 
 
 @pytest.mark.skipif(
@@ -1577,9 +1511,9 @@ def test_build_and_sync_remove_stale_source_from_both_render_profiles(
         assert b'<div class="source-preview"' in notebook_view
         assert b"Notebook rendering must never execute this cell" in notebook_view
         assert b'<div class="cell-output mb-3">' in notebook_view
-        assert notebook_view.index(
-            b"your_jina_api_key_here"
-        ) < notebook_view.index(b"SAVED_OUTPUT_CANARY")
+        assert notebook_view.index(b"your_jina_api_key_here") < notebook_view.index(
+            b"SAVED_OUTPUT_CANARY"
+        )
         assert b"SAVED_RESULT_CANARY" in notebook_view
         assert b"<strong>Saved Markdown output</strong>" in notebook_view
         assert b"SAVED_ERROR_CANARY" in notebook_view and b"\x1b" not in notebook_view
@@ -2403,11 +2337,11 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
     calls = []
 
     def regenerate(
-        actual_store, preview, *, watch_snapshot, source_browser, require_source_scan
+        actual_store, preview, *, watch_snapshot, source_browser, require_source_browser
     ):
         assert actual_store is store and preview is True
         assert source_browser is True
-        assert require_source_scan is False
+        assert require_source_browser is False
         calls.append(("generate", preview_clock.monotonic()))
         return generate(actual_store, preview, watch_snapshot=watch_snapshot)
 

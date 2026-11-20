@@ -8,10 +8,19 @@ projects for the current operating system user.
 This README covers setup, user workflows and site behavior.
 [AGENTS.md](AGENTS.md) contains working rules for agents editing this repository.
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and
+[Gitleaks](https://github.com/gitleaks/gitleaks) (`brew install gitleaks` on macOS).
+After cloning, run this once from the repository root:
+
 ```sh
-uv sync
+make init
 uv run at --help
 ```
+
+`make init` enables the [secret-scanning Git hook](#secret-scanning) in this
+clone and installs the locked Python dependencies. It confirms that the hook is
+enabled; the scan runs when you commit, not during setup. Cloning does not enable
+hooks from the cloned repository or copy its local Git configuration.
 
 Run `make doctor` to check the vault entries and run pytest with line and branch
 coverage. The report includes uncovered line numbers. Both checks run, and the
@@ -152,8 +161,6 @@ See [Images](#images) for importing and replacing figures, thumbnails and covers
 To add a 📁 `source` link to a post, run
 `uv run at cms post edit post/<id> --code-path PATH`. Use an existing project
 directory relative to the workspace root, such as `projects/my-project`.
-Install [Gitleaks](https://github.com/gitleaks/gitleaks) with
-`brew install gitleaks` to enable the browser.
 
 The browser follows the post's publication status and shows eligible files up to
 1 MiB committed at `HEAD`, subject to Git ignore rules. Markdown opens as formatted
@@ -161,10 +168,9 @@ text with a **View source** link. Code is syntax-highlighted where available.
 Notebooks show code, Markdown and saved text or Markdown outputs without running
 a kernel. Relative links work for visible files and folders.
 
-Gitleaks screens filenames and displayed content. Files with findings are
-omitted. If screening fails, the browser is omitted and `uv run at cms check`
-reports the problem. Review committed source before publishing because screening
-can miss private data.
+The browser does not run its own secret scan. The [Pages build](#deploy-to-github-pages)
+checks the repository before generating the site. Local previews and regular
+builds do not run that check; review companion source before sharing them.
 
 After committing companion changes or editing a nested ignore or exclude file,
 restart `make preview` or run `uv run at cms build --preview` with live preview
@@ -434,11 +440,11 @@ to be absent and runs the publication regression tests before building the site.
 GitHub Pages deploys the verified `frontend/_site/` artifact.
 
 Run `make build-pages` locally from a fresh checkout with Quarto and Gitleaks on
-`PATH`. The target uses `at cms build --for-pages`, which requires source screening
-to complete and screens rendered filenames and UTF-8 contents before allowing
-upload. It also rejects hidden or unrendered source files, links, Git-ignored
-frontend assets, and browser pages without a current CMS projection. Draft
-preview output stays outside the artifact.
+`PATH`. The target uses `at cms build --for-pages`, which runs the
+[repository secret scan](#secret-scanning) before rendering. It then scans the
+rendered paths and UTF-8 contents before upload. It also rejects hidden or
+unrendered source files, links, Git-ignored frontend assets, and browser pages
+without a current CMS projection. Draft preview output stays outside the artifact.
 
 #### Résumé PDF
 
@@ -574,15 +580,40 @@ Pass optional guidance after `/commit`:
 For commit safeguards, model selection and review-only usage, see the
 [command documentation](.opencode/README.md#local-commits).
 
-## Git hooks
+## Secret scanning
 
-Install the pre-commit tool and enable the repository hook once per clone:
+With Gitleaks on `PATH` (Pages uses 8.30.1), run the same source check used by the
+Pages build, without rendering:
 
 ```sh
-uv tool install pre-commit
-pre-commit install
+uv run --locked at cms scan-secrets
 ```
 
-Before each commit, the hook scans staged files for likely secrets with
-`detect-secrets`. To scan all tracked files manually, use
-`pre-commit run --all-files`. Run `uv run at vault check` to check vault entries.
+The scan checks all tracked files, including those that now match an ignore rule,
+and untracked files not ignored by Git. It checks paths and UTF-8 contents,
+including raw notebooks and the decoded cell source and saved text outputs shown
+by the companion browser. It also checks the index and `HEAD` when they differ
+from the working tree. It does not audit earlier commits or binary contents.
+
+Rules recognize provider token formats, quoted password assignments, and
+likely literal passwords in unquoted uppercase environment assignments. The
+unquoted rule skips simple variable references and the two exact Redis
+assignments used as example placeholders. A bare random string, Base64 value,
+or hex value may be indistinguishable from ordinary data; a clean scan does not
+prove that no secrets are present.
+
+`make init` configures the native Git hook with
+`git config --local core.hooksPath .githooks`. No `pre-commit` package is needed.
+If a different hooks path or executable hooks already exist, setup stops rather
+than bypassing them. To keep that setup, add the staged scan command below to
+your existing pre-commit hook (or create one in that directory) and run
+`uv sync --locked` separately.
+
+The hook runs `uv run --locked at cms scan-secrets --staged` over the full index,
+not just changed lines. This checks what the next commit would contain without
+blocking a cleanup commit over a secret present only in `HEAD`.
+
+Pages CI runs after a push: it can block publication, not prevent a credential
+from reaching the remote. Enable GitHub secret scanning and push protection if
+available. Revoke or rotate any real credential that has been committed, even
+if a later commit removes it. Run `uv run at vault check` to check vault entries.
