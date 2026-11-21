@@ -37,7 +37,7 @@ jobs:
           echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz' | sha256sum --check
           tar -xzf gitleaks.tar.gz gitleaks
           echo "$PWD" >> "$GITHUB_PATH"
-      - name: Build and verify the public site
+      - name: Check repository secrets, build, and verify the public site
         run: make build-pages
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

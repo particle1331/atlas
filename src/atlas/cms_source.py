@@ -1,7 +1,6 @@
-"""Project committed, screened companion text without executing it."""
+"""Project eligible committed companion text without executing it."""
 
 import json
-import logging
 import os
 import posixpath
 import re
@@ -10,7 +9,7 @@ import string
 import subprocess
 import tempfile
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 from html import escape
 from pathlib import Path, PurePosixPath
@@ -35,7 +34,6 @@ HEADING_PREFIX = "source-heading-"
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TEXT_LIMIT = 1024 * 1024
 GIT = ["git", "--no-replace-objects", "-c", "core.fsmonitor=false"]
-LOGGER = logging.getLogger(__name__)
 PRIVATE_NAME = re.compile(
     r"^(?:id_(?:rsa|dsa|ecdsa|ed25519)|kubeconfig|private)(?:\.|$)"
     r"|(?:^|[._-])(?:credentials?|secrets?|passwords?|passwd|"
@@ -53,15 +51,30 @@ description = "Jina API key"
 regex = '''\bjina_[A-Za-z0-9_-]{24,}\b'''
 keywords = ["jina_"]
 
-[[rules.allowlists]]
-description = "Literal placeholder shown in the Hybrid Search notebook"
-regexes = ['''^your_jina_api_key_here$''']
-
 [[rules]]
 id = "atlas-literal-password"
 description = "Literal password or client secret"
 regex = '''(?im)(?:^|[\s{,])["']?(?:[a-z_]*password|passwd|client_secret)["']?\s*[:=]\s*["'][^"'\r\n]{8,}["']'''
 keywords = ["password", "passwd", "client_secret"]
+
+[[rules]]
+id = "atlas-unquoted-password"
+description = "Unquoted password or client secret in an environment assignment"
+regex = '''(?m)^[\t ]*(?:export[\t ]+)?(?:[A-Z_][A-Z0-9_]*_)?(?:PASSWORD|PASSWD|CLIENT_SECRET)[\t ]*=[\t ]*([^\t \r\n"'`#][^\t \r\n"'`]{7,})[\t ]*(?:[\t ]#.*)?\r?$'''
+secretGroup = 1
+keywords = ["password", "passwd", "client_secret"]
+
+[[rules.allowlists]]
+description = "Unquoted environment variable references, not literal values"
+regexes = ['''^\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})$''']
+
+[[rules.allowlists]]
+description = "Exact Redis example placeholders that mirror their field names"
+regexTarget = "match"
+regexes = [
+    '''^LANGFUSE_REDIS_PASSWORD=langfuse_redis_password$''',
+    '''^REDIS__PASSWORD=redis_password$''',
+]
 """
 type SourceTree = dict[str, str | SourceTree]
 
@@ -79,8 +92,14 @@ class NotebookView:
 type SourceFiles = dict[PurePosixPath, str | NotebookView]
 
 
+@dataclass
+class SecretFinding:
+    rules: set[str] = field(default_factory=set)
+    path_spans: list[tuple[int, int]] = field(default_factory=list)
+
+
 class SourceBrowserUnavailable(ValueError):
-    """The source browser could not establish that its output is safe to publish."""
+    """The source browser could not read its inputs safely."""
 
 
 def folder_id(folder: PurePosixPath) -> str:
@@ -439,13 +458,31 @@ def read_committed_text(
     return files
 
 
-def secret_findings(files: dict[PurePosixPath, str]) -> set[PurePosixPath]:
-    """Screen UTF-8 contents and filenames without logging either."""
+def path_match_span(path: str, finding: dict) -> tuple[int, int]:
+    """Convert Gitleaks' inclusive byte columns to a slice of the scanned path."""
+    length = len(path.encode("utf-8"))
+    start, end = finding.get("StartColumn"), finding.get("EndColumn")
+    if (
+        "\n" not in path
+        and "\r" not in path
+        and finding.get("StartLine") == finding.get("EndLine") == 1
+        and type(start) is int
+        and type(end) is int
+        and 1 <= start <= end <= length
+    ):
+        return start - 1, end
+    return 0, length
+
+
+def secret_findings(
+    files: dict[PurePosixPath, str],
+) -> dict[PurePosixPath, SecretFinding]:
+    """Collect rule IDs and the path spans to redact in diagnostics."""
     if not files:
-        return set()
+        return {}
     scanner = shutil.which("gitleaks")
     if scanner is None:
-        raise SourceBrowserUnavailable("Install Gitleaks to screen public files.")
+        raise ValueError("Install Gitleaks to scan for secrets.")
     with tempfile.TemporaryDirectory(prefix="atlas-source-scan-") as temporary:
         workspace = Path(temporary)
         config = workspace / "scan.toml"
@@ -459,7 +496,7 @@ def secret_findings(files: dict[PurePosixPath, str]) -> set[PurePosixPath]:
             for kind, text in (("content", content), ("path", display_path(path))):
                 name = f"{index}-{kind}.txt"
                 (inputs / name).write_bytes(text.encode("utf-8"))
-                scan_paths[name] = path
+                scan_paths[name] = (path, kind)
         try:
             result = subprocess.run(
                 [
@@ -502,30 +539,42 @@ def secret_findings(files: dict[PurePosixPath, str]) -> set[PurePosixPath]:
                 or bool(findings) != (result.returncode == 23)
             ):
                 raise ValueError
-            blocked = {scan_paths[Path(finding["File"]).name] for finding in findings}
+            blocked = {}
+            for finding in findings:
+                path, kind = scan_paths[Path(finding["File"]).name]
+                rule = finding["RuleID"]
+                if not re.fullmatch(r"[A-Za-z0-9_-]+", rule):
+                    raise ValueError
+                entry = blocked.setdefault(path, SecretFinding())
+                entry.rules.add(rule)
+                if kind == "path":
+                    entry.path_spans.append(
+                        path_match_span(display_path(path), finding)
+                    )
         except (OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired):
             # Never print scanner output: it was produced from private input.
-            raise SourceBrowserUnavailable("The secret scan failed.") from None
+            raise ValueError("The secret scan failed.") from None
     return blocked
 
 
-def scan_source_files(files: SourceFiles) -> SourceFiles:
-    """Drop both the name and the content of any file with a scanner finding."""
-    blocked = secret_findings(
-        {
-            path: content.text if isinstance(content, NotebookView) else content
-            for path, content in files.items()
-        }
-    )
-    if blocked:
-        LOGGER.warning(
-            "Companion source omitted %d file(s) with possible secrets.", len(blocked)
-        )
-    return {path: content for path, content in files.items() if path not in blocked}
+def redact_path(path: PurePosixPath, spans: list[tuple[int, int]]) -> str:
+    raw = display_path(path).encode("utf-8")
+    visible = []
+    offset = 0
+    # Overlapping and adjacent findings share a single mask.
+    for start, end in sorted(spans):
+        if not visible or start > offset:
+            visible.append(raw[offset:start])
+        offset = max(offset, end)
+    visible.append(raw[offset:])
+    try:
+        return b"***".join(visible).decode("utf-8")
+    except UnicodeDecodeError:
+        return "***"
 
 
 def source_files(store: Store, records: Iterable[dict]) -> dict[str, SourceFiles]:
-    """Screen committed companion text before generating the browser pages."""
+    """Read eligible committed companion text for the browser pages."""
     projects = {}
     for record in records:
         project = store.code_directory(record)
@@ -542,7 +591,7 @@ def source_files(store: Store, records: Iterable[dict]) -> dict[str, SourceFiles
         raise SourceBrowserUnavailable("Git could not resolve the source commit.")
     commit = head.stdout.strip().decode("ascii")
     blobs = project_blobs(store.root, commit, set(projects.values()))
-    files = scan_source_files(read_committed_text(store.root, blobs))
+    files = read_committed_text(store.root, blobs)
     return {
         identity: {
             path.relative_to(base): text
@@ -599,7 +648,12 @@ def write_source_browser(stage: Path, record: dict, files: SourceFiles) -> str:
     slug = record["id"].split("/")[1]
     directory = stage / "posts" / slug / "source"
     directory.mkdir(parents=True, exist_ok=True)
-    meta = {"toc": False, "search": False, "draft": record["status"] == "draft"}
+    meta = {
+        "toc": False,
+        "search": False,
+        "draft": record["status"] == "draft",
+        "grid": {"body-width": "1053px"},
+    }
     index = [f"[← Back to post](../../{slug}.html)", "## Project files"]
     tree: SourceTree = {}
     pages = {relative: source_page(relative) for relative in files}

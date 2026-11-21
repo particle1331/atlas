@@ -146,11 +146,7 @@ def initialize(store: Store, empty: bool = False) -> dict:
                     )
                 # Incomplete scaffold pages become drafts under the content model.
                 if kind == "post":
-                    if (
-                        not record["thumbnail_path"]
-                        or not body.strip()
-                        or not record["short_description"].strip()
-                    ):
+                    if not body.strip() or not record["short_description"].strip():
                         record["status"] = "draft"
                     if record["status"] == "published":
                         published_posts.add(identity)
@@ -508,7 +504,14 @@ def verify_pages_artifact(store: Store):
                     and relative.parts[0] == "posts"
                     and relative.parts[2] == "source"
                 ):
-                    projection = store.path(f"frontend/{relative.with_suffix('.qmd')}")
+                    try:
+                        projection = store.path(
+                            f"frontend/{relative.with_suffix('.qmd')}"
+                        )
+                    except ValueError:
+                        raise ValueError(
+                            "GitHub Pages output contains an unapproved source page."
+                        ) from None
                     if relative.suffix != ".html" or not projection.is_file():
                         raise ValueError(
                             "GitHub Pages output contains an unapproved source page."
@@ -539,7 +542,7 @@ def generate(
     *,
     watch_snapshot: dict | None = None,
     source_browser: bool = True,
-    require_source_scan: bool = False,
+    require_source_browser: bool = False,
 ) -> dict:
     """Project saved source and public metadata into ignored frontend files."""
     with store.lock():
@@ -599,11 +602,11 @@ def generate(
             try:
                 browsers = source_files(store, selected_posts)
             except SourceBrowserUnavailable as error:
-                if require_source_scan:
+                if require_source_browser:
                     raise
                 LOGGER.warning("Companion source disabled. %s", error)
             except OSError:
-                if require_source_scan:
+                if require_source_browser:
                     raise SourceBrowserUnavailable(
                         "Companion source inputs could not be read."
                     ) from None
