@@ -629,12 +629,18 @@ by the companion browser. It also checks the index and `HEAD` when they differ
 from the working tree. It does not audit earlier commits or binary contents.
 
 `make doctor` also audits the workspace on disk, including Git-ignored files
-such as local `.env` files, generated output, and dependencies. To run just
-that scan:
+such as generated output. To run just that scan:
 
 ```sh
 uv run --locked at cms scan-secrets --workspace
 ```
+
+The workspace scan skips files named `.env`, directories named `.venv`, and
+symlinks with either name at any depth. Other Git-ignored files, such as
+`.env.example`, `.env.local`, and files inside `.venv-other`, are still scanned.
+These exclusions apply only to `--workspace`. The default repository scan,
+staged pre-commit scan, and Pages source scan still check these paths when
+visible to Git, including ignored paths that were force-added.
 
 This local scan checks file paths and UTF-8 text (including decoded notebook
 cells and saved text outputs), plus symlink names and link text without following

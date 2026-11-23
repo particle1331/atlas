@@ -1382,22 +1382,50 @@ def test_pages_artifact_build_rejects_repository_findings_before_render(git_stor
 @pytest.mark.skipif(
     shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
 )
-def test_workspace_secret_scan_is_opt_in(git_store):
-    git_store.path(".gitignore").write_text(".env\n")
+def test_workspace_secret_scan_keeps_local_exclusions_out_of_repository_scans(
+    git_store, monkeypatch
+):
+    git_store.path(".gitignore").write_text(".env\n.venv/\nlocal/\n")
     local = git_store.path(".env")
     key = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
     local.write_text(key)
+    dependency = git_store.path(".venv/dependency.py")
+    dependency.parent.mkdir()
+    dependency.write_text(key)
 
     invoke(git_store, "scan-secrets")
     invoke(git_store, "scan-secrets", "--staged")
+    result = invoke(git_store, "scan-secrets", "--workspace")
+    assert "Workspace secret scan passed." in result.stdout
+
+    other = git_store.path("local/settings.txt")
+    other.parent.mkdir()
+    other.write_text(key)
     result = invoke(git_store, "scan-secrets", "--workspace", code=2)
-    assert ".env: atlas-jina-api-key" in result.stderr
+    assert "local/settings.txt: atlas-jina-api-key" in result.stderr
     assert key not in result.stderr
     result = invoke(git_store, "scan-secrets", "--workspace", "--staged", code=2)
     assert "--workspace and --staged cannot be combined" in result.stderr
-    local.unlink()
+    other.unlink()
     result = invoke(git_store, "scan-secrets", "--workspace")
     assert "Workspace secret scan passed." in result.stdout
+
+    git(git_store, "add", "-f", ".env", ".venv/dependency.py")
+
+    def unexpected_render():
+        pytest.fail("Pages build should reject secrets before looking up Quarto")
+
+    monkeypatch.setattr("atlas.cms.quarto_executable", unexpected_render)
+    for args in [
+        ("scan-secrets",),
+        ("scan-secrets", "--staged"),
+        ("build", "--for-pages"),
+    ]:
+        result = invoke(git_store, *args, code=2)
+        assert ".env: atlas-jina-api-key" in result.stderr
+        assert ".venv/dependency.py: atlas-jina-api-key" in result.stderr
+        assert key not in result.stderr
+    assert not git_store.path("frontend/_site").exists()
 
 
 @pytest.mark.skipif(

@@ -2,6 +2,7 @@ import json
 import os
 import random
 import shutil
+import stat
 import string
 import subprocess
 import sys
@@ -162,8 +163,9 @@ def test_repository_scan_checks_worktree_index_and_head(repo, token):
 
 @requires_gitleaks
 def test_workspace_scans_ignored_files_and_redacts_findings(repo, token):
-    (repo / ".gitignore").write_text(".env\nlocal/\n")
-    (repo / ".env").write_text(f'JINA_API_KEY="{token}"\n')
+    (repo / ".gitignore").write_text(".env\n.env.*\nlocal/\n")
+    for name in (".env", ".env.example", ".env.local"):
+        (repo / name).write_text(f'JINA_API_KEY="{token}"\n')
     local = repo / "local"
     local.mkdir()
     (local / f"{token}.bin").write_bytes(b"\0\xff")
@@ -186,7 +188,8 @@ def test_workspace_scans_ignored_files_and_redacts_findings(repo, token):
     report = str(error.value)
     assert report.splitlines() == [
         "Workspace secret scan found possible secrets:",
-        "  .env: atlas-jina-api-key",
+        "  .env.example: atlas-jina-api-key",
+        "  .env.local: atlas-jina-api-key",
         "  local/***.bin: atlas-jina-api-key",
         "  local/notes.ipynb: atlas-jina-api-key",
     ]
@@ -206,7 +209,6 @@ def test_workspace_scans_in_batches_without_following_links(tmp_path, monkeypatc
     nested.mkdir()
     (nested / ".git").write_text("gitdir: elsewhere")
     (nested / "file").write_text("inside")
-    (root / ".env").write_text("ignored text")
     monkeypatch.setattr(cms_secrets, "WORKSPACE_BATCH_PATHS", 1)
     calls = []
 
@@ -216,14 +218,79 @@ def test_workspace_scans_in_batches_without_following_links(tmp_path, monkeypatc
 
     monkeypatch.setattr(cms_secrets, "secret_findings", scan)
     verify_workspace(root)
-    assert len(calls) == 4
+    assert len(calls) == 3
     assert all(len(batch) == 1 for batch in calls)
     assert {str(path): text for batch in calls for path, text in batch.items()} == {
-        ".env": "ignored text",
         "direct": str(outside / "file"),
         "link": str(outside),
         "nested/file": "inside",
     }
+
+
+def test_workspace_prunes_only_matching_environment_entries(tmp_path, monkeypatch):
+    included = {".venv-other/keep", "other/.env/keep", "other/.venv"}
+    excluded = {".env", ".venv/dependency", "nested/.env", "nested/.venv/dependency"}
+    for name in included | excluded:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("example")
+    links = tmp_path / "links"
+    links.mkdir()
+    (links / ".env").symlink_to("../.venv", target_is_directory=True)
+    (links / ".venv").symlink_to("missing")
+
+    fwalk = os.fwalk
+    open_file = os.open
+    file_content = cms_secrets.file_content
+
+    def no_venv_descent(*args, **kwargs):
+        for entry in fwalk(*args, **kwargs):
+            assert Path(entry[0]).name != ".venv"
+            yield entry
+
+    def no_link_reads(*args, **kwargs):
+        pytest.fail("workspace read an excluded symlink")
+
+    def no_excluded_opens(path, flags, *args, **kwargs):
+        if path in {".env", ".venv"}:
+            mode = os.stat(
+                path, dir_fd=kwargs.get("dir_fd"), follow_symlinks=False
+            ).st_mode
+            assert not stat.S_ISLNK(mode), "workspace opened an excluded symlink"
+        return open_file(path, flags, *args, **kwargs)
+
+    def no_env_reads(parent, name, **kwargs):
+        assert name != ".env"
+        return file_content(parent, name, **kwargs)
+
+    monkeypatch.setattr(os, "fwalk", no_venv_descent)
+    monkeypatch.setattr(os, "readlink", no_link_reads)
+    monkeypatch.setattr(os, "open", no_excluded_opens)
+    monkeypatch.setattr(cms_secrets, "file_content", no_env_reads)
+    (views,) = cms_secrets.workspace_views(tmp_path)
+    assert {str(path) for path in views} == included
+
+
+@requires_gitleaks
+@pytest.mark.parametrize("staged", [False, True])
+def test_repository_scans_force_added_environment_paths(repo, token, staged):
+    (repo / ".gitignore").write_text(".env\n.venv/\n")
+    paths = ("nested/.env", "nested/.venv/dependency")
+    for name in paths:
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(token)
+    verify_repository(repo, staged=staged)
+
+    git(repo, "add", "--force", "--", *paths)
+    verify_workspace(repo)
+    with pytest.raises(ValueError) as error:
+        verify_repository(repo, staged=staged)
+    report = str(error.value)
+    assert report.splitlines()[1:] == [
+        f"  {name}: atlas-jina-api-key" for name in paths
+    ]
+    assert token not in report
 
 
 def test_workspace_read_error_does_not_expose_the_unreadable_path(
@@ -231,7 +298,7 @@ def test_workspace_read_error_does_not_expose_the_unreadable_path(
 ):
     (repo / "local.txt").touch()
 
-    def unreadable(*_):
+    def unreadable(*args, **kwargs):
         raise PermissionError(token)
 
     monkeypatch.setattr(cms_secrets, "file_content", unreadable)

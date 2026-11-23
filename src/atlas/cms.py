@@ -1220,7 +1220,12 @@ def scan_secrets(
     workspace: Annotated[
         bool,
         typer.Option(
-            "--workspace", help="Scan local files on disk, including Git-ignored files."
+            "--workspace",
+            help=(
+                "Scan local files, including Git-ignored files, but skip .env files, "
+                ".venv directories, and symlinks with either name at any depth. "
+                "Git-visible scans do not use these exclusions."
+            ),
         ),
     ] = False,
 ):

@@ -116,10 +116,12 @@ def blob_contents(root: Path, oids: Iterable[bytes]) -> Iterator[tuple[bytes, by
             raise ValueError
 
 
-def file_content(parent: int, name: str) -> tuple[bytes, bool] | None:
+def file_content(
+    parent: int, name: str, *, read_symlink: bool = True
+) -> tuple[bytes, bool] | None:
     try:
         mode = os.stat(name, dir_fd=parent, follow_symlinks=False).st_mode
-        if stat.S_ISLNK(mode):
+        if read_symlink and stat.S_ISLNK(mode):
             return os.readlink(os.fsencode(name), dir_fd=parent), False
         if stat.S_ISREG(mode):
             fd = os.open(
@@ -211,13 +213,18 @@ def workspace_views(root: Path) -> Iterator[Views]:
     for folder, dirs, files, parent in os.fwalk(
         root, onerror=unreadable, follow_symlinks=False
     ):
-        if ".git" in dirs:
-            dirs.remove(".git")
+        dirs[:] = [name for name in dirs if name not in {".git", ".venv"}]
+        # fwalk can open directory symlinks before deciding not to follow them.
+        if ".env" in dirs and stat.S_ISLNK(
+            os.stat(".env", dir_fd=parent, follow_symlinks=False).st_mode
+        ):
+            dirs.remove(".env")
         relative = PurePosixPath(Path(folder).relative_to(root))
         for name in dirs + files:
-            if name == ".git":
+            if name in {".git", ".env"}:
                 continue
-            content = file_content(parent, name)
+            # A non-directory .venv entry can be a dangling or file symlink.
+            content = file_content(parent, name, read_symlink=name != ".venv")
             if content is None:
                 continue
             path = relative / name
