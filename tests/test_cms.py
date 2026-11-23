@@ -1382,6 +1382,27 @@ def test_pages_artifact_build_rejects_repository_findings_before_render(git_stor
 @pytest.mark.skipif(
     shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
 )
+def test_workspace_secret_scan_is_opt_in(git_store):
+    git_store.path(".gitignore").write_text(".env\n")
+    local = git_store.path(".env")
+    key = "jina_" + "aA0bB1cC2dD3eE4fF5" * 3
+    local.write_text(key)
+
+    invoke(git_store, "scan-secrets")
+    invoke(git_store, "scan-secrets", "--staged")
+    result = invoke(git_store, "scan-secrets", "--workspace", code=2)
+    assert ".env: atlas-jina-api-key" in result.stderr
+    assert key not in result.stderr
+    result = invoke(git_store, "scan-secrets", "--workspace", "--staged", code=2)
+    assert "--workspace and --staged cannot be combined" in result.stderr
+    local.unlink()
+    result = invoke(git_store, "scan-secrets", "--workspace")
+    assert "Workspace secret scan passed." in result.stdout
+
+
+@pytest.mark.skipif(
+    shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
+)
 def test_pages_artifact_build_rejects_a_secret_introduced_by_render(
     git_store, monkeypatch
 ):

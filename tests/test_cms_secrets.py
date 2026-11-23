@@ -12,7 +12,7 @@ from uuid import UUID
 import pytest
 
 from atlas import cms_secrets, cms_source
-from atlas.cms_secrets import verify_repository
+from atlas.cms_secrets import verify_repository, verify_workspace
 
 requires_gitleaks = pytest.mark.skipif(
     shutil.which("gitleaks") is None, reason="Gitleaks is not installed"
@@ -158,6 +158,88 @@ def test_repository_scan_checks_worktree_index_and_head(repo, token):
         assert f"{name}: atlas-jina-api-key" in report
     assert "ignored-untracked" not in report
     assert token not in report
+
+
+@requires_gitleaks
+def test_workspace_scans_ignored_files_and_redacts_findings(repo, token):
+    (repo / ".gitignore").write_text(".env\nlocal/\n")
+    (repo / ".env").write_text(f'JINA_API_KEY="{token}"\n')
+    local = repo / "local"
+    local.mkdir()
+    (local / f"{token}.bin").write_bytes(b"\0\xff")
+    (local / "notes.ipynb").write_text(
+        json.dumps(
+            {
+                "nbformat": 4,
+                "cells": [{"cell_type": "code", "source": ["jina_", token[5:]]}],
+            }
+        )
+    )
+    (repo / ".git" / "local").write_text(token)
+    (repo / "removed").write_text(token)
+    git(repo, "add", "removed")
+    commit(repo)
+    (repo / "removed").unlink()
+
+    with pytest.raises(ValueError) as error:
+        verify_workspace(repo)
+    report = str(error.value)
+    assert report.splitlines() == [
+        "Workspace secret scan found possible secrets:",
+        "  .env: atlas-jina-api-key",
+        "  local/***.bin: atlas-jina-api-key",
+        "  local/notes.ipynb: atlas-jina-api-key",
+    ]
+    assert token not in report
+
+
+def test_workspace_scans_in_batches_without_following_links(tmp_path, monkeypatch):
+    root = tmp_path / "workspace"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "file").write_text("outside")
+    (root / "link").symlink_to(outside, target_is_directory=True)
+    (root / "direct").symlink_to(outside / "file")
+    os.mkfifo(root / "pipe")
+    nested = root / "nested"
+    nested.mkdir()
+    (nested / ".git").write_text("gitdir: elsewhere")
+    (nested / "file").write_text("inside")
+    (root / ".env").write_text("ignored text")
+    monkeypatch.setattr(cms_secrets, "WORKSPACE_BATCH_PATHS", 1)
+    calls = []
+
+    def scan(files):
+        calls.append(files)
+        return {}
+
+    monkeypatch.setattr(cms_secrets, "secret_findings", scan)
+    verify_workspace(root)
+    assert len(calls) == 4
+    assert all(len(batch) == 1 for batch in calls)
+    assert {str(path): text for batch in calls for path, text in batch.items()} == {
+        ".env": "ignored text",
+        "direct": str(outside / "file"),
+        "link": str(outside),
+        "nested/file": "inside",
+    }
+
+
+def test_workspace_read_error_does_not_expose_the_unreadable_path(
+    repo, monkeypatch, token
+):
+    (repo / "local.txt").touch()
+
+    def unreadable(*_):
+        raise PermissionError(token)
+
+    monkeypatch.setattr(cms_secrets, "file_content", unreadable)
+    with pytest.raises(
+        ValueError, match="workspace secret scan could not complete"
+    ) as error:
+        verify_workspace(repo)
+    assert token not in str(error.value)
 
 
 @requires_gitleaks

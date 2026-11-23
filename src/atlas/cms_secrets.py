@@ -1,4 +1,4 @@
-"""Screen repository paths and text before publication."""
+"""Screen repository and local workspace paths and text for secrets."""
 
 import errno
 import os
@@ -22,6 +22,8 @@ from atlas.cms_source import (
 type Views = dict[PurePosixPath, dict[str, None]]
 type Blobs = dict[bytes, dict[PurePosixPath, bool]]
 OBJECT_ID = re.compile(rb"(?:[0-9a-f]{40}|[0-9a-f]{64})")
+WORKSPACE_BATCH_PATHS = 2048
+WORKSPACE_BATCH_CHARS = 16 * 1024 * 1024
 
 
 def git_output(root: Path, *args: str, index_file: str | None = None) -> bytes:
@@ -114,16 +116,8 @@ def blob_contents(root: Path, oids: Iterable[bytes]) -> Iterator[tuple[bytes, by
             raise ValueError
 
 
-def worktree_content(root: Path, path: PurePosixPath) -> tuple[bytes, bool] | None:
-    # Walk through opened directories so a replaced parent cannot redirect reads.
-    flags = os.O_DIRECTORY | os.O_NOFOLLOW | os.O_RDONLY
-    parent = os.open(root, flags)
+def file_content(parent: int, name: str) -> tuple[bytes, bool] | None:
     try:
-        for part in path.parts[:-1]:
-            child = os.open(part, flags, dir_fd=parent)
-            os.close(parent)
-            parent = child
-        name = path.name
         mode = os.stat(name, dir_fd=parent, follow_symlinks=False).st_mode
         if stat.S_ISLNK(mode):
             return os.readlink(os.fsencode(name), dir_fd=parent), False
@@ -134,6 +128,22 @@ def worktree_content(root: Path, path: PurePosixPath) -> tuple[bytes, bool] | No
             with os.fdopen(fd, "rb") as file:
                 if stat.S_ISREG(os.fstat(fd).st_mode):
                     return file.read(), True
+    except OSError as error:
+        if error.errno not in {errno.ENOENT, errno.ENOTDIR, errno.ELOOP}:
+            raise
+    return None
+
+
+def worktree_content(root: Path, path: PurePosixPath) -> tuple[bytes, bool] | None:
+    # Walk through opened directories so a replaced parent cannot redirect reads.
+    flags = os.O_DIRECTORY | os.O_NOFOLLOW | os.O_RDONLY
+    parent = os.open(root, flags)
+    try:
+        for part in path.parts[:-1]:
+            child = os.open(part, flags, dir_fd=parent)
+            os.close(parent)
+            parent = child
+        return file_content(parent, path.name)
     except OSError as error:
         if error.errno not in {errno.ENOENT, errno.ENOTDIR, errno.ELOOP}:
             raise
@@ -191,6 +201,37 @@ def repository_views(root: Path, *, staged: bool) -> Views:
     return views
 
 
+def workspace_views(root: Path) -> Iterator[Views]:
+    def unreadable(error: OSError) -> None:
+        raise error
+
+    batch: Views = {}
+    chars = 0
+    # fwalk supplies open directory descriptors and does not follow symlinks.
+    for folder, dirs, files, parent in os.fwalk(
+        root, onerror=unreadable, follow_symlinks=False
+    ):
+        if ".git" in dirs:
+            dirs.remove(".git")
+        relative = PurePosixPath(Path(folder).relative_to(root))
+        for name in dirs + files:
+            if name == ".git":
+                continue
+            content = file_content(parent, name)
+            if content is None:
+                continue
+            path = relative / name
+            variants = batch[path] = {}
+            add_views(variants, path, *content)
+            chars += sum(map(len, variants))
+            if len(batch) >= WORKSPACE_BATCH_PATHS or chars >= WORKSPACE_BATCH_CHARS:
+                yield batch
+                batch = {}
+                chars = 0
+    if batch:
+        yield batch
+
+
 def scan_views(views: Views) -> dict[PurePosixPath, SecretFinding]:
     inputs = {}
     aliases = {}
@@ -213,6 +254,19 @@ def scan_views(views: Views) -> dict[PurePosixPath, SecretFinding]:
     return blocked
 
 
+def reject_findings(blocked: dict[PurePosixPath, SecretFinding], *, scope: str) -> None:
+    if not blocked:
+        return
+    lines = [f"{scope} secret scan found possible secrets:"]
+    for path, finding in sorted(blocked.items()):
+        label = redact_path(path, finding.path_spans)
+        label = "".join(
+            char if char.isprintable() else repr(char)[1:-1] for char in label
+        )
+        lines.append(f"  {label}: {', '.join(sorted(finding.rules))}")
+    raise ValueError("\n".join(lines))
+
+
 def verify_repository(root: Path, *, staged: bool = False) -> None:
     """Raise a safe diagnostic for possible secrets, or if scanning could not run."""
     try:
@@ -229,12 +283,15 @@ def verify_repository(root: Path, *, staged: bool = False) -> None:
         blocked = scan_views(views)
     except (OSError, RuntimeError, subprocess.SubprocessError):
         raise ValueError("The secret scan failed.") from None
-    if blocked:
-        lines = ["Repository secret scan found possible secrets:"]
-        for path, finding in sorted(blocked.items()):
-            label = redact_path(path, finding.path_spans)
-            label = "".join(
-                char if char.isprintable() else repr(char)[1:-1] for char in label
-            )
-            lines.append(f"  {label}: {', '.join(sorted(finding.rules))}")
-        raise ValueError("\n".join(lines))
+    reject_findings(blocked, scope="Repository")
+
+
+def verify_workspace(root: Path) -> None:
+    """Scan files on disk independently of Git's index and ignore rules."""
+    blocked = {}
+    try:
+        for views in workspace_views(root.resolve()):
+            blocked.update(scan_views(views))
+    except (OSError, RuntimeError, subprocess.SubprocessError):
+        raise ValueError("The workspace secret scan could not complete.") from None
+    reject_findings(blocked, scope="Workspace")

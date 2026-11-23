@@ -19,7 +19,7 @@ wheels/
 !.env.example
 !/projects/production-agentic-rag/week[3-7]/.env.test
 
-# Local Vault audit records and temporary/lock files
+# Keep legacy local audit logs ignored.
 /.atlas/logs/
 /.atlas/cms/
 !/.atlas/plans/

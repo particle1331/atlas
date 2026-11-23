@@ -22,7 +22,7 @@ from PIL import Image
 from rich.console import Console
 from rich.table import Table
 
-from atlas.cms_secrets import verify_repository
+from atlas.cms_secrets import verify_repository, verify_workspace
 from atlas.cms_site import (
     file_stamp,
     generate,
@@ -1217,9 +1217,22 @@ def scan_secrets(
             "--staged", help="Scan only the full Git index (the next commit)."
         ),
     ] = False,
+    workspace: Annotated[
+        bool,
+        typer.Option(
+            "--workspace", help="Scan local files on disk, including Git-ignored files."
+        ),
+    ] = False,
 ):
-    """Scan tracked and non-ignored untracked files, plus HEAD and staged contents."""
-    verify_repository(store_for(ctx).root, staged=staged)
+    """Scan Git-visible files, or audit the local workspace with --workspace."""
+    if workspace and staged:
+        raise ValueError("--workspace and --staged cannot be combined.")
+    root = store_for(ctx).root
+    if workspace:
+        verify_workspace(root)
+        typer.echo("Workspace secret scan passed.")
+        return
+    verify_repository(root, staged=staged)
     typer.echo("Repository secret scan passed.")
 
 

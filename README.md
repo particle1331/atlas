@@ -1,20 +1,22 @@
 # Atlas
 
-Atlas provides the `at` CLI for content authoring and a local secret vault, and
-currently targets macOS. The CMS manages posts, collections and résumé entries.
-The vault uses the system keyring; secret names and values are shared across
-projects for the current operating system user.
+Atlas provides the `at` CLI for authoring and managing posts, collections and
+résumé entries.
 
 This README covers setup, user workflows and site behavior.
 [AGENTS.md](AGENTS.md) contains working rules for agents editing this repository.
 
+## Local development with Docker Sandboxes
+
+**We use Docker Sandboxes for local development.** Run the setup and development
+commands below inside your sandbox unless a step says to run it on the host.
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and
 [Gitleaks](https://github.com/gitleaks/gitleaks) (`brew install gitleaks` on macOS).
-After cloning, run this once from the repository root:
+Run this from the repository root:
 
 ```sh
 make init
-uv run at --help
 ```
 
 `make init` enables the [secret-scanning Git hook](#secret-scanning) in this
@@ -22,9 +24,87 @@ clone and installs the locked Python dependencies. It confirms that the hook is
 enabled; the scan runs when you commit, not during setup. Cloning does not enable
 hooks from the cloned repository or copy its local Git configuration.
 
-Run `make doctor` to check the vault entries and run pytest with line and branch
-coverage. The report includes uncovered line numbers. Both checks run, and the
-command fails if either check fails.
+Run `make doctor` to run pytest with line and branch coverage. The report
+includes uncovered line numbers.
+
+### Sandbox Python environment
+
+When your sandbox shares the Atlas checkout with a Mac, keep the sandbox's
+Linux virtual environment outside the checkout. Otherwise, `uv` uses `.venv`
+on both sides, and the two environments are not interchangeable.
+
+On Linux, including Docker Sandboxes, `make init` uses
+`~/.local/share/atlas/venv`. If `/etc/sandbox-persistent.sh` exists and is
+writable, it adds the export unless the line is already there. New sandbox
+shells pick it up automatically; in your current shell, run
+`. /etc/sandbox-persistent.sh`. If the file is missing or read-only,
+`make init` prints the command to run before using `uv`:
+
+```sh
+export UV_PROJECT_ENVIRONMENT="$HOME/.local/share/atlas/venv"
+```
+
+After recreating a sandbox, run `make init` again.
+
+**On your Mac**, leave the variable unset so `uv` uses `.venv`. Leave a working
+`.venv` as is. If the sandbox already replaced it with a Linux environment,
+delete only that broken `.venv` and run `uv sync --locked` from the Atlas root
+on your Mac to recreate it.
+
+### Connect VS Code to the sandbox over SSH
+
+On the host, sign in to Docker Sandboxes and install the
+[Remote - SSH extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh)
+in VS Code. Then run these commands on the host:
+
+```sh
+sbx setup ssh
+sbx ls
+ssh opencode-atlas.sbx
+```
+
+Use the name of your existing sandbox from `sbx ls` in place of `opencode-atlas`.
+`sbx setup ssh` configures the host's SSH client. The Docker Sandboxes daemon
+handles the connection locally, so you don't need to install `sshd`, publish a
+port, or create an SSH key.
+
+Once terminal SSH works, run **Remote-SSH: Connect to Host...** from the VS Code
+Command Palette and type `opencode-atlas.sbx` (or your `<sandbox-name>.sbx`)
+manually; it may not appear in the host picker. The first connection installs
+VS Code Server in the sandbox. Use **File → Open Folder** to open the Atlas
+checkout inside the sandbox, not the default `/home/agent` folder. For notebooks,
+select the [sandbox Python kernel](#vs-code-notebook-kernel).
+
+If VS Code gets stuck reconnecting on macOS, set `remote.SSH.useLocalServer`
+to `false` in your local VS Code user settings. See
+[Docker's VS Code SSH guide](https://docs.docker.com/ai/sandboxes/integrations/vscode/)
+for troubleshooting.
+
+### Global custom secrets
+
+Run `sbx secret set-custom` **on the host** to register a provider API key.
+Omit `--sandbox` to set the secret globally, so you can use it across sandboxes
+on that host. For example, to enter your DeepSeek key at the prompt:
+
+```sh
+sbx secret set-custom --host api.deepseek.com --env DEEPSEEK_API_KEY
+```
+
+The command also accepts `--value '<api_key_value>'`, but prefer the prompt:
+passing a real value as an argument can expose it in shell history and process
+listings.
+
+Inside the sandbox, the notebooks read `DEEPSEEK_API_KEY` from the environment.
+It holds a placeholder; the Docker Sandboxes proxy substitutes the real key in
+requests to `api.deepseek.com`. If the variable is missing in an existing
+sandbox, follow
+[Docker's custom secret instructions](https://docs.docker.com/ai/sandboxes/configuration/credentials/#custom-secrets)
+to configure the placeholder for future sessions, then reconnect VS Code and
+restart the notebook kernel. Keep real keys out of the shared checkout.
+
+If you used the old Atlas vault, register your provider keys with `sbx`.
+Atlas does not migrate or delete existing keyring entries; you can remove the
+old `atlas.vault` entries from your system keyring once you've verified the new setup.
 
 ## Content CMS and Quarto frontend
 
@@ -236,6 +316,28 @@ Source notebooks contain ordinary cells. The CMS supplies document metadata
 during sync, and Quarto supplies the TOC; no front matter, planning cells or
 generated navigation/contents lists are required. Use
 `uv run at notebook <command> --help` for command options.
+
+### VS Code notebook kernel
+
+Open the Atlas repository root in VS Code with the Python and Jupyter
+extensions installed. After `make init` on macOS, open a notebook under
+`content/posts/` and choose **Select Kernel → Python Environments**. Select
+the interpreter from this checkout's `.venv`.
+
+If VS Code is [connected over SSH](#connect-vs-code-to-the-sandbox-over-ssh) to
+the Linux sandbox, use the sandbox interpreter
+(`~/.local/share/atlas/venv/bin/python`), not the Mac's `.venv`. If the
+interpreter you want is missing from the picker, run the following in the same
+environment where VS Code runs Jupyter, from the Atlas root:
+
+```sh
+uv run --locked python -m ipykernel install --user --name atlas --display-name "Python (Atlas)"
+```
+
+Then choose **Select Kernel → Jupyter Kernel → Python (Atlas)**. This registers
+the current Atlas environment for your user; rerun it if the environment moves.
+To verify the active kernel, run `import sys; print(sys.executable)` in a
+notebook cell and check that the path points to the intended Atlas environment.
 
 ### Saved execution
 
@@ -456,93 +558,6 @@ how many employment entries appear before the page break. The default is four.
 
 If PDF rendering fails, the command stops and preserves the previous download.
 
-## Vault
-
-```sh
-# Create or replace a secret; prompts for a hidden value and confirmation.
-uv run at vault set API_TOKEN
-
-# Read a value from stdin; removes one trailing line ending.
-uv run at vault set API_TOKEN --stdin < /path/to/token
-
-# Copy the value when running interactively; write it to stdout when piped.
-uv run at vault get API_TOKEN
-
-# Delete the local value; prompts for confirmation.
-uv run at vault rm API_TOKEN
-
-# Delete without prompting, including in scripts.
-uv run at vault rm API_TOKEN --yes  # or -y
-
-# Check the names declared in the Atlas repository root's .env.example.
-uv run at vault check
-```
-
-Declare expected names in the Atlas repository root's `.env.example`, for example:
-
-```dotenv
-# Required secrets
-API_TOKEN=
-DATABASE_URL=
-```
-
-Use one `NAME=` entry per line with an empty value. Blank lines and full-line `#`
-comments (including indented comments) are skipped. `export` declarations, inline
-comments, quoted values, and multiline values are not supported. Duplicate names
-are checked separately. The path is fixed by Atlas's project root; it does not
-depend on the current directory and has no override option.
-
-`check` reports `[ok]` for each stored name and `[no]` for each missing name,
-followed by a missing-count summary if needed. It does not print stored values.
-The manifest must exist; a missing file raises `FileNotFoundError` and exits with
-code `1`. A manifest containing only blank lines or comments, or an empty manifest,
-succeeds and reports `No secrets declared.`
-
-`set` requires a terminal for hidden input unless `--stdin` is used. Empty secret
-values are rejected. `rm` requires a terminal for confirmation unless `--yes`
-or `-y` is used.
-
-`get` copies a secret to the clipboard when stdout is a terminal. When stdout is
-redirected or piped, it writes the stored value to stdout without adding a newline.
-
-In Python, import the vault reader and pass its return value directly to the
-client that needs it.
-
-```python
-from atlas.vault import get_secret
-
-api_key = get_secret("API_TOKEN")
-```
-
-`get_secret` returns the value silently, returns `None` when the entry is absent,
-and raises `atlas.vault.VaultError` on keyring failure.
-
-Vault commands leave `.env.example` unchanged. Deleting a value makes its name
-appear as missing on the next check. Remove a name from `.env.example` when the
-project stops requiring it.
-
-Exit codes are `0` for success (including cancelled deletion), `1` for missing
-secrets or a missing manifest, and `2` for invalid manifest entries, input errors,
-or keyring/clipboard errors.
-Python keyring chooses the credential backend; unavailable or disabled backends
-produce an error. Run `uv run keyring diagnose` to inspect backend configuration.
-
-Vault commands write a local audit log to `.atlas/logs/vault.jsonl` in the Atlas
-repository root. This directory, including lock and temporary files, is gitignored.
-Each JSON line records a UTC timestamp, operation, targeted secret names, outcome
-(`success`, `failure`, or `cancelled`), exit code, and process ID. Set the optional
-`ATLAS_VAULT_SESSION_ID` environment variable to attach a self-reported session
-label (limited to 256 characters). Secret values, stdin, and exception messages
-are never recorded.
-
-Only records within the last 30 days are kept. Expired records are removed when
-each command starts and finishes; there is no background cleanup while Vault is
-idle. Malformed, undated, or future-dated records are discarded during cleanup.
-New log files are created with owner-only permissions, and concurrent commands
-serialize updates. A logging failure emits a sanitized warning to stderr without
-changing the command result. These logs cover calls through Vault, not direct
-keyring access, and are not protected against changes by the same OS user.
-
 ## Other stuff, utilities 
 
 ### OpenCode
@@ -595,6 +610,24 @@ including raw notebooks and the decoded cell source and saved text outputs shown
 by the companion browser. It also checks the index and `HEAD` when they differ
 from the working tree. It does not audit earlier commits or binary contents.
 
+To audit the current workspace on disk, including Git-ignored files such as
+local `.env` files, generated output, and dependencies:
+
+```sh
+uv run --locked at cms scan-secrets --workspace
+```
+
+This local scan checks file paths and UTF-8 text (including decoded notebook
+cells and saved text outputs), plus symlink names and link text without following
+links. It skips `.git` metadata and special files and does not inspect binary
+contents or unpack archives. It scans only the selected workspace, not the
+entire machine, Git index, or commit history. Findings can include fixtures and
+dependency examples; the report shows paths and rule IDs, not matched values.
+This scan does not change what agents can read.
+
+To scan a different directory, use
+`uv run --locked at cms --root /path/to/audit scan-secrets --workspace`.
+
 Rules recognize provider token formats, quoted password assignments, and
 likely literal passwords in unquoted uppercase environment assignments. The
 unquoted rule skips simple variable references and the two exact Redis
@@ -607,7 +640,8 @@ prove that no secrets are present.
 If a different hooks path or executable hooks already exist, setup stops rather
 than bypassing them. To keep that setup, add the staged scan command below to
 your existing pre-commit hook (or create one in that directory) and run
-`uv sync --locked` separately.
+`uv sync --locked` separately. On Linux, use the
+[sandbox Python environment](#sandbox-python-environment) for both commands.
 
 The hook runs `uv run --locked at cms scan-secrets --staged` over the full index,
 not just changed lines. This checks what the next commit would contain without
@@ -616,4 +650,4 @@ blocking a cleanup commit over a secret present only in `HEAD`.
 Pages CI runs after a push: it can block publication, not prevent a credential
 from reaching the remote. Enable GitHub secret scanning and push protection if
 available. Revoke or rotate any real credential that has been committed, even
-if a later commit removes it. Run `uv run at vault check` to check vault entries.
+if a later commit removes it.
