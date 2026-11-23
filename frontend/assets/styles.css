@@ -3,6 +3,12 @@ body, p {
   hyphens: auto;
 }
 
+/* Diagram labels should not inherit the article's justified paragraph style. */
+.mermaid :is(.nodeLabel, .edgeLabel, p) {
+  text-align: center;
+  hyphens: none;
+}
+
 /* Keep titles and section headings left-aligned independently of body text. */
 main.content :is(h1, h2, h3, h4, h5, h6) {
   text-align: left;
@@ -12,6 +18,25 @@ main.content :is(h1, h2, h3, h4, h5, h6) {
 table, thead, tbody, tr, td, th {
   text-align: left !important;
   hyphens: auto;
+}
+
+/* Center selected tables without expanding them to the full page width. */
+.design-traps-table {
+  inline-size: 100%;
+  max-inline-size: 1060px;
+  justify-self: center;
+}
+
+.design-traps-table table {
+  width: 100%;
+  table-layout: fixed;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 991.98px) {
+  .page-columns > .design-traps-table {
+    grid-column: body-content-start / body-content-end;
+  }
 }
 
 .sidebar {

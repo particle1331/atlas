@@ -318,6 +318,15 @@ during sync, and Quarto supplies the TOC; no front matter, planning cells or
 generated navigation/contents lists are required. Use
 `uv run at notebook <command> --help` for command options.
 
+For a dense design table, a fenced div with
+`{.column-screen-inset .design-traps-table}` centers a wider table,
+capped at 1060px (about one-third wider than the desktop text), rather than
+using the full page width. Narrow screens use the normal text column.
+Keep any `tbl-colwidths` attribute inside the div with the table.
+Mermaid diagram labels are centered without hyphenation, independently of the
+justified article prose. Use `<br/>` inside quoted Mermaid labels to break long
+text at natural phrases.
+
 ### VS Code notebook kernel
 
 Open the Atlas repository root in VS Code with the Python and Jupyter
