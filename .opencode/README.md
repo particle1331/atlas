@@ -12,7 +12,8 @@ and instructions. Every custom agent must specify its reasoning level as
 
 | Agents | Model and reasoning |
 | --- | --- |
-| Orchestrator, fixer, designer, observer | `openai/gpt-6.2-sol#high` |
+| Orchestrator | `openai/gpt-6.1-sol#high` |
+| Fixer, designer, observer | `openai/gpt-6.2-sol#high` |
 | Oracle | `openai/gpt-6.2-astra#xhigh` |
 | Librarian | `openai/gpt-6-luna#medium` |
 | Explore | `openai/gpt-6-luna-fast#low` |

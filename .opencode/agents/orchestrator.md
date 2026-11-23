@@ -1,7 +1,7 @@
 ---
 description: Coordinates repository work, delegates focused tasks to specialist agents, and verifies their results.
 mode: primary
-model: openai/gpt-6.2-sol#high
+model: openai/gpt-6.1-sol#high
 permissions:
   - action: subagent
     resource: "*"
