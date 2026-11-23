@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import sys
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -400,7 +401,7 @@ def test_remove_missing_tag_does_not_write(store):
     assert store.get("post/example") == record
 
 
-@pytest.mark.parametrize("mode", ["file", "stdin-file", "pipe"])
+@pytest.mark.parametrize("mode", ["file", "stdin-file", "stdin-file-tty", "pipe"])
 @pytest.mark.parametrize(
     "text",
     ["", "Single line without a final newline", "Updated café prose\n第二行\n"],
@@ -422,20 +423,38 @@ def test_edit_accepts_noninteractive_source_without_changing_other_cells(
         path.write_text(text)
         args = ["--file", str(path)]
         stdin = "Unrelated stdin text"
-    elif mode == "stdin-file":
-        # Keep CLI parsing real while making this explicit stdin source a TTY.
-        monkeypatch.setattr(
-            "atlas.notebook_cli.sys",
-            SimpleNamespace(
-                stdin=SimpleNamespace(isatty=lambda: True, read=lambda: text)
-            ),
-        )
+    elif mode in {"stdin-file", "stdin-file-tty"}:
         args = ["--file", "-"]
+        if mode == "stdin-file-tty":
+            # The actual runner stdin is a TTY, including for Click's accessors.
+            class TerminalInput(BytesIO):
+                def isatty(self):
+                    return True
+
+            monkeypatch.setattr(
+                "typer.testing.make_input_stream",
+                lambda value, charset: TerminalInput(value.encode(charset)),
+            )
     result = invoke(store, "edit-cell", "example", "--index", "0", *args, input=stdin)
     assert json.loads(result.stdout)["changed"] is True
     expected = copy.deepcopy(before)
     expected["cells"][0]["source"] = text.splitlines(keepends=True)
     assert notebook(store) == expected
+
+
+def test_named_file_source_does_not_read_stdin(tmp_path, monkeypatch):
+    path = tmp_path / "source.md"
+    text = "File content, not stdin.\n"
+    path.write_text(text)
+
+    def unexpected_read(*_):
+        pytest.fail("A named source file must not consume stdin")
+
+    monkeypatch.setattr(
+        sys, "stdin", SimpleNamespace(isatty=lambda: False, read=unexpected_read)
+    )
+
+    assert source_input(None, path, "Original prose", ".md") == text
 
 
 def test_edit_missing_file_does_not_fall_back_to_stdin(store):
