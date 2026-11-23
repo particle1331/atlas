@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -43,14 +44,69 @@ def store(tmp_path):
     return store
 
 
-def invoke(store, *args, code=0):
-    result = CliRunner().invoke(app, ["notebook", "--root", str(store.root), *args])
+def invoke(store, *args, code=0, input=None):
+    result = CliRunner().invoke(
+        app, ["notebook", "--root", str(store.root), *args], input=input
+    )
     assert result.exit_code == code, (result.output, result.exception)
     return result
 
 
 def notebook(store):
     return nb.load(store.path("content/posts/example.ipynb").read_bytes())
+
+
+def test_map_and_count_report_sources_without_writing(store, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "160")
+    missing = store.new("post", "Missing")["record"]
+    store.path(missing["source_path"]).unlink()
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+
+    result = invoke(store, "map")
+    rows = result.stdout.replace("│", " ")
+    assert re.search(
+        r"post/example\s+draft\s+2\s+content/posts/example[.]ipynb\s+Example", rows
+    )
+    assert re.search(
+        r"post/missing\s+draft\s+missing\s+content/posts/missing[.]ipynb\s+Missing",
+        rows,
+    )
+    assert invoke(store, "count", "Example").stdout == (
+        f"post/example: 2 cells (notebook:{digest(before)})\n"
+    )
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+    assert not store.path(missing["source_path"]).exists()
+
+
+def test_kernels_reports_available_specs_without_starting_them(store, monkeypatch):
+    monkeypatch.setattr(
+        "jupyter_client.kernelspec.KernelSpecManager.get_all_specs",
+        lambda _: {
+            "python3": {"spec": {"display_name": "Python 3"}},
+            "custom": {"spec": {}},
+        },
+    )
+    result = invoke(store, "kernels")
+    assert "Display name" in result.stdout
+    rows = result.stdout.replace("│", " ")
+    assert re.search(r"custom\s+custom", rows)
+    assert re.search(r"python3\s+Python 3", rows)
+    assert result.stdout.index("custom") < result.stdout.index("python3")
+
+
+@pytest.mark.parametrize(
+    "locator, expected", [(("--index", "0"), []), (("--tag", "example"), ["example"])]
+)
+def test_reading_tags_does_not_write(store, locator, expected):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    assert json.loads(invoke(store, "tag", "example", *locator).stdout) == expected
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
 
 
 @pytest.mark.parametrize(
@@ -173,6 +229,155 @@ def test_cell_mutations_finish_and_preserve_other_content(store):
     assert after["cells"][1]["outputs"] == []
 
 
+@pytest.mark.parametrize(
+    "locator, position",
+    [
+        (("--before", "0"), 0),
+        (("--after", "0"), 1),
+        (("--after", "1"), 2),
+        (("--tag", "example"), 2),
+        (("--label", "fig-example"), 2),
+    ],
+)
+def test_insert_locators_preserve_existing_cells(store, locator, position):
+    before = notebook(store)
+    before["cells"].append(nb.cell("Trailing prose"))
+    store.path("content/posts/example.ipynb").write_bytes(nb.dump(before))
+    invoke(
+        store,
+        "insert-cell",
+        "example",
+        *locator,
+        "--type",
+        "code",
+        "--content",
+        "print('inserted')",
+    )
+    after = notebook(store)
+    inserted = after["cells"][position]
+    assert inserted == {
+        "id": inserted["id"],
+        "cell_type": "code",
+        "metadata": {},
+        "source": ["print('inserted')"],
+        "execution_count": None,
+        "outputs": [],
+    }
+    assert inserted["id"] not in {cell["id"] for cell in before["cells"]}
+    del after["cells"][position]
+    assert after == before
+
+
+@pytest.mark.parametrize(
+    "locator, message, preserved",
+    [
+        ((), "Use exactly one of", False),
+        (("--before", "0", "--after", "0"), "Use exactly one of", False),
+        (("--tag", "example", "--label", "fig-example"), "Use exactly one of", False),
+        (("--after", "2"), "Insert position is out of range.", True),
+        (("--before", "3"), "Insert position is out of range.", True),
+        (("--tag", "absent"), "No notebook cell matched that locator.", True),
+        (("--tag", "ambiguous"), "Ambiguous locator matched cells", True),
+    ],
+)
+def test_invalid_insert_does_not_write(store, locator, message, preserved):
+    path = store.path("content/posts/example.ipynb")
+    value = notebook(store)
+    for cell in value["cells"]:
+        cell["metadata"].setdefault("tags", []).append("ambiguous")
+    path.write_bytes(nb.dump(value))
+    before = path.read_bytes()
+    record = store.get("post/example")
+    result = invoke(
+        store, "insert-cell", "example", *locator, "--content", "Unsaved text", code=2
+    )
+    assert message in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+    if preserved:
+        error = json.loads(result.stderr)["error"]
+        recovered = Path(error.split("preserved at ", 1)[1].removesuffix("."))
+        assert recovered.parent == store.path(".atlas/cms/edits")
+        assert recovered.read_text() == "Unsaved text"
+
+
+@pytest.mark.parametrize(
+    "locator, targets",
+    [
+        ((), [1, 3]),
+        (("--from", "0"), [1, 3]),
+        (("--from", "2"), [3]),
+        (("--index", "1"), [1]),
+        (("--index", "3"), [3]),
+        (("--tag", "later"), [3]),
+        (("--label", "fig-later"), [3]),
+    ],
+)
+def test_clear_outputs_changes_only_selected_code_outputs(store, locator, targets):
+    before = notebook(store)
+    later = nb.cell("#| label: fig-later\nprint('later')", "code")
+    later["metadata"]["tags"] = ["later"]
+    later.update(
+        execution_count=8,
+        outputs=[{"output_type": "stream", "name": "stdout", "text": "later\n"}],
+    )
+    before["cells"].extend([nb.cell("Between code cells"), later])
+    store.path("content/posts/example.ipynb").write_bytes(nb.dump(before))
+    expected = copy.deepcopy(before)
+    for index in targets:
+        expected["cells"][index]["outputs"] = []
+
+    invoke(store, "clear-outputs", "example", *locator)
+
+    assert notebook(store) == expected
+
+
+@pytest.mark.parametrize(
+    "locator, message",
+    [
+        (("--from", "1", "--index", "1"), "Use --from alone."),
+        (("--from", "1", "--tag", "example"), "Use --from alone."),
+        (("--from", "1", "--label", "fig-example"), "Use --from alone."),
+        (("--from", "2"), "Start index is out of range."),
+        (("--index", "0"), "No code cells matched that locator."),
+        (("--tag", "absent"), "No code cells matched that locator."),
+    ],
+)
+def test_invalid_clear_outputs_does_not_write(store, locator, message):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    result = invoke(store, "clear-outputs", "example", *locator, code=2)
+    assert message in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        ("insert-cell", "--after", "0", "--content", "Stale edit"),
+        ("clear-outputs", "--from", "0"),
+    ],
+)
+def test_insert_and_clear_outputs_reject_stale_revision(store, command):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    result = invoke(
+        store,
+        command[0],
+        "example",
+        *command[1:],
+        "--expected-revision",
+        "notebook:" + "0" * 64,
+        code=3,
+    )
+    assert f"current revision is notebook:{digest(before)}" in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+
+
 def test_remove_requires_an_explicit_unambiguous_locator(store):
     original = notebook(store)
     invoke(store, "remove-cell", "example", code=2)
@@ -183,6 +388,99 @@ def test_remove_requires_an_explicit_unambiguous_locator(store):
     store.path("content/posts/example.ipynb").write_bytes(nb.dump(value))
     invoke(store, "remove-cell", "example", "--label", "fig-example", code=2)
     assert notebook(store) == value
+
+
+def test_remove_missing_tag_does_not_write(store):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    result = invoke(store, "remove-cell", "example", "--tag", "absent", code=2)
+    assert "No notebook cells matched that locator." in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+
+
+@pytest.mark.parametrize("mode", ["file", "stdin-file", "pipe"])
+@pytest.mark.parametrize(
+    "text",
+    ["", "Single line without a final newline", "Updated café prose\n第二行\n"],
+    ids=["empty", "single-line", "multiline-unicode"],
+)
+def test_edit_accepts_noninteractive_source_without_changing_other_cells(
+    store, mode, text, monkeypatch
+):
+    before = notebook(store)
+    args = []
+    stdin = text
+
+    def unexpected_editor(*_):
+        pytest.fail("Noninteractive source must not open an editor")
+
+    monkeypatch.setattr("atlas.notebook_cli.edit_text", unexpected_editor)
+    if mode == "file":
+        path = store.root / "source.md"
+        path.write_text(text)
+        args = ["--file", str(path)]
+        stdin = "Unrelated stdin text"
+    elif mode == "stdin-file":
+        # Keep CLI parsing real while making this explicit stdin source a TTY.
+        monkeypatch.setattr(
+            "atlas.notebook_cli.sys",
+            SimpleNamespace(
+                stdin=SimpleNamespace(isatty=lambda: True, read=lambda: text)
+            ),
+        )
+        args = ["--file", "-"]
+    result = invoke(store, "edit-cell", "example", "--index", "0", *args, input=stdin)
+    assert json.loads(result.stdout)["changed"] is True
+    expected = copy.deepcopy(before)
+    expected["cells"][0]["source"] = text.splitlines(keepends=True)
+    assert notebook(store) == expected
+
+
+def test_edit_missing_file_does_not_fall_back_to_stdin(store):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    missing = store.root / "missing-source.md"
+
+    result = invoke(
+        store,
+        "edit-cell",
+        "example",
+        "--index",
+        "0",
+        "--file",
+        str(missing),
+        input="Piped text must not replace the missing file.",
+        code=2,
+    )
+
+    assert missing.name in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+
+
+def test_edit_rejects_conflicting_source_inputs_without_writing(store):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    result = invoke(
+        store,
+        "edit-cell",
+        "example",
+        "--index",
+        "0",
+        "--content",
+        "Content argument",
+        "--file",
+        "-",
+        input="Piped input",
+        code=2,
+    )
+    assert "Use only one of --content or --file." in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
 
 
 def test_editor_can_clear_a_cell(monkeypatch):
@@ -260,6 +558,25 @@ def external_image(store, extension=".png"):
     else:
         Image.new("RGB", (8, 8), "blue").save(image)
     return image
+
+
+def test_figure_label_requires_replace_without_writing(store):
+    path = store.path("content/posts/example.ipynb")
+    before = path.read_bytes()
+    record = store.get("post/example")
+    result = invoke(
+        store,
+        "figure",
+        "example",
+        str(store.root / "unused.png"),
+        "--label",
+        "fig-example",
+        code=2,
+    )
+    assert "Use --label with --replace to select an existing figure." in result.stderr
+    assert path.read_bytes() == before
+    assert store.get("post/example") == record
+    assert not store.path("content/images/post").exists()
 
 
 @pytest.mark.parametrize("extension", [".png", ".jpg", ".jpeg", ".svg"])
@@ -566,6 +883,14 @@ def test_diff_has_separate_removed_and_added_lines(store):
         cwd=store.root,
         check=True,
     )
+    invoke(store, "clear-outputs", "example", "--index", "1")
+    assert notebook(store)["cells"][1]["outputs"] == []
+    source = store.path("content/posts/example.ipynb")
+    before = source.read_bytes()
+    record = store.get("post/example")
+    assert invoke(store, "diff", "example").stdout == ""
+    assert source.read_bytes() == before
+    assert store.get("post/example") == record
     invoke(store, "edit-cell", "example", "--index", "1", "--content", "print('new')")
     result = invoke(store, "diff", "example")
     assert "-print('old')\n+print('new')\n" in result.stdout
