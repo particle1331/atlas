@@ -24,8 +24,9 @@ clone and installs the locked Python dependencies. It confirms that the hook is
 enabled; the scan runs when you commit, not during setup. Cloning does not enable
 hooks from the cloned repository or copy its local Git configuration.
 
-Run `make doctor` to run pytest with line and branch coverage. The report
-includes uncovered line numbers.
+Run `make doctor` to [scan the local workspace for secrets](#secret-scanning),
+including Git-ignored files, and run pytest with line and branch coverage.
+Both checks run, and the command fails if either check fails.
 
 ### Sandbox Python environment
 
@@ -610,8 +611,9 @@ including raw notebooks and the decoded cell source and saved text outputs shown
 by the companion browser. It also checks the index and `HEAD` when they differ
 from the working tree. It does not audit earlier commits or binary contents.
 
-To audit the current workspace on disk, including Git-ignored files such as
-local `.env` files, generated output, and dependencies:
+`make doctor` also audits the workspace on disk, including Git-ignored files
+such as local `.env` files, generated output, and dependencies. To run just
+that scan:
 
 ```sh
 uv run --locked at cms scan-secrets --workspace

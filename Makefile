@@ -54,4 +54,7 @@ build-pages:
 	QUARTO="$(QUARTO)" uv run --locked at cms build --for-pages
 
 doctor:
-	uv run pytest --cov=atlas --cov-branch --cov-report=term-missing
+	@status=0; \
+	uv run --locked at cms scan-secrets --workspace || status=1; \
+	uv run pytest --cov=atlas --cov-branch --cov-report=term-missing || status=1; \
+	exit $$status
