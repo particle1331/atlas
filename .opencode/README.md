@@ -63,6 +63,12 @@ The child stages selected changes and creates new commits, but never pushes,
 amends existing commits, rewrites history or discards work. Ambiguous files
 (such as an unexplained résumé PDF update) remain uncommitted. Existing staged
 work is preserved; if it prevents safe grouping, the command reports a blocker.
+Before creating commits, the child runs `make doctor` once from the repository
+root, even for prose-only changes, plus any applicable content or rendering
+checks. The child must attempt the unmodified command; a failing or unavailable
+doctor check blocks commits unless you explicitly authorize proceeding after
+the reported failure. That exception does not waive content checks or commit
+hooks. Clean-tree and read-only reviews do not require doctor.
 Checks and commit hooks may produce generated changes, which are reviewed
 rather than automatically included. Undoing commits requires a separate request.
 

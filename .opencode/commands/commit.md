@@ -33,7 +33,17 @@ Additional user guidance: $ARGUMENTS
    do not silently include, unstage, or overwrite it. If an ambiguous or
    out-of-scope staged change prevents safe commits, stop and explain the
    blocker rather than changing the user's staging choices.
-6. Run applicable repository validation and inspect diffs before committing.
+6. Before creating any commits, attempt the unmodified `make doctor` command
+   from the repository root, including for prose-only changes. Run it once for
+   the reviewed working tree, not once per commit group. Also run applicable
+   content or rendering checks required by AGENTS.md and inspect diffs. If
+   `make doctor` fails or cannot run, stop before creating commits and report
+   the failing checks or missing tools.
+   Do not skip the attempt or weaken checks. Only proceed after a reported
+   failure or inability to run it if the user explicitly authorizes that
+   exception; applicable content checks and commit hooks still apply.
+   A clean working tree or a read-only review of existing commits does not
+   require running it.
    Do not execute notebook cells or start project services just to commit.
    Report draft publication blockers and other known limitations accurately;
    do not repair unrelated drafts or modify authored files to make checks pass.

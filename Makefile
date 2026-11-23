@@ -2,6 +2,7 @@
 .PHONY: init doctor preview build build-pages
 
 QUARTO ?= quarto
+QUARTO_VERSION := 1.10.18
 PORT ?= 4200
 SOURCES ?= 1
 
@@ -30,12 +31,33 @@ init:
 		env_file=/etc/sandbox-persistent.sh; \
 		if [ -f "$$env_file" ] && [ -w "$$env_file" ]; then \
 			grep -Fxq "$$setting" "$$env_file" || printf '\n%s\n' "$$setting" >> "$$env_file" || exit 1; \
+			setting='export PATH="$$HOME/.local/bin:$$PATH"'; \
+			grep -Fxq "$$setting" "$$env_file" || printf '\n%s\n' "$$setting" >> "$$env_file" || exit 1; \
 			printf '%s\n' 'For this shell, run: . /etc/sandbox-persistent.sh'; \
 		else \
 			printf 'For later uv commands, set: %s\n' "$$setting"; \
 		fi; \
 	else \
 		uv sync --locked; \
+	fi
+	@set -eu; \
+	if [ "$$("$(QUARTO)" --version 2>/dev/null || true)" != "$(QUARTO_VERSION)" ]; then \
+		test "$(QUARTO)" = quarto || { echo 'QUARTO must provide version $(QUARTO_VERSION).' >&2; exit 1; }; \
+		case "$$(uname -s)/$$(uname -m)" in \
+			Linux/x86_64) platform=linux-amd64 ;; \
+			Linux/aarch64|Linux/arm64) platform=linux-arm64 ;; \
+			Darwin/*) platform=macos ;; \
+			*) echo 'Unsupported platform; install Quarto $(QUARTO_VERSION) manually.' >&2; exit 1 ;; \
+		esac; \
+		tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
+		dir="$$HOME/.local/share/atlas/quarto-$(QUARTO_VERSION)"; \
+		mkdir -p "$$dir" "$$HOME/.local/bin"; \
+		curl --fail --location --output "$$tmp/quarto.tar.gz" \
+			"https://github.com/quarto-dev/quarto-cli/releases/download/v$(QUARTO_VERSION)/quarto-$(QUARTO_VERSION)-$$platform.tar.gz"; \
+		tar -xzf "$$tmp/quarto.tar.gz" -C "$$dir" --strip-components=1; \
+		test "$$("$$dir/bin/quarto" --version)" = "$(QUARTO_VERSION)"; \
+		ln -sf "$$dir/bin/quarto" "$$HOME/.local/bin/quarto"; \
+		printf '%s\n' 'For this shell, run: export PATH="$$HOME/.local/bin:$$PATH"'; \
 	fi
 	@printf '%s\n' 'Atlas setup complete. The secret-scanning pre-commit hook is enabled for this clone (.githooks).'
 

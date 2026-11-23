@@ -31,7 +31,7 @@ Use `at pdf` to inspect local PDFs. See the [PDF tools](README.md#pdf-tools).
   Use the CMS preview or build when rendering is affected. Re-read edited
   cells or records and inspect `notebook diff` and `git diff` as applicable.
   Run relevant pytest tests for CLI implementation changes. Prose-only edits
-  can skip the full `make doctor` checks.
+  outside `/commit` can skip the full `make doctor` checks.
 - Run the [repository secret scan](README.md#secret-scanning) before sharing
   changes. Never print suspected credential values.
 
@@ -39,6 +39,12 @@ Use `at pdf` to inspect local PDFs. See the [PDF tools](README.md#pdf-tools).
 
 `/commit` authorizes its child session to stage clear, in-scope changes and
 create new local commits. Pushes and history rewrites are outside that scope.
+Before creating commits, the child must attempt the unmodified `make doctor`
+once from the repository root, including for prose-only changes. If it fails or
+cannot run, stop and report the blocker unless the user explicitly authorizes
+proceeding after that report. Do not skip the attempt or weaken checks;
+applicable content checks and commit hooks still apply.
+Clean-tree and read-only reviews do not require doctor.
 When it returns, relay the actual commit count,
 hashes, messages, checks, exclusions and remaining changes in the main
 conversation, including failures or partial completion. Leave the review and

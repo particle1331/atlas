@@ -20,13 +20,21 @@ make init
 ```
 
 `make init` enables the [secret-scanning Git hook](#secret-scanning) in this
-clone and installs the locked Python dependencies. It confirms that the hook is
+clone, installs the locked Python dependencies and ensures Quarto **1.10.18**
+(the Pages CI version) is available. It confirms that the hook is
 enabled; the scan runs when you commit, not during setup. Cloning does not enable
 hooks from the cloned repository or copy its local Git configuration.
 
+If the expected Quarto version is not already available, setup downloads the
+official portable release to `~/.local/share/atlas/quarto-1.10.18`, linked from
+`~/.local/bin/quarto`. Linux x86_64/ARM64 and macOS are supported without `sudo`.
+Follow any printed `PATH` instruction; outside a sandbox, also add it to your
+shell startup file. Keep `QUARTO_VERSION` in `Makefile` aligned with Pages CI.
+
 Run `make doctor` to [scan the local workspace for secrets](#secret-scanning),
-including Git-ignored files, and run pytest with line and branch coverage.
-Both checks run, and the command fails if either check fails.
+including Git-ignored files except local `.env` files and `.venv` directories,
+and run pytest with line and branch coverage. Both checks run, and the command
+fails if either check fails.
 
 ### Sandbox Python environment
 
@@ -109,9 +117,9 @@ old `atlas.vault` entries from your system keyring once you've verified the new 
 
 ## Content CMS and Quarto frontend
 
-Install [Quarto](https://quarto.org/docs/get-started/) separately from the Python
-dependencies. Editable sources live in `content/`; CLI-managed records live in
-`backend/`. The build generates the Quarto copies. Start with
+Run `make init` to install [Quarto](https://quarto.org/docs/get-started/) and the
+Python dependencies. Editable sources live in `content/`; CLI-managed records
+live in `backend/`. The build generates the Quarto copies. Start with
 `uv run at cms --help`; every command also accepts `--help`.
 
 ### Source layout
