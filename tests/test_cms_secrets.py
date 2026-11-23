@@ -50,6 +50,13 @@ def commit(repo):
     git(repo, "commit", "--quiet", "-m", "Snapshot")
 
 
+def scan_rules(files):
+    findings = cms_source.secret_findings(
+        {PurePosixPath(name): text for name, text in files.items()}
+    )
+    return {str(path): finding.rules for path, finding in findings.items()}
+
+
 @requires_gitleaks
 @pytest.mark.parametrize(
     ("field", "length", "punctuation"),
@@ -86,26 +93,112 @@ def test_unquoted_environment_passwords(repo, field, length, punctuation):
 
 
 @requires_gitleaks
-def test_unquoted_rule_distinguishes_literals_from_references():
-    paths = {
-        name: PurePosixPath(name + ".txt")
-        for name in ("shell", "python", "redis-example", "unrelated-password")
-    }
-    placeholder = "redis_" + "password"
-    report = cms_source.secret_findings(
+@pytest.mark.parametrize("field", ["PASSWORD", "PASSWD", "CLIENT_SECRET"])
+@pytest.mark.parametrize("seed", [17, 83])
+def test_password_rules_require_at_least_eight_characters(field, seed):
+    random_source = random.Random(seed)
+    long = "".join(random_source.sample(string.ascii_letters + string.digits, 8))
+    short = long[:-1]
+    report = scan_rules(
         {
-            paths["shell"]: "PASSWORD=$LOCAL_VALUE\nCLIENT_SECRET=${LOCAL_TOKEN}\n",
-            paths["python"]: 'PASSWORD=os.getenv("LOCAL_VALUE")\n',
-            paths["redis-example"]: f"REDIS__PASSWORD={placeholder}\n",
-            paths["unrelated-password"]: f"DATABASE_PASSWORD={placeholder}\n",
+            "quoted-seven.txt": f'{field}="{short}"\n',
+            "quoted-eight.txt": f'{field}="{long}"\n',
+            "unquoted-seven.txt": f"{field}={short}\n",
+            "unquoted-eight.txt": f"{field}={long}\n",
         }
     )
-    assert set(report) == {paths["unrelated-password"]}
-    assert report[paths["unrelated-password"]].rules == {"atlas-unquoted-password"}
+    assert report == {
+        "quoted-eight.txt": {"atlas-literal-password"},
+        "unquoted-eight.txt": {"atlas-unquoted-password"},
+    }
 
 
 @requires_gitleaks
-def test_known_formats_and_context_dependent_values(token):
+def test_unquoted_rule_distinguishes_literals_from_references():
+    report = scan_rules(
+        {
+            "shell.txt": "PASSWORD=$LOCAL_VALUE\nCLIENT_SECRET=${LOCAL_TOKEN}\n",
+            "python.txt": 'PASSWORD=os.getenv("LOCAL_VALUE")\n',
+        }
+    )
+    assert report == {}
+
+
+@requires_gitleaks
+@pytest.mark.parametrize(
+    ("field", "placeholder", "other_placeholder"),
+    [
+        pytest.param(
+            "LANGFUSE_REDIS_PASSWORD",
+            "langfuse_redis_password",
+            "redis_password",
+            id="langfuse",
+        ),
+        pytest.param(
+            "REDIS__PASSWORD", "redis_password", "langfuse_redis_password", id="redis"
+        ),
+    ],
+)
+def test_redis_allowlist_matches_only_exact_assignments(
+    field, placeholder, other_placeholder
+):
+    assignment = f"{field}={placeholder}"
+    variants = {
+        "different-value.txt": assignment + "2\n",
+        "swapped-value.txt": f"{field}={other_placeholder}\n",
+        "different-field.txt": f"DATABASE_PASSWORD={placeholder}\n",
+        "prefixed-field.txt": f"OTHER_{assignment}\n",
+        "spaces.txt": f"{field} = {placeholder}\n",
+        "export.txt": f"export {assignment}\n",
+        "comment.txt": f"{assignment} # local setup\n",
+    }
+    report = scan_rules({"exact.txt": assignment + "\n", **variants})
+    assert report == {name: {"atlas-unquoted-password"} for name in variants}
+
+
+@requires_gitleaks
+@pytest.mark.parametrize("seed", [9037, 8123, 7727])
+def test_jina_api_key_format(seed):
+    random_source = random.Random(seed)
+    minimum, hyphen, underscore = (
+        "".join(random_source.choices(string.ascii_letters + string.digits, k=length))
+        for length in (24, 30, 38)
+    )
+    report = scan_rules(
+        {
+            "minimum.txt": f"jina_{minimum}",
+            "hyphen.txt": f"jina_{hyphen[:15]}-{hyphen[15:]}",
+            "underscore.txt": f"jina_{underscore[:19]}_{underscore[19:]}",
+            "short.txt": f"jina_{minimum[:-1]}",
+            "wrong-prefix.txt": f"jina-{minimum}",
+            "uppercase-prefix.txt": f"JINA_{minimum}",
+            "missing-boundary.txt": f"xjina_{minimum}",
+            "invalid-character.txt": f"jina_{minimum[:12]}+{minimum[12:]}",
+        }
+    )
+    assert report == {
+        "minimum.txt": {"atlas-jina-api-key"},
+        "hyphen.txt": {"atlas-jina-api-key"},
+        "underscore.txt": {"atlas-jina-api-key"},
+    }
+
+
+@requires_gitleaks
+def test_jina_example_is_not_a_blanket_placeholder_exemption():
+    # The negative example has no word boundary before jina_ and too short a
+    # payload. "Example" text is not itself an exemption for a matching token.
+    example_payload = "example_" + "not_a_real_key_here"
+    report = scan_rules(
+        {
+            "placeholder/.env.example": 'JINA_API_KEY="your_jina_api_key_here"\n',
+            "token-shaped/.env.example": f'JINA_API_KEY="jina_{example_payload}"\n',
+        }
+    )
+    assert report == {"token-shaped/.env.example": {"atlas-jina-api-key"}}
+
+
+@requires_gitleaks
+def test_known_formats_and_context_dependent_values():
     raw = random.Random(42).randbytes(32)
     encoded = b64encode(raw).decode("ascii")
     hex_key = raw.hex()
@@ -116,8 +209,6 @@ def test_known_formats_and_context_dependent_values(token):
             PurePosixPath("jwt.txt"): f"JWT_SECRET={encoded}\n",
             PurePosixPath("encryption.txt"): f"ENCRYPTION_KEY={hex_key}\n",
             PurePosixPath("stripe.txt"): stripe,
-            PurePosixPath("jina.txt"): token,
-            PurePosixPath("jina-example.txt"): 'JINA_API_KEY="your_jina_api_key_here"',
             PurePosixPath("id.txt"): f'id: "{identifier}"',
             PurePosixPath("bare.txt"): f"{identifier}\n{encoded}\n{hex_key}\n",
         }
@@ -126,7 +217,6 @@ def test_known_formats_and_context_dependent_values(token):
         "jwt.txt": {"generic-api-key"},
         "encryption.txt": {"generic-api-key"},
         "stripe.txt": {"stripe-access-token"},
-        "jina.txt": {"atlas-jina-api-key"},
     }
 
 
