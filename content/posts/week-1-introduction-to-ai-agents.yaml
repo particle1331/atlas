@@ -1,6 +1,6 @@
 title: 'AGS-1: Introduction to AI Agents'
-short_description: Notes and Python examples on LLM requests, tool calling, and the orchestration, evaluation,
-  and guardrails of AI agents.
+short_description: 'An introduction to AI agents: LLM calls, tool use, orchestration patterns, and the
+  basics of agentic system design (evaluation, guardrails, and common pitfalls).'
 tags:
 - ai-agents
 - llms

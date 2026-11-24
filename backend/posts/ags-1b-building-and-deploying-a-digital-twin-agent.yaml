@@ -1,0 +1,40 @@
+id: post/ags-1b-building-and-deploying-a-digital-twin-agent
+created_at: '2026-11-23T20:42:07.134532+00:00'
+updated_at: '2026-11-23T20:42:07.134532+00:00'
+status: draft
+internal_notes: |-
+  Working title: AGS-1b: Building and Deploying a Digital Twin Agent.
+
+  Author's direction: this entry is more application-focused. AGS-1 went beyond the course sessions and already covers some of this material. Avoid repeating its explanations of tool schemas, tool-call exchanges, orchestration patterns, observability/evaluation, and guardrails. Use cross-references and concentrate on applying those ideas to a complete application. The notebook is intentionally empty pending drafting; the title and scope are provisional.
+
+  Source material supplied in conversation:
+  - Transcripts covering the end of week 1, day 3: optional local inference with Ollama; model selection constrained by available hardware; local versus cloud-suffixed models; listing, pulling, serving, and removing models; an OpenAI-compatible local endpoint; adding local answers to a multi-model comparison.
+  - Competition conclusion: pair competitors and answers with zip; enumerate anonymous responses; ask a separate model to rank them; parse the JSON and map ranks back to model names. Treat this as a workflow demonstration, not a reliable model benchmark. Anonymization does not remove all judge bias; sequential independent calls are not concurrent execution.
+  - Opening of week 1, day 4: distinguish builders, agent products, runtimes, and frameworks; frameworks supply orchestration, tool handling, structured-output helpers, and agent loops; build a loop without a framework before comparing abstractions. Avoid a long framework catalog, since later AGS entries cover frameworks.
+
+  Remaining sessions were supplied as titles only (approximately 11–16 minutes each), not transcripts:
+  1. Start the Digital Twin: Read PDF and master system prompts.
+  2. Build a chat UI with Gradio and Define your first agent tool.
+  3. Build the agent loop from scratch: tool calling with a while loop.
+  4. Context engineering for AI agents: memory, tools, RAG.
+  5. Refactor the digital twin into python modules.
+  6. Deploy your twin agent to HuggingFace.
+  7. Build a visible agent loop with tools like Claude Code.
+
+  Proposed emphasis for later drafting:
+  - Brief local-model/judging bridge from AGS-1, only where it supports the application.
+  - PDF-derived profile context and system instructions: what the twin knows and what it should do when information is missing.
+  - Gradio chat interface, conversation history, and the first tool.
+  - An explicit, inspectable tool-calling loop and its termination/error boundaries.
+  - Context engineering: distinguish supplied document context from actual retrieval, and conversation history from persistent memory. Do not claim the course implements RAG or persistent memory based only on a session title.
+  - Refactor notebook experiments into Python modules and deploy the application to Hugging Face Spaces.
+  - A visible loop as a way to inspect model requests, tool calls, and tool results, rather than claim parity with a production coding agent.
+
+  Do not present the instructor's model rankings, timings, hardware, or deployments as the author's results. Verify model identifiers and technical details if used; transcripts contain speech-to-text errors (e.g. Olama/Ollama, Lama/Llama, Grok/Groq). Session titles establish intended scope, not completed implementation or measured outcomes.
+internal_todos: []
+thumbnail_path: null
+source_path: content/posts/ags-1b-building-and-deploying-a-digital-twin-agent.ipynb
+code_path: null
+related_post_ids: []
+source_digest: e2f86471c52d71427c94568cc770edeb1f9df211933494e74308da4e42b104cb
+metadata_digest: da069abf3048022e5f910031efeed59c7a6d854deb93c02a75ae046c7e109673

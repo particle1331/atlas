@@ -1,0 +1,10 @@
+title: 'AGS-1b: Building and Deploying a Digital Twin Agent'
+short_description: A practical walkthrough of building a digital twin with PDF context, a chat interface,
+  a tool-calling loop, and deployment to Hugging Face Spaces.
+tags:
+- ai-agents
+- python
+- tool-calling
+- context-engineering
+- gradio
+- deployment

@@ -1,12 +1,13 @@
 id: collection/agentic-systems-patterns-and-frameworks
 created_at: '2026-11-10T14:49:27.207950+00:00'
-updated_at: '2026-11-15T18:53:43.638479+00:00'
-status: draft
+updated_at: '2026-11-23T23:36:08.319275+00:00'
+status: published
 internal_notes: ''
 internal_todos: []
 cover_path: content/images/a8bbc7853856bfbeacd69f472bc317761e972888b08ae2e8d58ddff480eaa0ff.png
 post_ids:
 - post/week-1-introduction-to-ai-agents
+- post/ags-1b-building-and-deploying-a-digital-twin-agent
 - post/week-2-agent-orchestration-and-deep-research
 - post/week-3-multi-agents-with-crewai
 - post/week-4-memory-and-deep-agents-with-langgraph
