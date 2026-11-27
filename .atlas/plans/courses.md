@@ -23,3 +23,13 @@
 - [Understanding Deployment: Core Concepts](https://www.udemy.com/course/understanding-deployment-core-concepts)
 - [Understanding Node.js: Core Concepts](https://www.udemy.com/course/understanding-nodejs-core-concepts/)
 - [Build a Production Microservices &amp; Self-Host It (RabbitMQ, Redis, Docker)](https://www.youtube.com/watch?v=nCyvvMjO2ME)
+
+
+collections
+- kaggle comps?
+- priyam mazumdar playlists (e.g. pytorch, mytorch, triton, rl, audio)
+- mlx examples (whisper, stable diffusion) / https://github.com/ml-explore/mlx-examples
+- prod AI agents for generative media
+- pretraining llms / finetuning
+- reasoning models from scratch
+- datatalks club certs
