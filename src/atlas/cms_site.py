@@ -7,6 +7,7 @@ import re
 import shutil
 import stat
 import tempfile
+from collections.abc import Callable
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -543,6 +544,7 @@ def generate(
     watch_snapshot: dict | None = None,
     source_browser: bool = True,
     require_source_browser: bool = False,
+    before_install: Callable[[], None] | None = None,
 ) -> dict:
     """Project saved source and public metadata into ignored frontend files."""
     with store.lock():
@@ -788,6 +790,8 @@ def generate(
             generated[store.path(".atlas/cms/resume.qmd")] = document(
                 pdf_meta, pdf_body
             )
+            if before_install is not None:
+                before_install()
             invalidated = store.commit(generated)
             for browser in (site / "posts").glob("*/source"):
                 if not browser.is_symlink():

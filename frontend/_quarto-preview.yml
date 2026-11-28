@@ -3,3 +3,8 @@ project:
 
 website:
   draft-mode: visible
+
+format:
+  html:
+    include-in-header:
+      - _cms/preview-reload.html

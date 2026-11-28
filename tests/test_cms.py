@@ -2166,6 +2166,7 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
         return 0
 
     class FinishedPreview:
+        pid = 123
         returncode = 0
 
         def poll(self):
@@ -2182,6 +2183,7 @@ def test_build_and_preview_regenerate_pdf_before_rendering_site(
 
     monkeypatch.setattr(cms.subprocess, "call", quarto)
     monkeypatch.setattr(cms.subprocess, "Popen", popen)
+    monkeypatch.setattr(cms, "preview_group_running", lambda _: False)
     args = {
         "build": ["build"],
         "build-preview": ["build", "--preview"],
@@ -2244,6 +2246,7 @@ def test_quick_preview_skips_source_browser_and_removes_stale_preview_pages(
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: None)
 
     class FinishedPreview:
+        pid = 123
         returncode = 0
 
         def poll(self):
@@ -2266,6 +2269,7 @@ def test_quick_preview_skips_source_browser_and_removes_stale_preview_pages(
 
     monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
     monkeypatch.setattr(cms.subprocess, "Popen", start_preview)
+    monkeypatch.setattr(cms, "preview_group_running", lambda _: False)
     invoke(store, "preview", "--no-source-browser")
 
 
@@ -2331,6 +2335,7 @@ def preview_clock(monkeypatch):
         tick = 0
         stop = 12
         edits = {}
+        processes = []
 
         def monotonic(self):
             return self.tick * 0.25
@@ -2342,12 +2347,41 @@ def preview_clock(monkeypatch):
             if self.tick in self.edits:
                 self.edits[self.tick]()
 
+        def start(self, *args, **kwargs):
+            assert all(process.poll() is not None for process in self.processes)
+            process = Preview(len(self.processes) + 1)
+            self.processes.append(process)
+            return process
+
+    class Preview:
+        returncode = None
+        terminating = False
+
+        def __init__(self, pid):
+            self.pid = pid
+
         def poll(self):
-            return 0 if self.tick >= self.stop else None
+            if self.returncode is None and clock.tick >= clock.stop:
+                self.returncode = 0
+            return self.returncode
+
+        def wait(self, timeout=None):
+            if self.terminating:
+                self.returncode = -cms.signal.SIGTERM
+            assert self.returncode is not None
+            return self.returncode
+
+    def kill_group(pid, signal):
+        assert signal == cms.signal.SIGTERM
+        process = clock.processes[pid - 1]
+        assert not process.terminating
+        process.terminating = True
 
     clock = Clock()
     monkeypatch.setattr(cms.time, "sleep", clock.sleep)
     monkeypatch.setattr(cms.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(cms.os, "killpg", kill_group)
+    monkeypatch.setattr(cms, "preview_group_running", lambda _: False)
     return clock
 
 
@@ -2384,23 +2418,45 @@ def test_preview_watcher_debounces_source_edits_and_refreshes_pdf(
         2: lambda: save("Second save"),
     }
     calls = []
+    process = preview_clock.start()
 
     def regenerate(
-        actual_store, preview, *, watch_snapshot, source_browser, require_source_browser
+        actual_store,
+        preview,
+        *,
+        watch_snapshot,
+        source_browser,
+        require_source_browser,
+        before_install,
     ):
         assert actual_store is store and preview is True
         assert source_browser is True
         assert require_source_browser is False
+        assert process.poll() is None
         calls.append(("generate", preview_clock.monotonic()))
-        return generate(actual_store, preview, watch_snapshot=watch_snapshot)
+        return generate(
+            actual_store,
+            preview,
+            watch_snapshot=watch_snapshot,
+            before_install=before_install,
+        )
+
+    commit = store.commit
+
+    def commit_projection(changes):
+        if store.path("frontend/resume.qmd") in changes:
+            assert process.poll() == -cms.signal.SIGTERM
+        return commit(changes)
 
     def render(actual_store, executable):
         assert actual_store is store and executable == "/bin/quarto"
+        assert process.poll() == -cms.signal.SIGTERM
         calls.append(("pdf", preview_clock.monotonic()))
 
     monkeypatch.setattr(cms, "generate", regenerate)
+    monkeypatch.setattr(store, "commit", commit_projection)
     monkeypatch.setattr(cms, "render_resume_pdf", render)
-    cms.watch_preview(store, "/bin/quarto", preview_clock)
+    assert cms.watch_preview(store, "/bin/quarto", process) is not None
 
     assert [kind for kind, _ in calls] == ["generate", "pdf"]
     assert calls[0][1] >= 1.0  # Half a second after the final save.
@@ -2422,6 +2478,10 @@ def test_preview_watcher_restarts_for_changed_source_pages(
         commit_sources(store, "projects/demo")
     run(store, "post", "edit", "post/attention", "--code-path", "projects/demo")
     generate(store, preview=True)
+    stale = store.path("frontend/_site-preview/posts/attention/source/main.py.html")
+    if existing_page:
+        stale.parent.mkdir(parents=True)
+        stale.write_text("Old rendered contents")
     preview_clock.edits = {
         1: lambda: (
             file.write_text("print('sample')\n"),
@@ -2430,7 +2490,8 @@ def test_preview_watcher_restarts_for_changed_source_pages(
         )
     }
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *args: None)
-    assert cms.watch_preview(store, "/bin/quarto", preview_clock) is not None
+    assert cms.watch_preview(store, "/bin/quarto", preview_clock.start()) is not None
+    assert not stale.exists()
     assert (
         "sample"
         in store.path("frontend/posts/attention/source/main.py.qmd").read_text()
@@ -2456,7 +2517,7 @@ def test_preview_watcher_removes_newly_ignored_source_pages(
         1: lambda: store.path(".gitignore").write_text("/projects/demo/README.md\n")
     }
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *args: None)
-    assert cms.watch_preview(store, "/bin/quarto", preview_clock) is not None
+    assert cms.watch_preview(store, "/bin/quarto", preview_clock.start()) is not None
     assert not page.exists()
 
 
@@ -2476,7 +2537,7 @@ def test_preview_watcher_ignores_generated_output_and_hidden_edits(
     monkeypatch.setattr(cms, "generate", lambda *_, **__: calls.append("generate"))
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: calls.append("pdf"))
 
-    cms.watch_preview(store, "/bin/quarto", preview_clock)
+    assert cms.watch_preview(store, "/bin/quarto", preview_clock.start()) is None
 
     assert calls == []
     assert preview_clock.tick == preview_clock.stop
@@ -2499,10 +2560,15 @@ def test_preview_watcher_detects_source_creation_and_deletion(
         )
     }
     calls = []
-    monkeypatch.setattr(cms, "generate", lambda *_, **__: calls.append("generate"))
+
+    def regenerate(*_, before_install, **__):
+        calls.append("generate")
+        before_install()
+
+    monkeypatch.setattr(cms, "generate", regenerate)
     monkeypatch.setattr(cms, "render_resume_pdf", lambda *_: calls.append("pdf"))
 
-    cms.watch_preview(store, "/bin/quarto", preview_clock)
+    assert cms.watch_preview(store, "/bin/quarto", preview_clock.start()) is not None
 
     assert calls == ["generate", "pdf"]
 
@@ -2522,16 +2588,20 @@ def test_preview_watcher_picks_up_draft_created_during_a_refresh(
             actual_store.new("collection", "Second")
 
     monkeypatch.setattr(cms, "render_resume_pdf", render)
-    snapshot = cms.watch_preview(store, "/bin/quarto", preview_clock)
+    snapshot = cms.watch_preview(store, "/bin/quarto", preview_clock.start())
+
+    assert rendered == [False]
+    assert "backend/collections/second.yaml" not in snapshot
+    snapshot = cms.watch_preview(store, "/bin/quarto", preview_clock.start(), snapshot)
 
     assert rendered == [False, True]
     assert snapshot == cms.preview_snapshot(store)
 
 
-@pytest.mark.parametrize("phase", ["generate", "pdf"])
+@pytest.mark.parametrize("phase", ["install", "pdf"])
 @pytest.mark.parametrize("failure", ["validation", "os", "yaml", "exit"])
-def test_preview_watcher_reports_invalid_save_and_recovers_on_next_edit(
-    store, monkeypatch, preview_clock, capsys, phase, failure
+def test_preview_restarts_after_refresh_error_if_quarto_was_stopped(
+    store, monkeypatch, preview_clock, phase, failure
 ):
     from atlas import cms
 
@@ -2542,67 +2612,177 @@ def test_preview_watcher_reports_invalid_save_and_recovers_on_next_edit(
         "exit": cms.typer.Exit(7),
     }
     path = store.path("content/resume.yaml")
-    preview_clock.stop = 16
+    profile = decode(path.read_bytes())
     preview_clock.edits = {
-        1: lambda: path.write_text("Invalid save"),
-        9: lambda: path.write_text("Corrected save"),
+        1: lambda: path.write_bytes(encode(profile | {"summary": "Edited summary"}))
     }
-    attempts = []
-    rendered = []
+    commit = Store.commit
 
-    def regenerate(*_, **__):
-        attempts.append(preview_clock.tick)
-        if phase == "generate" and len(attempts) == 1:
+    def commit_projection(actual_store, changes):
+        if (
+            phase == "install"
+            and preview_clock.processes
+            and store.path("frontend/resume.qmd") in changes
+        ):
+            assert preview_clock.processes[-1].poll() == -cms.signal.SIGTERM
             raise errors[failure]
+        return commit(actual_store, changes)
 
     def render(*_):
-        rendered.append(preview_clock.tick)
-        if phase == "pdf" and len(rendered) == 1:
+        if phase == "pdf" and preview_clock.processes:
+            assert preview_clock.processes[-1].poll() == -cms.signal.SIGTERM
             raise errors[failure]
 
-    monkeypatch.setattr(cms, "generate", regenerate)
+    monkeypatch.setattr(Store, "commit", commit_projection)
     monkeypatch.setattr(cms, "render_resume_pdf", render)
+    monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
+    monkeypatch.setattr(cms.subprocess, "Popen", preview_clock.start)
 
-    cms.watch_preview(store, "/bin/quarto", preview_clock)
+    result = invoke(store, "preview")
 
-    assert len(attempts) == 2
-    assert attempts[0] < 9 <= attempts[1]
-    assert len(rendered) == (1 if phase == "generate" else 2)
-    assert capsys.readouterr().err.strip()
+    assert "Preview sync failed" in result.stderr
+    assert [process.returncode for process in preview_clock.processes] == [
+        -cms.signal.SIGTERM,
+        0,
+    ]
 
 
+def test_preview_restarts_on_same_port_for_each_saved_batch(
+    store, monkeypatch, preview_clock
+):
+    from atlas import cms
+
+    notebook = store.path("content/posts/example.ipynb")
+    profile_path = store.path("content/resume.yaml")
+    profile = decode(profile_path.read_bytes())
+    marker = store.path("frontend/_site-preview/atlas-preview-generation.json")
+    generations = []
+
+    def save(batch):
+        notebook.write_bytes(nb.dump(nb.notebook(f"Notebook batch {batch}")))
+        profile_path.write_bytes(encode(profile | {"summary": f"Résumé batch {batch}"}))
+
+    preview_clock.edits = {1: lambda: save(1), 6: lambda: save(2)}
+    monkeypatch.setattr(cms, "quarto_executable", lambda: "/bin/quarto")
+    rendered = []
+    commit = Store.commit
+    kill_group = cms.os.killpg
+
+    def stop_group(pid, signal):
+        assert not marker.exists()
+        kill_group(pid, signal)
+
+    def commit_projection(actual_store, changes):
+        if store.path("frontend/resume.qmd") in changes:
+            assert not marker.exists()
+        return commit(actual_store, changes)
+
+    def render(*_):
+        assert not marker.exists()
+        rendered.append(len(preview_clock.processes))
+
+    def start(args, cwd, *, start_new_session):
+        batch = len(preview_clock.processes)
+        assert cwd == store.root and start_new_session
+        generation = json.loads(marker.read_text())["generation"]
+        assert re.fullmatch(r"[0-9a-f]{32}", generation)
+        generations.append(generation)
+        assert args == [
+            "/bin/quarto",
+            "preview",
+            str(store.path("frontend")),
+            "--profile",
+            "preview",
+            "--output-dir",
+            "_site-preview",
+            "--port",
+            "4300",
+            "--render",
+            "none",
+            "--no-execute",
+            *(["--no-browser"] if batch else []),
+        ]
+        assert rendered[-1] == batch
+        if batch:
+            assert (
+                f"Notebook batch {batch}"
+                in store.path("frontend/posts/example.ipynb").read_text()
+            )
+            assert (
+                f"Résumé batch {batch}" in store.path("frontend/resume.qmd").read_text()
+            )
+        return preview_clock.start()
+
+    monkeypatch.setattr(cms.os, "killpg", stop_group)
+    monkeypatch.setattr(Store, "commit", commit_projection)
+    monkeypatch.setattr(cms, "render_resume_pdf", render)
+    monkeypatch.setattr(cms.subprocess, "Popen", start)
+    invoke(store, "preview", "--port", "4300")
+
+    assert [process.returncode for process in preview_clock.processes] == [
+        -cms.signal.SIGTERM,
+        -cms.signal.SIGTERM,
+        0,
+    ]
+    assert len(set(generations)) == 3
+    assert not marker.exists()
+    assert not store.path("frontend/_site/atlas-preview-generation.json").exists()
+
+
+@pytest.mark.parametrize("phase", ["validation", "staging"])
 def test_preview_watcher_recovers_from_malformed_authored_yaml(
-    store, monkeypatch, preview_clock, capsys
+    store, monkeypatch, preview_clock, capsys, phase
 ):
     from atlas import cms
 
     generate(store, True)
     target = store.path("frontend/resume.qmd")
     previous = target.read_bytes()
-    source = store.path("content/resume.yaml")
-    valid = decode(source.read_bytes())
-    valid["summary"] = "A corrected summary from the editor."
+    profile_path = store.path("content/resume.yaml")
+    summary = "A corrected summary from the editor."
+    valid_profile = encode(decode(profile_path.read_bytes()) | {"summary": summary})
+    if phase == "validation":
+        source = profile_path
+        valid_source = valid_profile
+        malformed_source = "summary: [unfinished YAML"
+    else:
+        source = store.path("frontend/_cms/resume-pdf.qmd")
+        valid_source = document({"format": "typst"}, "{{cms:summary}}")
+        malformed_source = "---\nformat: [unfinished YAML\n---\n"
+    marker = cms.preview_generation_marker(store)
+    cms.write_preview_generation(marker)
+    generation = marker.read_bytes()
+    process = preview_clock.start()
     rendered = []
 
     def verify_failed_save_preserves_output():
+        assert process.poll() is None
         assert target.read_bytes() == previous
+        assert marker.read_bytes() == generation
         assert rendered == []
+
+    def fix_save():
+        source.write_bytes(valid_source)
+        if phase == "staging":
+            profile_path.write_bytes(valid_profile)
 
     preview_clock.stop = 16
     preview_clock.edits = {
-        1: lambda: source.write_text("summary: [unfinished YAML"),
+        1: lambda: source.write_text(malformed_source),
         8: verify_failed_save_preserves_output,
-        9: lambda: source.write_bytes(encode(valid)),
+        9: fix_save,
     }
     monkeypatch.setattr(
         cms, "render_resume_pdf", lambda *_: rendered.append(target.read_text())
     )
 
-    cms.watch_preview(store, "/bin/quarto", preview_clock)
+    assert cms.watch_preview(store, "/bin/quarto", process) is not None
 
+    assert process.poll() == -cms.signal.SIGTERM
+    assert not marker.exists()
     assert len(rendered) == 1
-    assert valid["summary"] in rendered[0]
-    assert valid["summary"] in target.read_text()
+    assert summary in rendered[0]
+    assert summary in target.read_text()
     assert capsys.readouterr().err.strip()
 
 
@@ -2613,6 +2793,7 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
     from atlas import cms
 
     calls = []
+    marker = store.path("frontend/_site-preview/atlas-preview-generation.json")
 
     class Preview:
         pid = 123
@@ -2637,9 +2818,11 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
 
     def kill_group(pid, sig):
         assert pid == process.pid
+        assert not marker.exists()
         calls.append(sig)
 
     monkeypatch.setattr(cms.os, "killpg", kill_group)
+    monkeypatch.setattr(cms, "preview_group_running", lambda _: False)
 
     def interrupt(
         actual_store, executable, actual_process, previous, *, source_browser
@@ -2647,6 +2830,7 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
         assert actual_store.root == store.root and actual_process is process
         assert executable == "/bin/quarto"
         assert source_browser is True
+        assert marker.is_file()
         raise KeyboardInterrupt
 
     monkeypatch.setattr(cms, "watch_preview", interrupt)
@@ -2657,6 +2841,50 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
         if timeout
         else [cms.signal.SIGTERM, "wait"]
     )
+
+
+@pytest.mark.parametrize("already_exited", [False, True])
+def test_stop_preview_waits_for_server_after_launcher_exits(
+    monkeypatch, already_exited
+):
+    from atlas import cms
+
+    calls = []
+
+    class Launcher:
+        pid = 123
+
+        def poll(self):
+            return 0 if already_exited else None
+
+        def wait(self, timeout):
+            calls.append("launcher stopped")
+
+    states = iter([True, True, False] if already_exited else [True, False])
+    monkeypatch.setattr(
+        cms, "preview_group_running", lambda pid: pid == Launcher.pid and next(states)
+    )
+    monkeypatch.setattr(cms.os, "killpg", lambda pid, sig: calls.append((pid, sig)))
+    monkeypatch.setattr(cms.time, "sleep", lambda _: calls.append("waiting for server"))
+
+    cms.stop_preview(Launcher())
+
+    assert calls == [
+        (Launcher.pid, cms.signal.SIGTERM),
+        "launcher stopped",
+        "waiting for server",
+    ]
+
+
+@pytest.mark.parametrize("state, running", [("Sl", True), ("Zl", True), ("Z", False)])
+def test_preview_group_waits_for_live_threads(monkeypatch, state, running):
+    from atlas import cms
+
+    monkeypatch.setattr(
+        cms.subprocess, "check_output", lambda *_, **__: f" 456 Sl\n 123 {state}\n"
+    )
+
+    assert cms.preview_group_running(123) is running
 
 
 @pytest.mark.parametrize(

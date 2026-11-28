@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Annotated
@@ -27,7 +28,6 @@ from atlas.cms_site import (
     file_stamp,
     generate,
     initialize,
-    prune_source_output,
     verify_pages_artifact,
 )
 from atlas.cms_source import source_files
@@ -1052,6 +1052,7 @@ def prepare_site(
     watch_snapshot: dict | None = None,
     source_browser: bool = True,
     require_source_browser: bool = False,
+    before_install: Callable[[], None] | None = None,
 ) -> dict:
     result = generate(
         store,
@@ -1059,6 +1060,7 @@ def prepare_site(
         watch_snapshot=watch_snapshot,
         source_browser=source_browser,
         require_source_browser=require_source_browser,
+        before_install=before_install,
     )
     if preview:
         prune_preview_output(store)
@@ -1139,22 +1141,19 @@ def preview_snapshot(store: Store) -> dict:
     return snapshot
 
 
-def preview_pages(snapshot: dict) -> set[str]:
-    return {
-        path
-        for path in snapshot
-        if path.startswith(("backend/posts/", "backend/collections/"))
-        and path.endswith(".yaml")
-        and path.count("/") == 2
-    }
+def preview_generation_marker(store: Store) -> Path:
+    return store.path("frontend/_site-preview/atlas-preview-generation.json")
 
 
-def preview_source_pages(store: Store) -> dict[Path, tuple[int, int, int]]:
-    pages = {}
-    for path in store.path("frontend/posts").glob("*/source/**/*.qmd"):
-        with suppress(FileNotFoundError):
-            pages[path] = file_stamp(path)
-    return pages
+def write_preview_generation(marker: Path):
+    generation = uuid4().hex
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    temporary = marker.with_name(f".{marker.name}.{generation}")
+    try:
+        temporary.write_text(json.dumps({"generation": generation}), encoding="utf-8")
+        temporary.replace(marker)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def watch_preview(
@@ -1165,12 +1164,19 @@ def watch_preview(
     *,
     source_browser: bool = True,
 ) -> dict | None:
-    """Sync source changes and return the latest snapshot if Quarto must restart."""
+    """Sync source changes and return the watched snapshot after stopping Quarto."""
     if previous is None:
         previous = preview_snapshot(store)
-    pages = preview_pages(previous)
-    source_pages = preview_source_pages(store)
     changed_at = None
+    stopped = False
+
+    def stop_before_install():
+        nonlocal stopped
+        # Don't let Quarto's watcher render against a changing projection.
+        preview_generation_marker(store).unlink(missing_ok=True)
+        stop_preview(process)
+        stopped = True
+
     typer.echo("Watching content/ and backend/ for CMS changes.")
     while process.poll() is None:
         time.sleep(0.25)
@@ -1181,7 +1187,6 @@ def watch_preview(
         if changed_at is None or time.monotonic() - changed_at < 0.5:
             continue
         changed_at = None
-        synced = False
         try:
             with site_lock(store, "render"):
                 prepare_site(
@@ -1190,20 +1195,19 @@ def watch_preview(
                     preview=True,
                     watch_snapshot=previous,
                     source_browser=source_browser,
+                    before_install=stop_before_install,
                 )
-            synced = True
         except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
-            # A half-written or invalid save must not kill the preview server.
             typer.echo(
                 f"Preview sync failed: {error}. Fix the source and save again.",
                 err=True,
             )
-        if preview_source_pages(store) != source_pages or (
-            synced and preview_pages(previous) != pages
-        ):
-            return previous
-        if synced:
+        else:
             typer.echo("Preview content synced.")
+        if stopped:
+            # Keep the snapshot from before projection/PDF rendering so a save
+            # made during the refresh is seen by the replacement process's watch.
+            return previous
     return None
 
 
@@ -1300,43 +1304,69 @@ def preview(
                 watch_snapshot=previous,
                 source_browser=source_browser,
             )
+        marker = preview_generation_marker(store)
         while True:
-            source_pages = preview_source_pages(store)
-            process = subprocess.Popen(
-                [executable, "preview", result["site"], *options],
-                cwd=store.root,
-                start_new_session=True,
-            )
+            process = None
+            restart = None
             try:
-                previous = watch_preview(
+                write_preview_generation(marker)
+                process = subprocess.Popen(
+                    [executable, "preview", result["site"], *options],
+                    cwd=store.root,
+                    start_new_session=True,
+                )
+                restart = watch_preview(
                     store, executable, process, previous, source_browser=source_browser
                 )
             finally:
-                stop_preview(process)
-            if previous is None:
+                try:
+                    marker.unlink(missing_ok=True)
+                finally:
+                    if restart is None and process is not None:
+                        stop_preview(process)
+            if restart is None:
                 raise typer.Exit(process.returncode)
-            # The stopped preview might have finished writing an old view
-            # while sync updated its projection.
-            with site_lock(store, "render"):
-                invalidated = {
-                    path
-                    for path, stamp in preview_source_pages(store).items()
-                    if source_pages.get(path) != stamp
-                }
-                prune_source_output(store, preview_only=True, invalidated=invalidated)
-            typer.echo("Refreshing live preview for changed pages.")
+            previous = restart
+            typer.echo("Refreshing live preview for CMS changes.")
             if "--no-browser" not in options:
                 options.append("--no-browser")
 
 
+def preview_group_running(pid: int) -> bool:
+    # Waiting on the launcher can finish before Deno exits. A dead child may
+    # remain a zombie until reaped; on Linux, a zombie leader can still have
+    # live threads (the "l" modifier) that hold the listening socket open.
+    listing = subprocess.check_output(["ps", "-A", "-o", "pgid=,stat="], text=True)
+    return any(
+        group == str(pid) and (not state.startswith("Z") or "l" in state)
+        for group, state in (
+            line.split() for line in listing.splitlines() if line.strip()
+        )
+    )
+
+
+def wait_preview_group(pid: int, deadline: float) -> bool:
+    while preview_group_running(pid):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+    return True
+
+
 def stop_preview(process):
-    # The Quarto launcher starts a child server that also needs to release the port.
-    if process.poll() is None:
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
+    if process.poll() is not None and not preview_group_running(process.pid):
+        return
+    deadline = time.monotonic() + 5
+    with suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGTERM)
     try:
         process.wait(timeout=5)
+        if wait_preview_group(process.pid, deadline):
+            return
     except subprocess.TimeoutExpired:
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
-        process.wait()
+        pass
+    with suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGKILL)
+    process.wait()
+    if not wait_preview_group(process.pid, time.monotonic() + 5):
+        raise OSError("Quarto preview process group did not stop.")

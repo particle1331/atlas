@@ -1,0 +1,136 @@
+<script>
+// Quarto 1.10 reloads immediately when its preview socket closes. Atlas replaces
+// that renderer between saves, so keep this page until its successor is ready.
+document.addEventListener("DOMContentLoaded", () => {
+  const preview = window.QuartoPreview;
+  if (!preview) return;
+
+  const marker = new URL("/atlas-preview-generation.json", window.location.href);
+  const storageKey = "atlas-preview-generation:" +
+    window.location.pathname + window.location.search;
+  let lifetime = new AbortController();
+  let generation = null;
+  let recovering = false;
+  let timer;
+  let confirmationDelay = 250;
+
+  window.addEventListener("pagehide", () => {
+    lifetime.abort();
+    window.clearTimeout(timer);
+  });
+  window.addEventListener("pageshow", event => {
+    // A cached document has an aborted lifetime and no live preview socket.
+    if (event.persisted) {
+      lifetime = new AbortController();
+      recovering = false;
+      waitForReplacement(null);
+    }
+  });
+
+  async function readGeneration(signal) {
+    const response = await fetch(marker, {
+      cache: "no-store",
+      signal,
+    });
+    if (!response.ok) throw new Error("Preview is not ready");
+    const value = await response.json();
+    if (typeof value.generation !== "string" || !value.generation) {
+      throw new Error("Preview generation is unavailable");
+    }
+    return value.generation;
+  }
+
+  function reload(next) {
+    try {
+      window.sessionStorage.setItem(storageKey, next);
+    } catch {
+      // Recovery still works when browser storage is unavailable.
+    }
+    window.location.reload();
+  }
+
+  async function confirmGeneration() {
+    const controller = lifetime;
+    try {
+      const next = await readGeneration(controller.signal);
+      if (recovering || controller !== lifetime || controller.signal.aborted) return;
+      generation = next;
+      // Confirm a document once per URL/generation. This also catches an old
+      // document whose scripts initialized only after the server was replaced.
+      // Recovery records the token before reloading, avoiding another reload.
+      let confirmed;
+      try {
+        confirmed = window.sessionStorage.getItem(storageKey);
+        window.sessionStorage.setItem(storageKey, next);
+      } catch {
+        return; // Do not create a reload loop if storage is disabled.
+      }
+      if (confirmed !== next) window.location.reload();
+    } catch {
+      // A transient failure must not skip startup reconciliation forever.
+      if (!recovering && controller === lifetime && !controller.signal.aborted) {
+        timer = window.setTimeout(confirmGeneration, confirmationDelay);
+        confirmationDelay = Math.min(confirmationDelay * 1.5, 2000);
+      }
+    }
+  }
+
+  function recover(event) {
+    // This listener precedes Quarto's close listener on its own socket only.
+    event.stopImmediatePropagation();
+    waitForReplacement(generation);
+  }
+
+  function waitForReplacement(previous) {
+    if (recovering || lifetime.signal.aborted) return;
+    recovering = true;
+    window.clearTimeout(timer);
+    const controller = lifetime;
+    let delay = 250;
+
+    async function check() {
+      try {
+        const next = await readGeneration(controller.signal);
+        if (controller === lifetime && !controller.signal.aborted &&
+            next !== previous) {
+          reload(next);
+          return;
+        }
+      } catch {
+        // The port is intentionally unavailable while Atlas installs the save.
+      }
+      if (controller === lifetime && !controller.signal.aborted) {
+        timer = window.setTimeout(check, delay);
+        delay = Math.min(delay * 1.5, 2000);
+      }
+    }
+    check();
+  }
+
+  const init = preview.init;
+  preview.init = function (...args) {
+    const NativeWebSocket = window.WebSocket;
+    const path = window.location.pathname.replace(/\/?$/, "/");
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    // Quarto constructs its socket synchronously in init. Do not wrap sockets
+    // created by notebook content or any other application after that call.
+    window.WebSocket = new Proxy(NativeWebSocket, {
+      construct(Target, socketArgs) {
+        const socket = Reflect.construct(Target, socketArgs);
+        const url = new URL(socketArgs[0], window.location.href);
+        if (url.protocol === protocol && url.host === window.location.host &&
+            url.pathname === path) {
+          socket.addEventListener("open", confirmGeneration);
+          socket.addEventListener("close", recover);
+        }
+        return socket;
+      },
+    });
+    try {
+      return Reflect.apply(init, this, args);
+    } finally {
+      window.WebSocket = NativeWebSocket;
+    }
+  };
+}, { once: true });
+</script>

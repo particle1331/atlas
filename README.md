@@ -542,9 +542,24 @@ the generated pages from their authored sources without executing notebooks.
 including blockers for unfinished drafts.
 
 `make preview` watches `content/`, `backend/`, CMS templates and bundled fonts.
-If a save reports an error, fix the source and save again. Use
+After a valid save, Atlas stops Quarto before installing the updated pages, then
+restarts it automatically on the same port without opening another browser tab.
+This avoids overlapping projection writes and Quarto renders, and gives each
+refresh a fresh renderer. The open tab waits for the replacement server before
+reloading. Invalid saves rejected before installation leave the
+current preview running; fix the source and save again. Use
 `make preview SOURCES=0` or `uv run at cms preview --no-source-browser` to skip
 companion source pages while editing posts. Press Ctrl-C to stop preview.
+
+The opt-in browser regression checks repeated saves across a forced two-second
+renderer outage, without navigating or refreshing the open tabs:
+
+```sh
+uv run --locked --with playwright playwright install chromium
+ATLAS_BROWSER_TESTS=1 uv run --locked --with playwright pytest -q tests/test_cms_preview_browser.py
+```
+
+Set `ATLAS_CHROMIUM` to use an existing Chromium executable instead.
 
 `post new` and `collection new` save the draft and refresh its preview page and
 listing. If rendering fails, the saved draft is available and
