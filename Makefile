@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := doctor
-.PHONY: init doctor preview build build-pages
+.PHONY: init doctor preview build build-pages opencode-sbx
 
 QUARTO ?= quarto
 QUARTO_VERSION := 1.10.18
@@ -74,6 +74,9 @@ build-pages:
 	fi
 	QUARTO="$(QUARTO)" uv run --locked pytest -q tests/test_cms.py tests/test_cms_secrets.py -k 'source_browser or pages_artifact or both_render_profiles or cms_secrets'
 	QUARTO="$(QUARTO)" uv run --locked at cms build --for-pages
+
+opencode-sbx:
+	sbx run -e OPENCODE_CLI_CONFIG_CONTENT='{"keybinds":{"input.select.all":"ctrl+shift+a","input.select.line.home":"none"}}' opencode-atlas .
 
 doctor:
 	@status=0; \
