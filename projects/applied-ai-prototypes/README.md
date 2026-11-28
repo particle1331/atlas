@@ -28,6 +28,11 @@ for the earlier static audit. `UPSTREAM_README.md` preserves that revision's
 root README. There are no nested Git repositories, submodules or automatic
 updates from upstream.
 
+AAP-44 also includes a separate [workflow-slm reference](aap44/README.md#external-reference-workflow-slm)
+at commit `e3541a6c8a01be031ca5477311eddfa10230b4b3`, with its own
+[provenance manifest](aap44/workflow-slm-provenance.json). It is an external
+incident-triage experiment, not a replacement for the missing course implementation.
+
 The [provenance manifest](provenance.json) records every actual post ID,
 companion directory, selected upstream folder, copied file, source blob and
 SHA-256 checksum. Some examples support more than one post and are deliberately
@@ -37,6 +42,7 @@ snapshots rather than symlinks to a moving shared implementation.
 | Location | Meaning |
 |---|---|
 | `aapN/reference/<prototype>/` | Imported upstream files, unchanged except for the explicit environment-file omission below |
+| `aap44/reference/workflow-slm/` | Separately pinned external SOP experiment; see its local guide and manifest |
 | `aapN/README.md` | Our guide to the post's sources, import status and unresolved implementation work |
 | `aapN/implementation/` | Reserved convention for later authored adaptations; not created by this import |
 | `.atlas/plans/applied-ai-prototypes.md` at the repository root | Course outline and open authoring gaps |
@@ -71,7 +77,8 @@ implementations. In particular:
 
 | Posts | Boundary |
 |---|---|
-| AAP-8, AAP-22, AAP-37, AAP-40, AAP-44 | No matching implementation was identified in the pinned public repository; the directory contains a guide, not invented placeholder code |
+| AAP-8, AAP-22, AAP-37, AAP-40 | No matching implementation was identified in the pinned public repository; the directory contains a guide, not invented placeholder code |
+| AAP-44 | No matching course implementation was identified; a separately pinned external `workflow-slm` snapshot is available for comparison, not as a completed workflow engine |
 | AAP-4 | The Jev examples are available; Clairic remains an authoring-time source dependency |
 | AAP-23 | Small RAG diagnostics are reference material, not a RAG system measured at ten million documents |
 | AAP-28 | Patching examples and the search-source pointer are available, not Claude Code's complete implementation |

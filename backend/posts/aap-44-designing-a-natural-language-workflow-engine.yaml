@@ -1,6 +1,6 @@
 id: post/aap-44-designing-a-natural-language-workflow-engine
 created_at: '2026-11-16T07:15:47.234689+00:00'
-updated_at: '2026-11-28T05:32:46.650328+00:00'
+updated_at: '2026-11-28T06:05:36.884479+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-44.
@@ -8,12 +8,14 @@ internal_notes: |-
   Companion directory: projects/applied-ai-prototypes/aap44 (pinned references or documented missing implementation; no lesson adaptation).
   Reference audit: 678d9d0b579a72113c94a2d2f57671fd9f7f2a56; static findings, not reproduced results.
   Retain scope and unresolved questions in the single ordinary Markdown cell until substantive authoring replaces that content.
-  Import provenance: projects/applied-ai-prototypes/provenance.json.
-  Reference status: no_matching_implementation; the import does not close authoring gaps and ran no prototype/API code.
+  Original course import provenance: projects/applied-ai-prototypes/provenance.json.
+  Course reference status: no_matching_implementation; the import does not close authoring gaps and ran no prototype/API code.
+  Separate external reference: arpitbbhayani/workflow-slm at e3541a6c8a01be031ca5477311eddfa10230b4b3, copied unchanged to reference/workflow-slm/.
+  External import provenance: projects/applied-ai-prototypes/aap44/workflow-slm-provenance.json. No upstream execution or benchmark reproduction; no license declaration found in the pinned tree. This fixed-SOP experiment is not the course implementation.
 internal_todos: []
 thumbnail_path: null
 source_path: content/posts/aap-44-designing-a-natural-language-workflow-engine.ipynb
 code_path: projects/applied-ai-prototypes/aap44
 related_post_ids: []
-source_digest: ee1672907490df2586abc4e211c8c8180165d73c31bfcb962f745d000116dda0
+source_digest: 7941e69d5ab8a3bad0d2f0809ed2a14d482c198f8436c5706a85bb7596a3bab9
 metadata_digest: ab99706bf5821372af8db7274949f138046065dc6076a979620235ce89b63880

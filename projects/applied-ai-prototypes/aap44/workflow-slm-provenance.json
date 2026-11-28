@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/arpitbbhayani/workflow-slm",
+  "commit": "e3541a6c8a01be031ca5477311eddfa10230b4b3",
+  "post_id": "post/aap-44-designing-a-natural-language-workflow-engine",
+  "reference_status": "reference_only",
+  "reproduced": false,
+  "license_status": "No license was found in the pinned tree. This manifest does not assert permission to use, modify, or redistribute the upstream files.",
+  "selection": "All tracked regular Git blobs at the pinned commit, with original bytes and modes. Local paths are relative to aap44/.",
+  "exclusion_policy": "At any depth, exclude files named .env or matching .env.* except .env.example before reading contents. Reject symlinks, submodules, and other nonregular entries. Do not include untracked or runtime files.",
+  "omissions": [],
+  "files": [
+    {
+      "upstream_path": ".gitignore",
+      "path": "reference/workflow-slm/.gitignore",
+      "git_blob": "b30de1adf3e5484096f59cfddb1ef7d97d315d41",
+      "mode": "100644",
+      "sha256": "7a7b08cc33c3880d3a62c9e2b3e86b880edf0216edb9823b19512586b98e0d16",
+      "size": 487
+    },
+    {
+      "upstream_path": "EXPERIMENT.md",
+      "path": "reference/workflow-slm/EXPERIMENT.md",
+      "git_blob": "0600db66f45140c096befb8a619b72010dc8f44f",
+      "mode": "100644",
+      "sha256": "420511736b93fc13793797b59ad0965fa62334d1ee196003e0efadd77bfee29f",
+      "size": 18500
+    },
+    {
+      "upstream_path": "Makefile",
+      "path": "reference/workflow-slm/Makefile",
+      "git_blob": "573b9eaf1d0feb103a30d155a143d5f63a38cb18",
+      "mode": "100644",
+      "sha256": "cbf3c9a3b40f548caec11d1e46e598b5846dbd09b13cb1e5b4e1b85af7694bb9",
+      "size": 725
+    },
+    {
+      "upstream_path": "README.md",
+      "path": "reference/workflow-slm/README.md",
+      "git_blob": "47e2df3e3bd200224849748978cfe8a77539731f",
+      "mode": "100644",
+      "sha256": "4d306f15f19068ed928abcb5dbf18d01e7f67f7903d248304da78232468d6d3a",
+      "size": 12037
+    },
+    {
+      "upstream_path": "config/config.yaml",
+      "path": "reference/workflow-slm/config/config.yaml",
+      "git_blob": "6d093e8b5ab1dd483f79d1ae2d9ed04b1552dac3",
+      "mode": "100644",
+      "sha256": "d62a16c49127ebea6ea9561bd16f54fa92ae240dfc951ed3f5b46ec9b5241dd7",
+      "size": 2132
+    },
+    {
+      "upstream_path": "config/pricing.yaml",
+      "path": "reference/workflow-slm/config/pricing.yaml",
+      "git_blob": "702bebf5f4734d044879a5d160e444b6ec05a99b",
+      "mode": "100644",
+      "sha256": "fa7554d9773c8e243c1fcf26369f64780d04b3fc1df8ba23654dfe4a65c81bb5",
+      "size": 414
+    },
+    {
+      "upstream_path": "doc.md",
+      "path": "reference/workflow-slm/doc.md",
+      "git_blob": "831de1d5127d7855fa65dd240d961cfcfc290534",
+      "mode": "100644",
+      "sha256": "1a7e29e78f3e570311b2ab57142f34055d569763c906c72fd19d2ec497b5fd58",
+      "size": 65926
+    },
+    {
+      "upstream_path": "docs/APPROACH.md",
+      "path": "reference/workflow-slm/docs/APPROACH.md",
+      "git_blob": "0b33eff1f1a1183328f38ba65986b13b6d510086",
+      "mode": "100644",
+      "sha256": "a51d2e8cf91165b001099caf5c629b8ff166a2c63a741af6a203ef630ac7bc15",
+      "size": 11169
+    },
+    {
+      "upstream_path": "docs/DECISIONS.md",
+      "path": "reference/workflow-slm/docs/DECISIONS.md",
+      "git_blob": "03d9349700ce6621fb8bacca746965f68b0501fa",
+      "mode": "100644",
+      "sha256": "8437ac4a95075644d09ecb39407fa1467a6c92cb141a12204c0c2615a6a5c2f5",
+      "size": 3562
+    },
+    {
+      "upstream_path": "docs/REPORT.md",
+      "path": "reference/workflow-slm/docs/REPORT.md",
+      "git_blob": "9c653a578c7bd8b91addd56335506bdd929739c1",
+      "mode": "100644",
+      "sha256": "ba8c8d13e43f8c0bc2a3c0157fe0bd44c4a220eeb9b6182c7e6aa8efbdc9907f",
+      "size": 2692
+    },
+    {
+      "upstream_path": "docs/RUNLOG.md",
+      "path": "reference/workflow-slm/docs/RUNLOG.md",
+      "git_blob": "a8384860704d7d391e8221da4869294d887d55c3",
+      "mode": "100644",
+      "sha256": "d147a5b8fc8683675f6a1e8f74061267b0906eba12b062e3180f16cf2e2acc3d",
+      "size": 1698
+    },
+    {
+      "upstream_path": "docs/sample_training_conversation.json",
+      "path": "reference/workflow-slm/docs/sample_training_conversation.json",
+      "git_blob": "55de68c1ac6b562caa40840b4ccdc8efaddc1e8b",
+      "mode": "100644",
+      "sha256": "74010e528802788e396ace81f1b0138cd087e8c0e502d84e350bec013248389f",
+      "size": 3147
+    },
+    {
+      "upstream_path": "pyproject.toml",
+      "path": "reference/workflow-slm/pyproject.toml",
+      "git_blob": "b6c8669b0490bb9839011f7bcefd95782412eedc",
+      "mode": "100644",
+      "sha256": "7b7486e6d73ca7be9914a0c3ede49bb1b364a0d30f0f2278cc69e3ad58dbb1c6",
+      "size": 584
+    },
+    {
+      "upstream_path": "src/exp/__init__.py",
+      "path": "reference/workflow-slm/src/exp/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/baselines/__init__.py",
+      "path": "reference/workflow-slm/src/exp/baselines/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/baselines/run_baseline.py",
+      "path": "reference/workflow-slm/src/exp/baselines/run_baseline.py",
+      "git_blob": "b93003f107c80b5082d4891cb20fb7dbbe846924",
+      "mode": "100644",
+      "sha256": "e328440a1ff7c1765a61e2a31601eac64fe6a7f604b2768fe9b1687daf8a747d",
+      "size": 5478
+    },
+    {
+      "upstream_path": "src/exp/config.py",
+      "path": "reference/workflow-slm/src/exp/config.py",
+      "git_blob": "5df9a434536bdb57c8918a24343f68374f02a66f",
+      "mode": "100644",
+      "sha256": "dab5db8b7ecafadc07b738b9e2f9b028e6243138f059c66d6dea9476be9725f9",
+      "size": 649
+    },
+    {
+      "upstream_path": "src/exp/data/__init__.py",
+      "path": "reference/workflow-slm/src/exp/data/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/data/generate.py",
+      "path": "reference/workflow-slm/src/exp/data/generate.py",
+      "git_blob": "eec3e7880e504e46144bb4c07cb9fbc6e1fb5e3c",
+      "mode": "100644",
+      "sha256": "219f7b781842a0e48f9e4be27cab75be85645274ba57eb527bb0fe48fa558f0c",
+      "size": 440
+    },
+    {
+      "upstream_path": "src/exp/data/log_bank.py",
+      "path": "reference/workflow-slm/src/exp/data/log_bank.py",
+      "git_blob": "b74a62904cddcd2cb75e2a3e9218d28abee4756a",
+      "mode": "100644",
+      "sha256": "ad58d27c6e93a6190e724d4ec300f05a105b013ab3a3c201ffc8b8699b58c3d8",
+      "size": 13326
+    },
+    {
+      "upstream_path": "src/exp/data/render.py",
+      "path": "reference/workflow-slm/src/exp/data/render.py",
+      "git_blob": "e11104195302d3a32131eaf646c2057780690071",
+      "mode": "100644",
+      "sha256": "3f625f1325719369323fd10b030f0c3c1ad114faceb42cf6c7569cbbd4b304f1",
+      "size": 6639
+    },
+    {
+      "upstream_path": "src/exp/data/split.py",
+      "path": "reference/workflow-slm/src/exp/data/split.py",
+      "git_blob": "a066073bd14e8ad3a125af81f09de51a4fea83a2",
+      "mode": "100644",
+      "sha256": "2b1d780ae8404b102a68ab88f44bc0548b76050da6c4e9a4c7f689481dc2c7d1",
+      "size": 6912
+    },
+    {
+      "upstream_path": "src/exp/eval/__init__.py",
+      "path": "reference/workflow-slm/src/exp/eval/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/eval/ablate.py",
+      "path": "reference/workflow-slm/src/exp/eval/ablate.py",
+      "git_blob": "e21739e153b3521a3ccba6d7f920742e8191cc24",
+      "mode": "100644",
+      "sha256": "c019ea3428494f7ec96c53ba4efa199c9ea01c2644b7d51b98114ed202ad2b62",
+      "size": 6508
+    },
+    {
+      "upstream_path": "src/exp/eval/bootstrap.py",
+      "path": "reference/workflow-slm/src/exp/eval/bootstrap.py",
+      "git_blob": "aed49306007e70393a36d15bc8f2bc0b71657e18",
+      "mode": "100644",
+      "sha256": "4b897de87475d6ed1277aa4e9f8946c88c5190fe1ff13c597187845df6d52c86",
+      "size": 1772
+    },
+    {
+      "upstream_path": "src/exp/eval/metrics.py",
+      "path": "reference/workflow-slm/src/exp/eval/metrics.py",
+      "git_blob": "282d997b99193a0d69c95674b65fa835cd13b901",
+      "mode": "100644",
+      "sha256": "c4c72c3706e3320c8cd19a9e86303f219179f9fd6e283ea43e92f850b2afc67f",
+      "size": 4752
+    },
+    {
+      "upstream_path": "src/exp/eval/report.py",
+      "path": "reference/workflow-slm/src/exp/eval/report.py",
+      "git_blob": "84dc232021b137fe0c938c1fced6dc198aa1cdaf",
+      "mode": "100644",
+      "sha256": "96de316fd22eb83a00d4202e5d191287e76459585196b358846939b79a53d7f9",
+      "size": 5935
+    },
+    {
+      "upstream_path": "src/exp/eval/run_eval.py",
+      "path": "reference/workflow-slm/src/exp/eval/run_eval.py",
+      "git_blob": "339fa2d0ce0cecdeb739cd4d9c72136087c5d0dd",
+      "mode": "100644",
+      "sha256": "557714d0bf75c3ef4c5673b7b34ab6ea093d01e3a1dd29e2e859397c91135bad",
+      "size": 2967
+    },
+    {
+      "upstream_path": "src/exp/eval/teacher_forced.py",
+      "path": "reference/workflow-slm/src/exp/eval/teacher_forced.py",
+      "git_blob": "21c748a469bfb3043f5ca97fd5f9e484fad270e7",
+      "mode": "100644",
+      "sha256": "42baa69bc2461d7f27e451de4b007c707a5b3849e3182af57f739a1f37939f89",
+      "size": 3851
+    },
+    {
+      "upstream_path": "src/exp/prompts/log_bank.md",
+      "path": "reference/workflow-slm/src/exp/prompts/log_bank.md",
+      "git_blob": "74bc9c40bc29a51cbee3af5ccca01ae7dcfb18a3",
+      "mode": "100644",
+      "sha256": "5776da6394666934cc797d2cc4cbf1bbeef9d3b7d0d15a289d24a36505dcccbd",
+      "size": 1318
+    },
+    {
+      "upstream_path": "src/exp/prompts/render_alert.md",
+      "path": "reference/workflow-slm/src/exp/prompts/render_alert.md",
+      "git_blob": "446c6b2eb26afe79020c1673c21006aae4bd7650",
+      "mode": "100644",
+      "sha256": "85533c79a77f7c63776ff5cecee63192e77065c7cbfe7c55914c51e7101f65cf",
+      "size": 2191
+    },
+    {
+      "upstream_path": "src/exp/prompts/sop.md",
+      "path": "reference/workflow-slm/src/exp/prompts/sop.md",
+      "git_blob": "f42757101557fe947cec4c80bb60947e59432a10",
+      "mode": "100644",
+      "sha256": "a10efea43783a5d54365b89b05a7aaa7a8b9a5fd0cb0dc5eec2673677c58648c",
+      "size": 13543
+    },
+    {
+      "upstream_path": "src/exp/runtime/__init__.py",
+      "path": "reference/workflow-slm/src/exp/runtime/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/runtime/cli.py",
+      "path": "reference/workflow-slm/src/exp/runtime/cli.py",
+      "git_blob": "fe9cf4c1b0d6a803caa0542af6bf6bdc2418fa2a",
+      "mode": "100644",
+      "sha256": "b4d1fe3348e111a4dd55d2b6c7beff62b48064b33706820877ad53e2bc4cc280",
+      "size": 10173
+    },
+    {
+      "upstream_path": "src/exp/runtime/clients.py",
+      "path": "reference/workflow-slm/src/exp/runtime/clients.py",
+      "git_blob": "37e7edd7ecc35d7c2aed43d538c1b90a44d00877",
+      "mode": "100644",
+      "sha256": "947d83f5b6ad34a425d445ceadde4327b186849a6c61f78a8c70e7fd1cba71bd",
+      "size": 8384
+    },
+    {
+      "upstream_path": "src/exp/runtime/escalate.py",
+      "path": "reference/workflow-slm/src/exp/runtime/escalate.py",
+      "git_blob": "e0d46866da6502fc8b611676e02dbc98d8e74281",
+      "mode": "100644",
+      "sha256": "ee336da314e73e429778cf031074bc079684a4fbab57d257e2f3ba5cdd2a441d",
+      "size": 1391
+    },
+    {
+      "upstream_path": "src/exp/runtime/loop.py",
+      "path": "reference/workflow-slm/src/exp/runtime/loop.py",
+      "git_blob": "0262956ed2af952c93c0bd50cb2932484ea82826",
+      "mode": "100644",
+      "sha256": "87b47857fd65b47f672b45d26f4f2beea0c7f18d1947ccb949ba46943f09ed1d",
+      "size": 6480
+    },
+    {
+      "upstream_path": "src/exp/runtime/structure.py",
+      "path": "reference/workflow-slm/src/exp/runtime/structure.py",
+      "git_blob": "7be06f1a5e3ea8080d0e9353f0949e310742e10a",
+      "mode": "100644",
+      "sha256": "7c2e686d185e6883c90ba8e2efc6a49e38eba8b54a4cb046a3fc2855f8b51a42",
+      "size": 4620
+    },
+    {
+      "upstream_path": "src/exp/schema.py",
+      "path": "reference/workflow-slm/src/exp/schema.py",
+      "git_blob": "b33480ba9cae9160f493eec0c3ec31e292d36081",
+      "mode": "100644",
+      "sha256": "67a9b2647251d3f5c2b14fc77bedd8d0259ece923791f75850469ec22b984c71",
+      "size": 4104
+    },
+    {
+      "upstream_path": "src/exp/serve/serve.sh",
+      "path": "reference/workflow-slm/src/exp/serve/serve.sh",
+      "git_blob": "93d17914553d2d143d100571f3bdf8fed29f521a",
+      "mode": "100644",
+      "sha256": "9fdc8dea9aa09815a6a31b455ccff38a4eb59b19e08a811c7b2425292f6ab04c",
+      "size": 747
+    },
+    {
+      "upstream_path": "src/exp/smoke.py",
+      "path": "reference/workflow-slm/src/exp/smoke.py",
+      "git_blob": "c0641ec937e530399fe9ab7019f11b918ec1a11b",
+      "mode": "100644",
+      "sha256": "7d0c83d51c806c71be85960a77a03351e10d305bedd13f1e407130c1edd0bde7",
+      "size": 5398
+    },
+    {
+      "upstream_path": "src/exp/teacher/__init__.py",
+      "path": "reference/workflow-slm/src/exp/teacher/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/teacher/run_traces.py",
+      "path": "reference/workflow-slm/src/exp/teacher/run_traces.py",
+      "git_blob": "3d9c4688c7bb1775be9d7a2ce2c8d898ded52617",
+      "mode": "100644",
+      "sha256": "4218cc4381e5fb278bc51421a40b6cbc301f71944979cc60e8d89350ef656d68",
+      "size": 8157
+    },
+    {
+      "upstream_path": "src/exp/train/__init__.py",
+      "path": "reference/workflow-slm/src/exp/train/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/train/build_sft.py",
+      "path": "reference/workflow-slm/src/exp/train/build_sft.py",
+      "git_blob": "2ffacc7977e98dc12bd7275bba281aed494b9697",
+      "mode": "100644",
+      "sha256": "0e41e8088cced70b1797f02437d322080d871274e6076ab0343f7db142f96444",
+      "size": 3363
+    },
+    {
+      "upstream_path": "src/exp/train/train_lora.py",
+      "path": "reference/workflow-slm/src/exp/train/train_lora.py",
+      "git_blob": "4ad99372af259ff5677fd9631cf90661af5949ae",
+      "mode": "100644",
+      "sha256": "e35d1e9e63b2b17575057a6f5a6421cba76cfe7e0275b0fab794025aaee29040",
+      "size": 9790
+    },
+    {
+      "upstream_path": "src/exp/util/__init__.py",
+      "path": "reference/workflow-slm/src/exp/util/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/util/cache.py",
+      "path": "reference/workflow-slm/src/exp/util/cache.py",
+      "git_blob": "561cf83620cc95360500f352e4e51c340fe923b8",
+      "mode": "100644",
+      "sha256": "3e41cae7cf1df27a6264e5aa57cebe49c05020a5f5c62ca7ae83c25013bc8931",
+      "size": 1833
+    },
+    {
+      "upstream_path": "src/exp/util/log.py",
+      "path": "reference/workflow-slm/src/exp/util/log.py",
+      "git_blob": "f8e4114d2b9232c2e59a62a117c6678e40bebb23",
+      "mode": "100644",
+      "sha256": "2effada45af67264c379da16bdf1c1b13fe23304e797ba0147e2c3458de85d75",
+      "size": 455
+    },
+    {
+      "upstream_path": "src/exp/validators.py",
+      "path": "reference/workflow-slm/src/exp/validators.py",
+      "git_blob": "a96e2781755f01ae6b5847a237cfb3431b4004fc",
+      "mode": "100644",
+      "sha256": "76246debcd2585eafbf6e0c17acbd83284c705609a86d2ba2fc07b7628922b05",
+      "size": 11811
+    },
+    {
+      "upstream_path": "src/exp/world/__init__.py",
+      "path": "reference/workflow-slm/src/exp/world/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "src/exp/world/policy.py",
+      "path": "reference/workflow-slm/src/exp/world/policy.py",
+      "git_blob": "ef028f41d7570626879d76d61284415df187d961",
+      "mode": "100644",
+      "sha256": "04ae4d8b0162ddb9a9ffc5c3a2f212544f6ec7954f8a757e3b01d71ac4ebf8fe",
+      "size": 1171
+    },
+    {
+      "upstream_path": "src/exp/world/procedure.py",
+      "path": "reference/workflow-slm/src/exp/world/procedure.py",
+      "git_blob": "b73b1f39db135b65e6482189f2593f033b93bcac",
+      "mode": "100644",
+      "sha256": "2dfea20b4270aeb81431a1f4905fdfb2cf27085e093617e997575f8b5bc9eb85",
+      "size": 4068
+    },
+    {
+      "upstream_path": "src/exp/world/scenarios.py",
+      "path": "reference/workflow-slm/src/exp/world/scenarios.py",
+      "git_blob": "a07e94b1dfff8382711bda17aec06e18677b9b1b",
+      "mode": "100644",
+      "sha256": "296e118a5fc6771fb784404cea6e544e1f194cf06336c2cc7a09e8e0f4b5187b",
+      "size": 17081
+    },
+    {
+      "upstream_path": "src/exp/world/services.py",
+      "path": "reference/workflow-slm/src/exp/world/services.py",
+      "git_blob": "e1e544031d4a2421cb2e378fd9cfc1b5224b2a94",
+      "mode": "100644",
+      "sha256": "86bd8c9ef2c0a30e0b06b16aad22342687b2a558846e02bdd7a486e2c0ce8dbe",
+      "size": 1954
+    },
+    {
+      "upstream_path": "src/exp/world/simulator.py",
+      "path": "reference/workflow-slm/src/exp/world/simulator.py",
+      "git_blob": "af9bd412ac1d76b36fdfbffb3b1d2018862a0284",
+      "mode": "100644",
+      "sha256": "337f4bd8de001240d8b9c2436950a4541b32b45bf18dcdfe19753e937ef28816",
+      "size": 7426
+    },
+    {
+      "upstream_path": "tests/__init__.py",
+      "path": "reference/workflow-slm/tests/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "upstream_path": "tests/test_chat_template.py",
+      "path": "reference/workflow-slm/tests/test_chat_template.py",
+      "git_blob": "96920a9bc04b10df2cf50644dd6e31de350c3f06",
+      "mode": "100644",
+      "sha256": "a29678e794cee5044785f58599273e0006da9cd30286b08f41cd60e3033bebe0",
+      "size": 1650
+    },
+    {
+      "upstream_path": "tests/test_level2_generator.py",
+      "path": "reference/workflow-slm/tests/test_level2_generator.py",
+      "git_blob": "3360c7bdbc424a47d27c584be71456ab30248848",
+      "mode": "100644",
+      "sha256": "179bd5eec20d3839e8317aaa375bc9fda131262bd8e30d384740909bc6f4d3b1",
+      "size": 7464
+    },
+    {
+      "upstream_path": "tests/test_oracle.py",
+      "path": "reference/workflow-slm/tests/test_oracle.py",
+      "git_blob": "7429984af3b8bef38bd44a2f60fd0fe117a30fb7",
+      "mode": "100644",
+      "sha256": "202731ca298e707c1acda8d556c57d807bb65b7ed7c8723db34bf2fd35f64317",
+      "size": 8687
+    },
+    {
+      "upstream_path": "tests/test_policy.py",
+      "path": "reference/workflow-slm/tests/test_policy.py",
+      "git_blob": "37a252ba1065c1b82495ea0726eea92d132191f0",
+      "mode": "100644",
+      "sha256": "b25fb96f6aa6bd532f88300d2db3e84cc380ff76ee4436455ab1eabfc77080a4",
+      "size": 2827
+    },
+    {
+      "upstream_path": "tests/test_runtime.py",
+      "path": "reference/workflow-slm/tests/test_runtime.py",
+      "git_blob": "7871dacc7766e57b2aa0429db37d5e81ca2a50dd",
+      "mode": "100644",
+      "sha256": "6eb241b169faa47ade38805294ef5f96144f56dbb7392767ab4bda95e412d58b",
+      "size": 8853
+    },
+    {
+      "upstream_path": "tests/test_schema.py",
+      "path": "reference/workflow-slm/tests/test_schema.py",
+      "git_blob": "d0f089bc53decc6b9a15eccb49687a51616b690c",
+      "mode": "100644",
+      "sha256": "8e2f37217aeb1cb9a32e9cca5d7296ba7b3e9089193d95a2fffa2b600b121351",
+      "size": 2346
+    },
+    {
+      "upstream_path": "tests/test_simulator.py",
+      "path": "reference/workflow-slm/tests/test_simulator.py",
+      "git_blob": "9415521027beefdf8e3fb20f01a79c53f0a2a7ae",
+      "mode": "100644",
+      "sha256": "9eec2ab3ba1ee3a27e3990a5eee57d5f3b1014fddb5b2b7ebd47ac230f5d90e1",
+      "size": 5134
+    },
+    {
+      "upstream_path": "tests/test_stage_s2.py",
+      "path": "reference/workflow-slm/tests/test_stage_s2.py",
+      "git_blob": "d241848dae5d634e099aa9ddb882a3d61294777c",
+      "mode": "100644",
+      "sha256": "612a58e823a821303a79cc1256d0d556e9adc359837a2ba94f35501eae34a314",
+      "size": 2357
+    },
+    {
+      "upstream_path": "tests/test_structure.py",
+      "path": "reference/workflow-slm/tests/test_structure.py",
+      "git_blob": "3587526d624bb9f6d206768f499d07a39db91f1a",
+      "mode": "100644",
+      "sha256": "e06aaec6480d84fa478a546413e4b459328008b67d387600af431ca9875b51fe",
+      "size": 5430
+    },
+    {
+      "upstream_path": "tests/test_validators.py",
+      "path": "reference/workflow-slm/tests/test_validators.py",
+      "git_blob": "5c28a8a674e6a5ceba06e44905e3e5bdb8a38686",
+      "mode": "100644",
+      "sha256": "54ee67d648ddc55bc4a936e54d0e972b46f00df9149ecbd9cc0ce614559c47fa",
+      "size": 8200
+    },
+    {
+      "upstream_path": "tests/test_world.py",
+      "path": "reference/workflow-slm/tests/test_world.py",
+      "git_blob": "6cb2fbe839070f922dc8e6522d2965eaf784dcf4",
+      "mode": "100644",
+      "sha256": "ed24d6b047d011df585e45e8ae8c1b9ac5a00e86359570e1314a57955dcb37f8",
+      "size": 113
+    }
+  ]
+}

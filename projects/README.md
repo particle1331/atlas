@@ -15,6 +15,8 @@ CMS sync projects eligible files from the current Git commit into a
   references by `AAP-n` post under `aap1` through `aap44`. Its
   [provenance manifest](applied-ai-prototypes/provenance.json) records file
   checksums, omissions and posts whose implementation is still unavailable.
+  AAP-44's [local guide](applied-ai-prototypes/aap44/README.md) also documents a
+  separately pinned external `workflow-slm` reference and its own manifest.
 
 Keep imported reference trees unchanged, including their licenses. Document
 provenance and release mappings in each project's guide and manifest. Put
