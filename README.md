@@ -550,6 +550,10 @@ reloading. Invalid saves rejected before installation leave the
 current preview running; fix the source and save again. Use
 `make preview SOURCES=0` or `uv run at cms preview --no-source-browser` to skip
 companion source pages while editing posts. Press Ctrl-C to stop preview.
+Interrupted installs are recovered, including output cleanup and the PDF refresh,
+before Quarto restarts. If recovery fails, it stays stopped and reports the error.
+While preview is running, let its watcher sync saved edits; explicit syncs and
+public builds are rejected so they cannot overwrite the live draft projection.
 
 The opt-in browser regression checks repeated saves across a forced two-second
 renderer outage, without navigating or refreshing the open tabs:

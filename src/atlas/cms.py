@@ -960,7 +960,14 @@ def check(ctx: typer.Context):
 def sync(ctx: typer.Context, preview: bool = False):
     """Sync ignored frontend copies with public metadata. --preview includes drafts."""
     store = store_for(ctx)
-    with site_lock(store, "render"):
+    with (
+        site_lock(store, "render"),
+        site_lock(store, "live-preview", wait=False) as idle,
+    ):
+        if not idle:
+            raise ValueError(
+                "A live preview is running; let it sync saved edits automatically."
+            )
         emit(generate(store, preview))
 
 
@@ -1089,12 +1096,15 @@ def prune_preview_output(store: Store):
 def render_site(store: Store, preview: bool, *, for_pages: bool = False):
     if preview and for_pages:
         raise ValueError("--for-pages requires a public build.")
-    with site_lock(store, "render"):
-        if preview:
-            with site_lock(store, "live-preview", wait=False) as idle:
-                if not idle:
-                    # The live preview watches the source files created by the CMS.
-                    return
+    with (
+        site_lock(store, "render"),
+        site_lock(store, "live-preview", wait=False) as idle,
+    ):
+        if not idle:
+            if preview:
+                # The live preview watches the source files created by the CMS.
+                return
+            raise ValueError("Stop the live preview before running a public build.")
         options = preview_options(store) if preview else []
         if for_pages:
             verify_repository(store.root)
@@ -1145,8 +1155,8 @@ def preview_generation_marker(store: Store) -> Path:
     return store.path("frontend/_site-preview/atlas-preview-generation.json")
 
 
-def write_preview_generation(marker: Path):
-    generation = uuid4().hex
+def write_preview_generation(marker: Path, generation: str | None = None) -> str:
+    generation = generation or uuid4().hex
     marker.parent.mkdir(parents=True, exist_ok=True)
     temporary = marker.with_name(f".{marker.name}.{generation}")
     try:
@@ -1154,6 +1164,7 @@ def write_preview_generation(marker: Path):
         temporary.replace(marker)
     finally:
         temporary.unlink(missing_ok=True)
+    return generation
 
 
 def watch_preview(
@@ -1163,6 +1174,7 @@ def watch_preview(
     previous: dict | None = None,
     *,
     source_browser: bool = True,
+    generation: str | None = None,
 ) -> dict | None:
     """Sync source changes and return the watched snapshot after stopping Quarto."""
     if previous is None:
@@ -1180,6 +1192,15 @@ def watch_preview(
     typer.echo("Watching content/ and backend/ for CMS changes.")
     while process.poll() is None:
         time.sleep(0.25)
+        if process.poll() is not None:
+            break
+        if generation is not None:
+            marker = preview_generation_marker(store)
+            if not marker.is_file():
+                # A startup render may clean the output directory. Keep this
+                # child's token stable, and retry if cleanup races this write.
+                with suppress(FileNotFoundError):
+                    write_preview_generation(marker, generation)
         current = preview_snapshot(store)
         if current != previous:
             previous = current
@@ -1198,10 +1219,27 @@ def watch_preview(
                     before_install=stop_before_install,
                 )
         except (ValueError, OSError, yaml.YAMLError, typer.Exit) as error:
+            advice = (
+                "Retrying a complete refresh before restarting Quarto."
+                if stopped
+                else "Fix the source and save again."
+            )
             typer.echo(
-                f"Preview sync failed: {error}. Fix the source and save again.",
+                f"Preview sync failed: {error}. {advice}",
                 err=True,
             )
+            if stopped:
+                # Replay any interrupted transaction, then finish the entire
+                # refresh (including pruning and PDF generation) while offline.
+                # If this also fails, don't serve a partially prepared site.
+                with site_lock(store, "render"):
+                    prepare_site(
+                        store,
+                        executable,
+                        preview=True,
+                        watch_snapshot=previous,
+                        source_browser=source_browser,
+                    )
         else:
             typer.echo("Preview content synced.")
         if stopped:
@@ -1267,6 +1305,25 @@ def build(
     render_site(store_for(ctx), preview, for_pages=for_pages)
 
 
+@contextmanager
+def preview_signals():
+    """Let normal preview cleanup run when its terminal or supervisor stops it."""
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}
+
+    def terminate(signum, _frame):
+        for sig in previous:
+            signal.signal(sig, signal.SIG_IGN)
+        raise SystemExit(128 + signum)
+
+    try:
+        for sig in previous:
+            signal.signal(sig, terminate)
+        yield
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+
+
 @app.command("preview")
 @guard
 def preview(
@@ -1291,7 +1348,7 @@ def preview(
         "none",
         "--no-execute",
     ]
-    with site_lock(store, "live-preview", wait=False) as available:
+    with preview_signals(), site_lock(store, "live-preview", wait=False) as available:
         if not available:
             raise ValueError("A live preview is already running in this workspace.")
         with site_lock(store, "render"):
@@ -1309,14 +1366,23 @@ def preview(
             process = None
             restart = None
             try:
-                write_preview_generation(marker)
+                # A failed install can leave a journal after some files were
+                # replaced. Finish recovery before any renderer sees the site.
+                with store.lock():
+                    pass
+                generation = write_preview_generation(marker)
                 process = subprocess.Popen(
                     [executable, "preview", result["site"], *options],
                     cwd=store.root,
                     start_new_session=True,
                 )
                 restart = watch_preview(
-                    store, executable, process, previous, source_browser=source_browser
+                    store,
+                    executable,
+                    process,
+                    previous,
+                    source_browser=source_browser,
+                    generation=generation,
                 )
             finally:
                 try:

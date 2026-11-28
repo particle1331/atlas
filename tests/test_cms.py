@@ -2617,20 +2617,26 @@ def test_preview_restarts_after_refresh_error_if_quarto_was_stopped(
         1: lambda: path.write_bytes(encode(profile | {"summary": "Edited summary"}))
     }
     commit = Store.commit
+    failed = False
 
     def commit_projection(actual_store, changes):
+        nonlocal failed
         if (
             phase == "install"
             and preview_clock.processes
             and store.path("frontend/resume.qmd") in changes
+            and not failed
         ):
             assert preview_clock.processes[-1].poll() == -cms.signal.SIGTERM
+            failed = True
             raise errors[failure]
         return commit(actual_store, changes)
 
     def render(*_):
-        if phase == "pdf" and preview_clock.processes:
+        nonlocal failed
+        if phase == "pdf" and preview_clock.processes and not failed:
             assert preview_clock.processes[-1].poll() == -cms.signal.SIGTERM
+            failed = True
             raise errors[failure]
 
     monkeypatch.setattr(Store, "commit", commit_projection)
@@ -2825,11 +2831,18 @@ def test_preview_interrupt_terminates_child_and_kills_after_timeout(
     monkeypatch.setattr(cms, "preview_group_running", lambda _: False)
 
     def interrupt(
-        actual_store, executable, actual_process, previous, *, source_browser
+        actual_store,
+        executable,
+        actual_process,
+        previous,
+        *,
+        source_browser,
+        generation,
     ):
         assert actual_store.root == store.root and actual_process is process
         assert executable == "/bin/quarto"
         assert source_browser is True
+        assert json.loads(marker.read_text())["generation"] == generation
         assert marker.is_file()
         raise KeyboardInterrupt
 

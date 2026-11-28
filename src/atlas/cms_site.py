@@ -722,7 +722,13 @@ def generate(
                 meta, body = split_document(
                     store.path(f"frontend/_cms/{page}.qmd").read_text()
                 )
-                meta["listing"]["contents"] = (
+                listing = meta.get("listing")
+                if not isinstance(listing, dict):
+                    raise ValueError(
+                        f"CMS listing template needs a listing mapping: "
+                        f"frontend/_cms/{page}.qmd."
+                    )
+                listing["contents"] = (
                     contents
                     if (selected_posts if page == "posts" else selected_collections)
                     else []

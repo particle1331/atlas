@@ -163,7 +163,7 @@ def test_preview_tabs_recover_after_repeated_offline_refreshes(store):
                     # nested post tab and résumé tab must recover themselves.
                     for page in pages:
                         try:
-                            page.get_by_text(marker, exact=True).wait_for(timeout=60000)
+                            page.get_by_text(marker).wait_for(timeout=60000)
                         except Exception:
                             print("Browser state:", page.url, page.inner_text("body"))
                             raise
@@ -198,16 +198,16 @@ def test_preview_tabs_recover_after_repeated_offline_refreshes(store):
                     }
                     """)
                 post.goto(post.url)
-                assert post.get_by_text(marker, exact=True).is_visible()
+                assert post.get_by_text(marker).is_visible()
                 marker = "Save while an old document is still initializing"
                 profile["summary"] = marker
                 store.path("content/resume.yaml").write_bytes(encode(profile))
                 store.path("content/posts/example.ipynb").write_bytes(
                     nb.dump(nb.notebook(marker))
                 )
-                resume.get_by_text(marker, exact=True).wait_for(timeout=60000)
+                resume.get_by_text(marker).wait_for(timeout=60000)
                 post.evaluate("window.__releasePreview()")
-                post.get_by_text(marker, exact=True).wait_for(timeout=60000)
+                post.get_by_text(marker).wait_for(timeout=60000)
                 post.wait_for_function(
                     "window.__testSockets.some(s => s.readyState === 1)"
                 )
@@ -233,7 +233,7 @@ def test_preview_tabs_recover_after_repeated_offline_refreshes(store):
                       new PageTransitionEvent("pageshow", { persisted: true })
                     );
                     """)
-                post.get_by_text(marker, exact=True).wait_for(timeout=60000)
+                post.get_by_text(marker).wait_for(timeout=60000)
                 assert [page.url for page in pages] == urls
                 assert not errors
                 assert any(

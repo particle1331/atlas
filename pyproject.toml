@@ -22,6 +22,7 @@ dependencies = [
     "typer>=0.15",
     "picoagents>=0.5.0",
     "pandas>=3.1.1",
+    "nbdime>=4.0.4",
 ]
 
 [project.scripts]
