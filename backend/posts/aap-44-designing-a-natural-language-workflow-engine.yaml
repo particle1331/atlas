@@ -1,6 +1,6 @@
 id: post/aap-44-designing-a-natural-language-workflow-engine
 created_at: '2026-11-16T07:15:47.234689+00:00'
-updated_at: '2026-11-16T07:49:16.909060+00:00'
+updated_at: '2026-11-28T05:32:46.650328+00:00'
 status: draft
 internal_notes: |-
   Course scope: .atlas/plans/applied-ai-prototypes.md, AAP-44.
@@ -15,5 +15,5 @@ thumbnail_path: null
 source_path: content/posts/aap-44-designing-a-natural-language-workflow-engine.ipynb
 code_path: projects/applied-ai-prototypes/aap44
 related_post_ids: []
-source_digest: 2f14497e58a0e48f5ab4b686e0511fa95da1466c031bcc957e0ba70ac0933e99
+source_digest: ee1672907490df2586abc4e211c8c8180165d73c31bfcb962f745d000116dda0
 metadata_digest: ab99706bf5821372af8db7274949f138046065dc6076a979620235ce89b63880
